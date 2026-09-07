@@ -1,4 +1,4 @@
-package org.example.ticketing_app.service;
+package org.example.ticketing_app.service.ticketService;
 
 import org.springframework.stereotype.Service;
 
