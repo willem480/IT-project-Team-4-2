@@ -44,7 +44,7 @@ public class EmailService {
      * you need to call CloseSession after you are done with the messages
      * @throws Exception
      */
-    @Scheduled(fixedRate = 5000)
+    //@Scheduled(fixedRate = 5000)
     public EmailSession readUnreadEmails() throws Exception {
 
         Properties props = new Properties();
