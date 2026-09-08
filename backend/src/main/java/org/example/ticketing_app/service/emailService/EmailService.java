@@ -1,19 +1,11 @@
 package org.example.ticketing_app.service.emailService;
 
-import jakarta.mail.Authenticator;
-import jakarta.mail.Flags;
-import jakarta.mail.Folder;
-import jakarta.mail.Message;
-import jakarta.mail.Multipart;
-import jakarta.mail.Part;
-import jakarta.mail.PasswordAuthentication;
-import jakarta.mail.Session;
-import jakarta.mail.Store;
-import jakarta.mail.Transport;
+import jakarta.mail.*;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.search.FlagTerm;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -46,9 +38,14 @@ public class EmailService {
     @Value("${email.smtp.password}")
     private String smtpPassword;
 
-        // methods here
-
-    public List<Message> readUnreadEmails() throws Exception {
+    /**
+     * a schedules task that reads the unseen messages in the inbox and returns them
+     * @return an email session that contains the messages,
+     * you need to call CloseSession after you are done with the messages
+     * @throws Exception
+     */
+    @Scheduled(fixedRate = 5000)
+    public EmailSession readUnreadEmails() throws Exception {
 
         Properties props = new Properties();
 
@@ -68,7 +65,7 @@ public class EmailService {
         );
 
         Folder inbox = store.getFolder("INBOX");
-        inbox.open(Folder.READ_ONLY);
+        inbox.open(Folder.READ_WRITE);
 
         Message[] messages = inbox.search(
                 new FlagTerm(
@@ -76,14 +73,31 @@ public class EmailService {
                         false
                 )
         );
+        return EmailSession.builder()
+                .messages(Arrays.asList(messages))
+                .folder(inbox)
+                .store(store)
+                .build();
+    }
 
-        return Arrays.asList(messages);
+    /**
+     * mark the messages in an email session with a flag
+     * @param emailSession
+     * @param flag
+     * @param value
+     * @throws MessagingException
+     */
+    private void markMessages(EmailSession emailSession, Flags.Flag flag, boolean value)
+            throws MessagingException {
+        List<Message> messages = emailSession.getMessages();
+        for (Message message : messages) {
+            message.setFlag(flag, value);
+        }
     }
 
     public EmailData parseEmail(
             Message message
     ) throws Exception {
-
         String from =
                 ((InternetAddress) message.getFrom()[0])
                         .getAddress();
