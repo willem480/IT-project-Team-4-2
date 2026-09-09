@@ -15,5 +15,11 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
+    public String getAllTickets() {
+        return "get all tickets is working";
+    }
 
+    public String getTicketById(Long id) {
+        return "Ticket " + id;
+    }
 }

@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 @RequestMapping("/ticket")
 @ResponseBody
 public class TicketController {
-    TicketService ticketService = new TicketService();
+    TicketServiceImpl ticketService = new TicketServiceImpl();
     @GetMapping("getAllTickets")
     public String getAllTickets() {
         return ticketService.getAllTickets();

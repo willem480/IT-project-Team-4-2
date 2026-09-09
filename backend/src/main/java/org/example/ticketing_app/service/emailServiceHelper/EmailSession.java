@@ -1,4 +1,4 @@
-package org.example.ticketing_app.service.emailService;
+package org.example.ticketing_app.service.emailServiceHelper;
 
 import jakarta.mail.Folder;
 import jakarta.mail.Message;

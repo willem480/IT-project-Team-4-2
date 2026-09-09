@@ -1,4 +1,4 @@
-package org.example.ticketing_app.service.emailService;
+package org.example.ticketing_app.service.emailServiceHelper;
 
 public record EmailData(
         String messageId,

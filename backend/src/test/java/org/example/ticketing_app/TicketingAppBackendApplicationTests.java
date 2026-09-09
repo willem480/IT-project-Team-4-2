@@ -2,11 +2,12 @@ package org.example.ticketing_app;
 
 import jakarta.mail.Message;
 import jakarta.mail.MessagingException;
-import org.example.ticketing_app.service.emailService.EmailData;
+import org.example.ticketing_app.service.emailServiceHelper.EmailData;
+import org.example.ticketing_app.service.impl.InboxServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.example.ticketing_app.service.emailService.*;
+import org.example.ticketing_app.service.emailServiceHelper.*;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -16,11 +17,11 @@ import java.util.List;
 @SpringBootTest
 class TicketingAppBackendApplicationTests {
     @Autowired
-    EmailService emailService;
+    InboxServiceImpl inboxService;
     @Test
     void sendAndReceiveEmail() throws Exception {
 
-        EmailSession session = emailService.readUnreadEmails();
+        EmailSession session = inboxService.readUnreadEmails();
         List<Message> messages = session.getMessages();
 
         Message latestMessage = messages.stream()
@@ -41,14 +42,14 @@ class TicketingAppBackendApplicationTests {
                 .orElse(null);
 
         if (latestMessage != null) {
-            EmailData email = emailService.parseEmail(latestMessage);
+            EmailData email = inboxService.parseEmail(latestMessage);
 
 
             System.out.println("From: " + email.from());
             System.out.println("Subject: " + email.subject());
             System.out.println("Body: " + email.body());
 
-            emailService.sendDummyReply(
+            inboxService.sendDummyReply(
                     "hyc018018@gmail.com",
                     email.subject()
             );
@@ -60,7 +61,7 @@ class TicketingAppBackendApplicationTests {
     @Test
     void printAllMessagesTest() throws Exception {
 
-        EmailSession session = emailService.readUnreadEmails();
+        EmailSession session = inboxService.readUnreadEmails();
         List<Message> messages = session.getMessages();
 
         System.out.println("Unread message count: " + messages.size());
@@ -90,7 +91,7 @@ class TicketingAppBackendApplicationTests {
                 }))
                 .orElseThrow();
 
-        EmailData email = emailService.parseEmail(latestMessage);
+        EmailData email = inboxService.parseEmail(latestMessage);
 
         System.out.println("\nLATEST UNREAD MESSAGE");
         System.out.println("From: " + email.from());
