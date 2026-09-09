@@ -30,10 +30,10 @@ public class CodeGenerator {
                         .enableFileOverride()
 
                         .serviceBuilder()
-                        .enableFileOverride()
+                        .disableService()
 
                         .controllerBuilder()
-                        .enableFileOverride()
+                        //.enableFileOverride()
                 )
                 .templateEngine(new FreemarkerTemplateEngine())
                 .execute();

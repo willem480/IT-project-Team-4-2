@@ -2,7 +2,6 @@ package org.example.ticketing_app.service.impl;
 
 import org.example.ticketing_app.entity.Manager;
 import org.example.ticketing_app.mapper.ManagerMapper;
-import org.example.ticketing_app.service.IManagerService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +14,6 @@ import org.springframework.stereotype.Service;
  * @since 2026-09-09
  */
 @Service
-public class ManagerServiceImpl extends ServiceImpl<ManagerMapper, Manager> implements IManagerService {
+public class ManagerServiceImpl extends ServiceImpl<ManagerMapper, Manager> {
 
 }
