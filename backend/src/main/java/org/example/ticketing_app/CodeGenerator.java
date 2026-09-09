@@ -27,13 +27,11 @@ public class CodeGenerator {
                         .enableFileOverride()
 
                         .mapperBuilder()
-                        .enableFileOverride()
 
                         .serviceBuilder()
                         .disableService()
 
                         .controllerBuilder()
-                        //.enableFileOverride()
                 )
                 .templateEngine(new FreemarkerTemplateEngine())
                 .execute();
