@@ -1,7 +1,6 @@
 package org.example.ticketing_app.controller;
 
 import org.example.ticketing_app.service.impl.TicketServiceImpl;
-import org.example.ticketing_app.service.ticketService.TicketService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.stereotype.Controller;
