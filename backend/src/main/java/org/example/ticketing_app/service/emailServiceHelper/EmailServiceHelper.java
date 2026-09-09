@@ -86,7 +86,7 @@ public final class EmailServiceHelper {
         }
 
         if (flags.contains(Flags.Flag.SEEN)) {
-            return "READ";
+            return "SEEN";
         }
 
         return "UNREAD";

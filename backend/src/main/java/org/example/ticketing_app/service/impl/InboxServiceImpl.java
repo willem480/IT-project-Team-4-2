@@ -38,18 +38,13 @@ public class InboxServiceImpl extends ServiceImpl<InboxMapper, Inbox> {
             EmailData emailData =
                     EmailServiceHelper.parseEmail(message);
 
-            boolean exists =
-                    lambdaQuery()
-                            .eq(Inbox::getIdEmail, emailData.getMessageId())
-                            .exists();
+            Inbox inbox =
+                    getById(emailData.getMessageId());
 
-            if (exists) {
-                continue;
+            if (inbox == null) {
+                inbox = new Inbox();
+                inbox.setIdEmail(emailData.getMessageId());
             }
-
-            Inbox inbox = new Inbox();
-
-            inbox.setIdEmail(emailData.getMessageId());
 
             inbox.setDateReceived(
                     new Timestamp(
@@ -57,9 +52,11 @@ public class InboxServiceImpl extends ServiceImpl<InboxMapper, Inbox> {
                     ).toLocalDateTime()
             );
 
-            inbox.setDateSent(new Timestamp(
-                    message.getSentDate().getTime()
-            ).toLocalDateTime());
+            inbox.setDateSent(
+                    new Timestamp(
+                            message.getSentDate().getTime()
+                    ).toLocalDateTime()
+            );
 
             inbox.setSender(
                     emailData.getFrom()
@@ -76,13 +73,13 @@ public class InboxServiceImpl extends ServiceImpl<InboxMapper, Inbox> {
             inbox.setBody(
                     emailData.getBody()
             );
-
             inbox.setStatus(EmailServiceHelper.getStatus(message));
 
-            save(inbox);
+            saveOrUpdate(inbox);
         }
 
         inboxFolder.close(false);
         store.close();
+        System.out.println("Inbox sync complete.");
     }
 }
