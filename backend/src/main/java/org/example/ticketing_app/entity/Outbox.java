@@ -24,17 +24,19 @@ public class Outbox implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @TableId("idEmail")
-    private Integer idEmail;
+    private String idEmail;
 
-    private LocalDateTime date;
+    private LocalDateTime dateSent;
 
-    private String from;
+    private String sender;
 
-    private String to;
+    private String receiver;
 
     private String subject;
 
     private String body;
 
     private String status;
+
+    private LocalDateTime dateReceived;
 }
