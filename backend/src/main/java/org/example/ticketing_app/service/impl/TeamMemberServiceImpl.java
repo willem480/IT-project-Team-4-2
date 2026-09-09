@@ -1,7 +1,7 @@
 package org.example.ticketing_app.service.impl;
 
-import org.example.ticketing_app.entity.Teammember;
-import org.example.ticketing_app.mapper.TeammemberMapper;
+import org.example.ticketing_app.entity.TeamMember;
+import org.example.ticketing_app.mapper.TeamMemberMapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
 
@@ -14,6 +14,6 @@ import org.springframework.stereotype.Service;
  * @since 2026-09-09
  */
 @Service
-public class TeammemberServiceImpl extends ServiceImpl<TeammemberMapper, Teammember> {
+public class TeamMemberServiceImpl extends ServiceImpl<TeamMemberMapper, TeamMember> {
 
 }

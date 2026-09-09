@@ -25,5 +25,5 @@ public class Team implements Serializable {
     @TableId("idTeam")
     private Integer idTeam;
 
-    private Integer organizationIdorganization;
+    private Integer organizationId;
 }

@@ -1,6 +1,7 @@
 package org.example.ticketing_app.entity;
 
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -18,12 +19,13 @@ import java.io.Serializable;
 @Getter
 @Setter
 @ToString
-public class Memberreport implements Serializable {
+@TableName("member_report")
+public class MemberReport implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
     @TableId("idMemberReport")
     private Integer idMemberReport;
 
-    private Integer teammemberIdteammember;
+    private Integer teammemberId;
 }

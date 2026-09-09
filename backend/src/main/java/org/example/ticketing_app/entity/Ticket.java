@@ -26,7 +26,7 @@ public class Ticket implements Serializable {
     @TableId("idTicket")
     private Integer idTicket;
 
-    private Integer userIduser;
+    private Integer userId;
 
     private String title;
 
@@ -37,4 +37,6 @@ public class Ticket implements Serializable {
     private String location;
 
     private Integer pay;
+
+    private String email;
 }

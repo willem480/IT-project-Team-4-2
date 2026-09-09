@@ -1,7 +1,7 @@
 package org.example.ticketing_app.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import org.example.ticketing_app.entity.Ticketattachment;
+import org.example.ticketing_app.entity.OrganizationReport;
 
 /**
  * <p>
@@ -11,6 +11,6 @@ import org.example.ticketing_app.entity.Ticketattachment;
  * @author Yucong
  * @since 2026-09-09
  */
-public interface TicketattachmentMapper extends BaseMapper<Ticketattachment> {
+public interface OrganizationReportMapper extends BaseMapper<OrganizationReport> {
 
 }

@@ -25,7 +25,7 @@ public class Manager implements Serializable {
     @TableId("idManager")
     private Integer idManager;
 
-    private Integer userIduser;
+    private Integer userId;
 
-    private Integer organizationIdorganization;
+    private Integer organizationId;
 }
