@@ -101,6 +101,51 @@ class _MyHomePageState extends State<MyHomePage> {
                 padding: EdgeInsets.all(16.0),
                 child: Text('Good morning, Alan', style: TextStyle(fontSize: 20)), 
               ),
+
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: TextField(
+                  decoration: InputDecoration(
+                    //hint area
+                    hintText: 'Search tickets, assignees, or locations...',
+                    hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14), 
+
+                    prefixIcon: const Icon(Icons.search, color: Colors.grey),
+
+                    //filled background color
+                    filled: true,
+                    fillColor: Colors.white, 
+
+                    //search frame by default
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(30.0),
+                      borderSide: BorderSide(color: Colors.grey.shade300, width: 1.0), 
+      
+                    ),
+
+                    //color after i click it
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(30.0),
+                      borderSide: const BorderSide(color: Colors.blue, width: 1.0),
+                    ),
+
+                    //up vertical padding
+                    contentPadding: const EdgeInsets.symmetric(vertical: 14.0),
+
+                  ),
+                ),
+              ),
+
+              Padding(
+                padding:  EdgeInsets.all(16.0),
+                child: Row(// from left to right
+                  children: [
+                    OutlinedButton(onPressed:() {}, child:  Text('Distance')),
+                    OutlinedButton(onPressed:() {}, child:  Text('Pay')),
+                   
+                  ]
+                )
+              ),
               
               //example
               // const Text('You have pushed the button this many times:'),
@@ -108,28 +153,29 @@ class _MyHomePageState extends State<MyHomePage> {
               //   '$_counter',
               //   style: Theme.of(context).textTheme.headlineMedium,
               // ),
+              
 
-            //scrol area
-            Expanded(
-              child: SingleChildScrollView(
-                //sizebox to stretch width
-                child: SizedBox(
-                  width: double.infinity,
-                  child: Column(
-                    crossAxisAlignment:CrossAxisAlignment.center,
-                    children: [
-                      Container(height: 200, width: 500,  color: Colors.white, margin: const EdgeInsets.all(10)),
-                      Container(height: 200, width: 500,  color: Colors.white, margin: const EdgeInsets.all(10)),
-                      Container(height: 200, width: 500,  color: Colors.white, margin: const EdgeInsets.all(10)),
-                      Container(height: 200, width: 500,  color: Colors.white, margin: const EdgeInsets.all(10)),
-                    ],
-                  )
+              //scrol area
+              Expanded(
+                child: SingleChildScrollView(
+                  //sizebox to stretch width
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: Column(
+                      crossAxisAlignment:CrossAxisAlignment.center,
+                      children: [
+                        Container(height: 200, width: 500,  color: Colors.white, margin: const EdgeInsets.all(10)),
+                        Container(height: 200, width: 500,  color: Colors.white, margin: const EdgeInsets.all(10)),
+                        Container(height: 200, width: 500,  color: Colors.white, margin: const EdgeInsets.all(10)),
+                        Container(height: 200, width: 500,  color: Colors.white, margin: const EdgeInsets.all(10)),
+                      ],
+                    )
+                  ),
+
+                  //jobs
+
                 ),
-
-                //jobs
-
-              ),
-            )
+              )
 
             ],
           ),
