@@ -1,3 +1,5 @@
+import 'dart:ui';
+import 'accept_job.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -87,6 +89,7 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text('Good morning, Alan', style: TextStyle(color:Colors.black)),
         
       ),
+      //body
       body: SafeArea(
        
         // Center is a layout widget. It takes a single child and positions it
@@ -97,11 +100,12 @@ class _MyHomePageState extends State<MyHomePage> {
 
             children: [
               //fixed area, this is upper area excluding 
-              const Padding(
+              Padding(
                 padding: EdgeInsets.all(16.0),
                 child: Text('Good morning, Alan', style: TextStyle(fontSize: 20)), 
               ),
 
+              //Search area
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: TextField(
@@ -114,7 +118,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
                     //filled background color
                     filled: true,
-                    fillColor: Colors.white, 
+                    fillColor: Colors.white,
 
                     //search frame by default
                     enabledBorder: OutlineInputBorder(
@@ -146,14 +150,6 @@ class _MyHomePageState extends State<MyHomePage> {
                   ]
                 )
               ),
-              
-              //example
-              // const Text('You have pushed the button this many times:'),
-              // Text(
-              //   '$_counter',
-              //   style: Theme.of(context).textTheme.headlineMedium,
-              // ),
-              
 
               //scrol area
               Expanded(
@@ -175,17 +171,48 @@ class _MyHomePageState extends State<MyHomePage> {
                   //jobs
 
                 ),
-              )
+              ),
 
             ],
           ),
       ),
       
       floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
+        onPressed: () {},
+        backgroundColor: Colors.blue,
+        shape: const CircleBorder(),
+        tooltip: 'Post a Job',
+        child: const Icon(Icons.add, color:  Colors.white),
       ),
+
+      //lock at center
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+
+      //bottom navigation bar
+      bottomNavigationBar: BottomAppBar(
+        color: Colors.white,
+        shape: const CircularNotchedRectangle(),
+        notchMargin: 8.0,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            TextButton.icon(
+              onPressed: () {}, 
+              icon: Icon(Icons.search), 
+              label: Text('Find a Job', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+  
+            const SizedBox(width: 60),
+            TextButton.icon(
+              onPressed: () {Navigator.push(context, MaterialPageRoute(builder: (context) => accept_job()),);}, 
+              icon: Icon(Icons.check_circle_outlined), 
+              label: Text('Accept a Job', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        )
+      ),
+
+
     );
   }
 }
