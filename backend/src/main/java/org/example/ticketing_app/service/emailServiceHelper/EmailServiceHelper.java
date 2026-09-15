@@ -159,6 +159,10 @@ public final class EmailServiceHelper {
             Message message
     ) throws Exception {
 
+        if (message == null) {
+            throw new IllegalArgumentException("message must not be null");
+        }
+
         String from = concatAddresses(message.getFrom());
         String to = concatAddresses(message.getRecipients(Message.RecipientType.TO));
         String subject =
@@ -180,7 +184,7 @@ public final class EmailServiceHelper {
                 messageId,
                 from,
                 to,
-                subject,
+                subject == null ? "" : subject,
                 body
         );
     }
@@ -216,42 +220,78 @@ public final class EmailServiceHelper {
             Part part
     ) throws Exception {
 
+        return extractBodyContent(part).preferredText();
+    }
+
+    private static BodyContent extractBodyContent(Part part) throws Exception {
+        if (Part.ATTACHMENT.equalsIgnoreCase(part.getDisposition())
+                || part.getFileName() != null) {
+            return BodyContent.empty();
+        }
+
         if (part.isMimeType("text/plain")) {
-            return (String) part.getContent();
+            return new BodyContent(textContent(part), "");
         }
 
         if (part.isMimeType("text/html")) {
-
-            String html =
-                    (String) part.getContent();
-
-            return html
-                    .replaceAll("<[^>]+>", " ")
-                    .replace("&nbsp;", " ")
-                    .trim();
+            return new BodyContent("", htmlToText(textContent(part)));
         }
 
-        if (part.isMimeType("multipart/*")) {
-
-            Multipart multipart =
-                    (Multipart) part.getContent();
-
-            StringBuilder body =
-                    new StringBuilder();
-
-            for (int i = 0; i < multipart.getCount(); i++) {
-
-                body.append(
-                        extractBody(
-                                multipart.getBodyPart(i)
-                        )
-                );
-            }
-
-            return body.toString();
+        if (!part.isMimeType("multipart/*")) {
+            return BodyContent.empty();
         }
 
-        return "";
+        Multipart multipart = (Multipart) part.getContent();
+        StringBuilder plainText = new StringBuilder();
+        StringBuilder htmlText = new StringBuilder();
+
+        for (int i = 0; i < multipart.getCount(); i++) {
+            BodyContent content = extractBodyContent(multipart.getBodyPart(i));
+            appendText(plainText, content.plainText());
+            appendText(htmlText, content.htmlText());
+        }
+
+        return new BodyContent(plainText.toString(), htmlText.toString());
+    }
+
+    private static String textContent(Part part) throws Exception {
+        Object content = part.getContent();
+        return content instanceof String text ? text.trim() : "";
+    }
+
+    private static String htmlToText(String html) {
+        return html
+                .replaceAll("(?is)<(script|style)[^>]*>.*?</\\1>", " ")
+                .replaceAll("(?i)<br\\s*/?>", "\n")
+                .replaceAll("(?i)</p>|</div>|</li>", "\n")
+                .replaceAll("<[^>]+>", " ")
+                .replace("&nbsp;", " ")
+                .replaceAll("[ \\t]+", " ")
+                .replaceAll("\\n{3,}", "\n\n")
+                .replaceAll("\\s+([.,;:!?])", "$1")
+                .trim();
+    }
+
+    private static void appendText(StringBuilder target, String text) {
+        if (text.isBlank()) {
+            return;
+        }
+
+        if (!target.isEmpty()) {
+            target.append('\n');
+        }
+
+        target.append(text);
+    }
+
+    private record BodyContent(String plainText, String htmlText) {
+        private static BodyContent empty() {
+            return new BodyContent("", "");
+        }
+
+        private String preferredText() {
+            return plainText.isBlank() ? htmlText : plainText;
+        }
     }
 
     public static void sendDummyReply(
