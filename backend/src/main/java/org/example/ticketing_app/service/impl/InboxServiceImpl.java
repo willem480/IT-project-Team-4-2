@@ -7,8 +7,10 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.example.ticketing_app.service.emailServiceHelper.*;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 
 /**
@@ -22,7 +24,14 @@ import java.sql.Timestamp;
 @Service
 public class InboxServiceImpl extends ServiceImpl<InboxMapper, Inbox> {
 
+    private final TicketServiceImpl ticketService;
+
+    public InboxServiceImpl(TicketServiceImpl ticketService) {
+        this.ticketService = ticketService;
+    }
+
     @Scheduled(fixedRate = 3000)
+    @Transactional
     public void syncInbox() throws Exception {
 
         Store store = EmailServiceHelper.createImapStore();
@@ -41,7 +50,9 @@ public class InboxServiceImpl extends ServiceImpl<InboxMapper, Inbox> {
             Inbox inbox =
                     getById(emailData.getMessageId());
 
-            if (inbox == null) {
+            boolean isNewEmail = inbox == null;
+
+            if (isNewEmail) {
                 inbox = new Inbox();
                 inbox.setIdEmail(emailData.getMessageId());
             }
@@ -52,11 +63,11 @@ public class InboxServiceImpl extends ServiceImpl<InboxMapper, Inbox> {
                     ).toLocalDateTime()
             );
 
-            inbox.setDateSent(
-                    new Timestamp(
-                            message.getSentDate().getTime()
-                    ).toLocalDateTime()
-            );
+            LocalDateTime dateSent = message.getSentDate() == null
+                    ? LocalDateTime.now()
+                    : new Timestamp(message.getSentDate().getTime()).toLocalDateTime();
+
+            inbox.setDateSent(dateSent);
 
             inbox.setSender(
                     emailData.getFrom()
@@ -76,6 +87,10 @@ public class InboxServiceImpl extends ServiceImpl<InboxMapper, Inbox> {
             inbox.setStatus(EmailServiceHelper.getStatus(message));
 
             saveOrUpdate(inbox);
+
+            if (isNewEmail) {
+                ticketService.createTicketFromEmail(emailData, dateSent);
+            }
         }
 
         inboxFolder.close(false);
