@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'accept_job.dart';
+import 'post_job.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -178,7 +179,7 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () {Navigator.push(context, MaterialPageRoute(builder: (context) => post_job()),);},
         backgroundColor: Colors.blue,
         shape: const CircleBorder(),
         tooltip: 'Post a Job',
