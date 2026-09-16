@@ -1,6 +1,5 @@
 package org.example.ticketing_app.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.Getter;
 import lombok.Setter;
@@ -15,7 +14,7 @@ import java.time.LocalDateTime;
  * </p>
  *
  * @author Yucong
- * @since 2026-09-09
+ * @since 2026-09-16
  */
 @Getter
 @Setter
@@ -24,7 +23,7 @@ public class Ticket implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @TableId(value = "idTicket", type = IdType.AUTO)
+    @TableId("idTicket")
     private Integer idTicket;
 
     private Integer userId;
@@ -40,6 +39,4 @@ public class Ticket implements Serializable {
     private Integer pay;
 
     private String email;
-
-    private String sourceEmailId;
 }
