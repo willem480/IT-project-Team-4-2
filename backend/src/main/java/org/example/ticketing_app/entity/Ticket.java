@@ -39,4 +39,6 @@ public class Ticket implements Serializable {
     private Integer pay;
 
     private String email;
+
+    private String status;
 }
