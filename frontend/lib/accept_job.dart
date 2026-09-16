@@ -1,118 +1,598 @@
 import 'package:flutter/material.dart';
 
+const _ink = Color(0xFF111827);
+const _muted = Color(0xFF6B7280);
+const _border = Color(0xFFE5E7EB);
 
-class accept_job extends StatelessWidget {
+// Keep the existing entry point so callers do not need routing changes.
+// ignore: camel_case_types
+class accept_job extends AcceptJobPage {
   const accept_job({super.key});
+}
 
-  // This widget is the root of your application.
+class AcceptJobPage extends StatefulWidget {
+  const AcceptJobPage({super.key});
+
+  @override
+  State<AcceptJobPage> createState() => _AcceptJobPageState();
+}
+
+class _AcceptJobPageState extends State<AcceptJobPage> {
+  String? _time;
+  String? _distance;
+  String? _priority;
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
+    return Scaffold(
+      backgroundColor: const Color(0xFFF9FAFB),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 640),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Align(
+                    alignment: Alignment.center,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Good morning,',
+                          style: TextStyle(color: _muted, fontSize: 14),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Alan',
+                          style: TextStyle(
+                            color: _ink,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  const _SearchField(),
+                  const SizedBox(height: 16),
+                  const IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          child: _StatusSummaryCard(label: 'Open', count: '12'),
+                        ),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: _StatusSummaryCard(
+                            label: 'In Progress',
+                            count: '7',
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: _StatusSummaryCard(
+                            label: 'Completed',
+                            count: '34',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _FilterButton(
+                        label: 'Time',
+                        value: _time,
+                        options: const [
+                          'Less than 1 day',
+                          '1 day',
+                          '2 days',
+                          '3+ days',
+                        ],
+                        onSelected: (value) => setState(() => _time = value),
+                      ),
+                      _FilterButton(
+                        label: 'Distance',
+                        value: _distance,
+                        options: const [
+                          'Less than 1 km',
+                          '1–5 km',
+                          '5–10 km',
+                          '10+ km',
+                        ],
+                        onSelected: (value) =>
+                            setState(() => _distance = value),
+                      ),
+                      _FilterButton(
+                        label: 'Priority',
+                        value: _priority,
+                        options: const ['Urgent', 'Medium', 'Low'],
+                        onSelected: (value) =>
+                            setState(() => _priority = value),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  const Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          'Assigned to you',
+                          style: TextStyle(
+                            color: _ink,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Text(
+                        '3 results',
+                        style: TextStyle(
+                          color: _muted,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  Expanded(
+                    child: ListView(
+                      padding: EdgeInsets.zero,
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
+                      children: [
+                        for (final job in _jobs)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: JobCard(job: job),
+                          ),
+                        // Empty UI placeholders, separate from the real jobs.
+                        for (var i = 0; i < 2; i++)
+                          Container(
+                            height: 140,
+                            margin: const EdgeInsets.only(bottom: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: _border),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      bottomNavigationBar: const _AcceptedJobBottomBar(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+class Job {
+  const Job({
+    required this.jobName,
+    required this.position,
+    required this.jobType,
+    required this.status,
+    required this.priority,
+    required this.dueDate,
+    required this.dueTime,
+  });
 
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  final String jobName;
+  final String position;
+  final String jobType;
+  final String status;
+  final String priority;
+  final String dueDate;
+  final String dueTime;
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+const _jobs = [
+  Job(
+    jobName: 'Emergency light fitting',
+    position: 'Building C',
+    jobType: 'The University of Melbourne',
+    status: 'In Progress',
+    priority: 'Urgent',
+    dueDate: 'today',
+    dueTime: '2:00 PM',
+  ),
+  Job(
+    jobName: 'Network printer offline',
+    position: 'Floor 2',
+    jobType: 'Provision IT',
+    status: 'Open',
+    priority: 'Medium',
+    dueDate: 'tomorrow',
+    dueTime: '10:00 AM',
+  ),
+  Job(
+    jobName: 'Door access request',
+    position: 'Warehouse B',
+    jobType: 'Microsoft',
+    status: 'Open',
+    priority: 'Low',
+    dueDate: 'Fri',
+    dueTime: '4:00 PM',
+  ),
+];
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
+class JobCard extends StatelessWidget {
+  const JobCard({super.key, required this.job});
+
+  final Job job;
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text('accept job page'),
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: _border),
+        borderRadius: BorderRadius.circular(16),
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: .center,
-          children: [
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  '${job.jobName} - ${job.position}',
+                  style: const TextStyle(
+                    color: _ink,
+                    fontSize: 20,
+                    height: 1.3,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              _PriorityBadge(priority: job.priority),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const CircleAvatar(
+                radius: 13,
+                backgroundColor: Color(0xFFEFF6FF),
+                child: Icon(
+                  Icons.business_outlined,
+                  size: 17,
+                  color: Color(0xFF64748B),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  job.jobType,
+                  style: const TextStyle(
+                    color: Color(0xFF374151),
+                    fontSize: 14,
+                    height: 1.7,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 120),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: job.status == 'In Progress'
+                            ? const Color(0xFFF59E0B)
+                            : const Color(0xFF10B981),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        job.status,
+                        style: const TextStyle(
+                          color: _muted,
+                          fontSize: 14,
+                          height: 1.7,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              const Icon(
+                Icons.calendar_today_outlined,
+                size: 18,
+                color: Color(0xFF9CA3AF),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Due ${job.dueDate} · ${job.dueTime}',
+                  style: const TextStyle(color: _muted, fontSize: 14),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SearchField extends StatelessWidget {
+  const _SearchField();
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      style: const TextStyle(color: _ink, fontSize: 14),
+      decoration: InputDecoration(
+        hintText: 'Search tickets, assignees, or locations...',
+        hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
+        prefixIcon: const Icon(Icons.search, color: Color(0xFF9CA3AF)),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(32),
+          borderSide: const BorderSide(color: _border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(32),
+          borderSide: const BorderSide(color: Colors.blue),
+        ),
+      ),
+    );
+  }
+}
+
+class _StatusSummaryCard extends StatelessWidget {
+  const _StatusSummaryCard({required this.label, required this.count});
+
+  final String label;
+  final String count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(color: _muted, fontSize: 13)),
+          const SizedBox(height: 8),
+          Text(
+            count,
+            style: const TextStyle(
+              color: _ink,
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FilterButton extends StatelessWidget {
+  const _FilterButton({
+    required this.label,
+    required this.value,
+    required this.options,
+    required this.onSelected,
+  });
+
+  final String label;
+  final String? value;
+  final List<String> options;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<String>(
+      tooltip: 'Filter by $label',
+      initialValue: value,
+      onSelected: onSelected,
+      color: Colors.white,
+      position: PopupMenuPosition.under,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      itemBuilder: (_) => [
+        for (final option in options)
+          CheckedPopupMenuItem(
+            value: option,
+            checked: option == value,
+            child: Text(option),
+          ),
+      ],
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 48),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(
+            color: value == null ? _border : const Color(0xFF93C5FD),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(
+                value == null ? label : '$label: $value',
+                style: const TextStyle(
+                  color: _ink,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            const Icon(Icons.keyboard_arrow_down, size: 18, color: _muted),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
+    );
+  }
+}
+
+class _PriorityBadge extends StatelessWidget {
+  const _PriorityBadge({required this.priority});
+
+  final String priority;
+
+  @override
+  Widget build(BuildContext context) {
+    final (background, foreground) = switch (priority) {
+      'Urgent' => (const Color(0xFFFEE2E2), const Color(0xFF991B1B)),
+      'Medium' => (const Color(0xFFFEF3C7), const Color(0xFF92400E)),
+      _ => (const Color(0xFFDBEAFE), const Color(0xFF1E40AF)),
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        priority,
+        style: TextStyle(
+          color: foreground,
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+/// Local visual placeholder with no navigation or action callbacks.
+class _AcceptedJobBottomBar extends StatelessWidget {
+  const _AcceptedJobBottomBar();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: _border)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              const Expanded(
+                child: _BottomBarItem(label: 'Find a Job', icon: Icons.search),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Semantics(
+                  label: 'Post a Job',
+                  child: const DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Color(0xFF3B82F6),
+                      shape: BoxShape.circle,
+                    ),
+                    child: SizedBox(
+                      width: 44,
+                      height: 44,
+                      child: Icon(Icons.add, color: Colors.white, size: 32),
+                    ),
+                  ),
+                ),
+              ),
+              const Expanded(
+                child: _BottomBarItem(
+                  label: 'Accepted Job',
+                  icon: Icons.check_circle_outlined,
+                  selected: true,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BottomBarItem extends StatelessWidget {
+  const _BottomBarItem({
+    required this.label,
+    required this.icon,
+    this.selected = false,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = selected ? _ink : _muted;
+    return Semantics(
+      selected: selected,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFFD6D5D3) : Colors.transparent,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 26, color: color),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: color,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
