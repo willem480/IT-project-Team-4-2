@@ -503,7 +503,7 @@ class _PriorityBadge extends StatelessWidget {
   }
 }
 
-/// Local visual placeholder with no navigation or action callbacks.
+/// Local bottom bar; only Find a Job returns to the previous page.
 class _AcceptedJobBottomBar extends StatelessWidget {
   const _AcceptedJobBottomBar();
 
@@ -520,8 +520,14 @@ class _AcceptedJobBottomBar extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(
             children: [
-              const Expanded(
-                child: _BottomBarItem(label: 'Find a Job', icon: Icons.search),
+              Expanded(
+                child: _BottomBarItem(
+                  label: 'Find a Job',
+                  icon: Icons.search,
+                  onTap: () {
+                    Navigator.pop(context);
+                  },
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -560,38 +566,43 @@ class _BottomBarItem extends StatelessWidget {
     required this.label,
     required this.icon,
     this.selected = false,
+    this.onTap,
   });
 
   final String label;
   final IconData icon;
   final bool selected;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final color = selected ? _ink : _muted;
-    return Semantics(
-      selected: selected,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? const Color(0xFFD6D5D3) : Colors.transparent,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 26, color: color),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: color,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+    return GestureDetector(
+      onTap: onTap,
+      child: Semantics(
+        selected: selected,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          decoration: BoxDecoration(
+            color: selected ? const Color(0xFFD6D5D3) : Colors.transparent,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 26, color: color),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
