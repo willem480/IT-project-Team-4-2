@@ -6,6 +6,7 @@ import org.example.ticketing_app.entity.User;
 import org.example.ticketing_app.mapper.TicketMapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.example.ticketing_app.service.emailServiceHelper.EmailData;
+import org.example.ticketing_app.service.ticketServiceHelper.TicketStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -79,6 +80,7 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
         ticket.setLocation(jobPosting.get().location());
         ticket.setPay(jobPosting.get().pay());
         ticket.setEmail(emailData.getFrom());
+        ticket.setStatus(TicketStatus.OPEN.name());
         save(ticket);
         return ticket;
     }
