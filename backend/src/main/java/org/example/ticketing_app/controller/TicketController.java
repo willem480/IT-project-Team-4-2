@@ -25,8 +25,5 @@ public class TicketController {
         this.ticketService = ticketService;
     }
 
-    @GetMapping("getAllTickets")
-    public String getAllTickets() {
-        return ticketService.getAllTickets();
-    }
+
 }
