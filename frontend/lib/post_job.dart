@@ -1,3 +1,7 @@
+
+
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 
@@ -25,7 +29,7 @@ class post_job extends StatelessWidget {
         //
         // This works for code too, not just values: Most code changes can be
         // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
+         colorScheme: .fromSeed(seedColor: const Color(0xFFF9FAFB)),
       ),
       home: const MyHomePage(title: 'Flutter Demo Home Page'),
     );
@@ -77,43 +81,218 @@ class _MyHomePageState extends State<MyHomePage> {
         // TRY THIS: Try changing the color here to a specific color (to
         // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
         // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        backgroundColor: const Color(0xFFF9FAFB),
+        elevation: 0,
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
-        title: Text('accept job page'),
+        title: Text('Good morning, Alan', style: TextStyle(color:Colors.black)),
       ),
-      body: Center(
+      body: SafeArea(
         // Center is a layout widget. It takes a single child and positions it
         // in the middle of the parent.
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
         child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: .center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+
           children: [
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+
+            Text('Post a job', style: TextStyle(fontWeight: FontWeight.bold)),
+            SizedBox(height: 45),
+            
+
+            //name
+            const Text(
+              'Full Name',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.black),
             ),
+            TextField(
+              decoration: InputDecoration(
+                hintText: 'Name',
+                hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: Colors.black, width: 1.0)
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: Colors.blue, width: 1.0)
+                ),
+              ),
+            ),
+            SizedBox(height: 32.0),
+            
+            
+            //email
+              const Text(
+              'Email',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.black),
+            ),
+            
+            TextField(
+              decoration: InputDecoration(
+                hintText: 'Write your email',
+                hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: Colors.black, width: 1.0)
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: Colors.blue, width: 1.0)
+                ),
+              ),
+            ),
+
+            SizedBox(height: 32.0),
+            
+
+            //Address
+              const Text(
+              'Address',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.black),
+            ),
+          
+
+            TextField(
+              decoration: InputDecoration(
+                hintText: 'Write your address including postcode',
+                hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: Colors.black, width: 1.0)
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: Colors.blue, width: 1.0)
+                ),
+              ),
+            ),
+
+            SizedBox(height: 32.0),
+            
+
+            //Amount of money
+    
+            const Text(
+              'Amount of Money',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.black),
+            ),
+            
+  
+            TextField(
+              decoration: InputDecoration(
+                hintText: 'Fill your expect money',
+                hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: Colors.black, width: 1.0)
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: Colors.blue, width: 1.0)
+                ),
+              ),
+            ),
+
+            SizedBox(height: 32.0),
+          
+
+
+            //Company
+ 
+            const Text(
+              'Company',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.black),
+            ),
+
+
+            TextField(
+              decoration: InputDecoration(
+                hintText: 'Choose a company',
+                hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: Colors.black, width: 1.0)
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: Colors.blue, width: 1.0)
+                ),
+              ),
+            ),
+
+            SizedBox(height: 32.0),
+  
+
+            //Final date
+
+            const Text(
+              'Final date',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.black),
+            ),
+            
+            TextField(
+              decoration: InputDecoration(
+                hintText: 'Enter your final date in dd/mm/yy',
+                hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: Colors.black, width: 1.0)
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: Colors.blue, width: 1.0)
+                ),
+              ),
+            ),
+
+            SizedBox(height: 32.0),
+            
+            //description
+            const Text(
+              'Description',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.black),
+            ),
+            TextField(
+              decoration: InputDecoration(
+                isDense: true,
+                hintText: 'Write your description to the ticket',
+                hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: Colors.black, width: 1.0)
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: Colors.blue, width: 1.0)
+                ),
+              ),
+            ),
+
+            SizedBox(height: 45.0),
+
           ],
+ 
+          
+        ),
+        )
+      ),
+
+
+      floatingActionButton: SizedBox(
+        width: 200,
+        height: 70,
+        
+        child: FloatingActionButton(
+          onPressed: () {},
+          backgroundColor: Colors.blue,
+          shape:  RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
+          tooltip: 'Submit',
+          child: const Text('Submit', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white))
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ),
-    );
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+    );  
   }
 }
