@@ -28,7 +28,7 @@ public class TicketAssignment implements Serializable {
     @TableId("idTicketAssignment")
     private Integer idTicketAssignment;
 
-    private Integer userId;
+    private Integer assigneeId;
 
     private Integer ticketId;
 

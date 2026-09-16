@@ -1,10 +1,12 @@
 package org.example.ticketing_app.service.impl;
 
 import jakarta.mail.*;
+import lombok.RequiredArgsConstructor;
 import org.example.ticketing_app.entity.Inbox;
 import org.example.ticketing_app.mapper.InboxMapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.example.ticketing_app.service.emailServiceHelper.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,13 +24,10 @@ import java.time.LocalDateTime;
  * @since 2026-09-09
  */
 @Service
+@RequiredArgsConstructor
 public class InboxServiceImpl extends ServiceImpl<InboxMapper, Inbox> {
 
     private final TicketServiceImpl ticketService;
-
-    public InboxServiceImpl(TicketServiceImpl ticketService) {
-        this.ticketService = ticketService;
-    }
 
     @Scheduled(fixedRate = 3000)
     @Transactional

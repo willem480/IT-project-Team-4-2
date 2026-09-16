@@ -1,7 +1,12 @@
 package org.example.ticketing_app.controller;
 
+import lombok.RequiredArgsConstructor;
+import org.example.ticketing_app.service.impl.TicketAssignmentServiceImpl;
+import org.example.ticketing_app.service.ticketServiceHelper.TicketAssignmentReturn;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.stereotype.Controller;
+
+import java.util.List;
 
 /**
  * <p>
@@ -13,6 +18,10 @@ import org.springframework.stereotype.Controller;
  */
 @Controller
 @RequestMapping("/ticketassignment")
+@RequiredArgsConstructor
 public class TicketassignmentController {
-
+    private final TicketAssignmentServiceImpl ticketAssignmentService;
+    public List<TicketAssignmentReturn> getTicketAssignmentByAssigneeID(Integer assigneeID) {
+        return ticketAssignmentService.getTicketAssignmentByAssigneeID(assigneeID);
+    }
 }

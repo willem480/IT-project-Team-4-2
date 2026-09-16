@@ -26,7 +26,7 @@ public class Ticket implements Serializable {
     @TableId("idTicket")
     private Integer idTicket;
 
-    private Integer userId;
+    private Integer posterId;
 
     private String title;
 

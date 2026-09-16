@@ -72,7 +72,7 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
         User user = findOrCreateUser(emailData.getFrom());
 
         Ticket ticket = new Ticket();
-        ticket.setUserId(user.getIdUser());
+        ticket.setPosterId(user.getIdUser());
         ticket.setTitle(jobPosting.get().title());
         ticket.setDescription(jobPosting.get().description());
         ticket.setDatePosted(datePosted);
