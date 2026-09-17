@@ -58,7 +58,9 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  # assets:
+  assets:
+    - assets/images/pngtree-green-check-mark-icon-flat-style-png-image_5253210.jpg
+    - assets/images/images.png
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
 

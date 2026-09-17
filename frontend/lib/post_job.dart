@@ -3,6 +3,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:ticketing_app/success_page.dart';
 
 
 class post_job extends StatelessWidget {
@@ -280,17 +281,20 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
 
 
-      floatingActionButton: SizedBox(
-        width: 200,
-        height: 70,
+      floatingActionButton: Padding(
+        padding: EdgeInsets.only(bottom: 20),
+        child: SizedBox(
+          width: 200,
+          height: 70,
         
-        child: FloatingActionButton(
-          onPressed: () {},
-          backgroundColor: Colors.blue,
-          shape:  RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
-          tooltip: 'Submit',
-          child: const Text('Submit', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white))
-        ),
+          child: FloatingActionButton(
+            onPressed: () {Navigator.push(context, MaterialPageRoute(builder: (context) => success_page()),);},
+            backgroundColor: Colors.blue,
+            shape:  RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
+            tooltip: 'Submit',
+            child: const Text('Submit', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white))
+          ),
+      ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );  

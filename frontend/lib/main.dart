@@ -1,4 +1,4 @@
-import 'dart:ui';
+
 import 'accept_job.dart';
 import 'post_job.dart';
 import 'package:flutter/material.dart';
@@ -33,7 +33,7 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: .fromSeed(seedColor: const Color(0xFFF9FAFB)),
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MyHomePage(title: 'Find a job'),
     );
   }
 }
