@@ -6,8 +6,8 @@ const _border = Color(0xFFE5E7EB);
 
 // Keep the existing entry point so callers do not need routing changes.
 // ignore: camel_case_types
-class accept_job extends AcceptJobPage {
-  const accept_job({super.key});
+class Acceptjob extends AcceptJobPage {
+  const Acceptjob({super.key});
 }
 
 class AcceptJobPage extends StatefulWidget {

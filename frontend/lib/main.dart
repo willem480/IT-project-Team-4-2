@@ -1,6 +1,6 @@
 
-import 'accept_job.dart';
-import 'post_job.dart';
+import 'AcceptJob.dart';
+import 'PostJob.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -168,7 +168,7 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       
       floatingActionButton: FloatingActionButton(
-        onPressed: () {Navigator.push(context, MaterialPageRoute(builder: (context) => post_job()),);},
+        onPressed: () {Navigator.push(context, MaterialPageRoute(builder: (context) => PostJob()),);},
         backgroundColor: Colors.blue,
         shape: const CircleBorder(),
         tooltip: 'Post a Job',
@@ -194,7 +194,7 @@ class _MyHomePageState extends State<MyHomePage> {
   
             const SizedBox(width: 60),
             TextButton.icon(
-              onPressed: () {Navigator.push(context, MaterialPageRoute(builder: (context) => accept_job()),);}, 
+              onPressed: () {Navigator.push(context, MaterialPageRoute(builder: (context) => AcceptJobPage()),);}, 
               icon: Icon(Icons.check_circle_outlined), 
               label: Text('Accept a Job', style: TextStyle(fontWeight: FontWeight.bold)),
             ),

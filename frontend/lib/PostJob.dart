@@ -1,14 +1,9 @@
-
-
-import 'dart:math';
-
 import 'package:flutter/material.dart';
-import 'package:ticketing_app/success_page.dart';
+import 'package:ticketing_app/SuccessPage.dart';
 
 
-class post_job extends StatelessWidget {
-  const post_job({super.key});
-
+class PostJob extends StatelessWidget {
+  const PostJob({super.key});
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
@@ -30,15 +25,15 @@ class post_job extends StatelessWidget {
         //
         // This works for code too, not just values: Most code changes can be
         // tested with just a hot reload.
-         colorScheme: .fromSeed(seedColor: const Color(0xFFF9FAFB)),
+         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFF9FAFB)),
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const PostJobPage(title: 'Flutter Demo Home Page'),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+class PostJobPage extends StatefulWidget {
+  const PostJobPage({super.key, required this.title});
 
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect
@@ -52,22 +47,11 @@ class MyHomePage extends StatefulWidget {
   final String title;
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<PostJobPage> createState() => _PostJobPageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
+class _PostJobPageState extends State<PostJobPage> {
+  String? selectedCompany;
 
   @override
   Widget build(BuildContext context) {
@@ -208,7 +192,11 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
 
 
-            TextField(
+            DropdownButtonFormField<String>(
+              
+              value: selectedCompany, 
+              icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
+              
               decoration: InputDecoration(
                 hintText: 'Choose a company',
                 hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
@@ -221,6 +209,23 @@ class _MyHomePageState extends State<MyHomePage> {
                   borderSide: BorderSide(color: Colors.blue, width: 1.0)
                 ),
               ),
+
+
+              //fake input
+              items: ['A', 'B', 'C'].map((String companyName){
+                return DropdownMenuItem<String>(
+                  value:companyName,
+                  child: Text(companyName),
+                );
+              }).toList(),
+
+              onChanged: (String? newValue){
+                setState(() {
+                  selectedCompany = newValue;
+                });
+              },
+
+
             ),
 
             SizedBox(height: 32.0),
@@ -256,6 +261,7 @@ class _MyHomePageState extends State<MyHomePage> {
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.black),
             ),
             TextField(
+ 
               decoration: InputDecoration(
                 isDense: true,
                 hintText: 'Write your description to the ticket',
@@ -288,7 +294,7 @@ class _MyHomePageState extends State<MyHomePage> {
           height: 70,
         
           child: FloatingActionButton(
-            onPressed: () {Navigator.push(context, MaterialPageRoute(builder: (context) => success_page()),);},
+            onPressed: () {Navigator.push(context, MaterialPageRoute(builder: (context) => SuccessPage()),);},
             backgroundColor: Colors.blue,
             shape:  RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
             tooltip: 'Submit',
