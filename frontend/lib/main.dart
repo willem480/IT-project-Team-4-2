@@ -1,4 +1,5 @@
 
+import 'package:ticketing_app/SignIn.dart';
 import 'AcceptJob.dart';
 import 'PostJob.dart';
 import 'package:flutter/material.dart';
@@ -33,7 +34,7 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: .fromSeed(seedColor: const Color(0xFFF9FAFB)),
       ),
-      home: const MyHomePage(title: 'Find a job'),
+      home: const SignInPage(title: 'Find a job'),
     );
   }
 }
