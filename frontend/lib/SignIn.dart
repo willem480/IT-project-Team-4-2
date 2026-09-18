@@ -150,7 +150,7 @@ class _SignInPageState extends State<SignInPage> {
                 alignment: Alignment.center,
                 child: TextButton(
                   onPressed: (){Navigator.push(context, MaterialPageRoute(builder: (context) => SignUp()),);},
-                  child: Text('Don/t have an account?, sign up here', style: TextStyle(color: Colors.green, decoration: TextDecoration.underline),
+                  child: Text('Don/t have an account? Sign up here', style: TextStyle(color: Colors.green, decoration: TextDecoration.underline),
                   ),
                 ),
               ),
