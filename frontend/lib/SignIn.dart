@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ticketing_app/Signup.dart';
 import 'package:ticketing_app/main.dart';
 
 
@@ -148,7 +149,7 @@ class _SignInPageState extends State<SignInPage> {
               Align(
                 alignment: Alignment.center,
                 child: TextButton(
-                  onPressed: (){},
+                  onPressed: (){Navigator.push(context, MaterialPageRoute(builder: (context) => SignUp()),);},
                   child: Text('Don/t have an account?, sign up here', style: TextStyle(color: Colors.green, decoration: TextDecoration.underline),
                   ),
                 ),
