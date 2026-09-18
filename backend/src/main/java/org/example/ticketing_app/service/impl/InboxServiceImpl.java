@@ -88,7 +88,14 @@ public class InboxServiceImpl extends ServiceImpl<InboxMapper, Inbox> {
             saveOrUpdate(inbox);
 
             if (isNewEmail) {
-                ticketService.createTicketFromEmail(emailData, dateSent);
+                if (ticketService.isValidPostJobEmail(emailData)) {
+                    ticketService.createTicketFromEmail(emailData, dateSent);
+                } else {
+                    EmailServiceHelper.sendInvalidFormatReply(
+                            emailData.getFrom(),
+                            emailData.getSubject()
+                    );
+                }
             }
         }
 

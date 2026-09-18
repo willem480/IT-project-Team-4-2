@@ -123,6 +123,16 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
                 && emailData.getSubject().toLowerCase(Locale.ROOT).contains(POST_JOB_SUBJECT_MARKER);
     }
 
+    public boolean isValidPostJobEmail(EmailData emailData) {
+        if (!isPostJobEmail(emailData)) {
+            return false;
+        }
+
+        return parseJobPosting(emailData.getBody()).isPresent();
+    }
+
+
+
     /**
      * Parses the agreed email template:
      * Title, Description, Location, and Pay are all required before a ticket is created.

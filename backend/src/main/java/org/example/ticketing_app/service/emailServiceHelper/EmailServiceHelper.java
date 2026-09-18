@@ -349,4 +349,59 @@ public final class EmailServiceHelper {
 
         Transport.send(reply);
     }
+
+    public static void sendInvalidFormatReply(
+            String recipient,
+            String originalSubject
+    ) throws Exception {
+
+        Properties props = new Properties();
+
+        props.put("mail.smtp.host", smtpHost);
+        props.put("mail.smtp.port", String.valueOf(smtpPort));
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.ssl.enable", "true");
+
+        Session session = Session.getInstance(
+                props,
+                new Authenticator() {
+                    @Override
+                    protected PasswordAuthentication getPasswordAuthentication() {
+                        return new PasswordAuthentication(
+                                smtpUsername,
+                                smtpPassword
+                        );
+                    }
+                }
+        );
+
+        MimeMessage reply = new MimeMessage(session);
+
+        reply.setFrom(
+                new InternetAddress(smtpUsername)
+        );
+
+        reply.setRecipients(
+                Message.RecipientType.TO,
+                InternetAddress.parse(recipient)
+        );
+
+        reply.setSubject(
+                "Re: " + originalSubject
+        );
+
+        reply.setText(
+                "Thank you for contacting us.\n\n" +
+                        "We could not process your email because it does not follow the required format.\n" +
+                        "Please edit and resend your email using the following format:\n\n" +
+                        "Subject: Post Job\n\n" +
+                        "Title: [Job title]\n" +
+                        "Description:\n" +
+                        "[Job description]\n" +
+                        "Location: [Job location]\n" +
+                        "Pay: [Amount]"
+        );
+
+        Transport.send(reply);
+    }
 }
