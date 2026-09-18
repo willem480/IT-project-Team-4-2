@@ -1,10 +1,16 @@
 package org.example.ticketing_app.controller;
 
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.example.ticketing_app.entity.Ticket;
 import org.example.ticketing_app.service.impl.TicketServiceImpl;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.example.ticketing_app.service.ticketServiceHelper.CreateTicketRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * <p>
@@ -14,16 +20,17 @@ import org.springframework.web.bind.annotation.ResponseBody;
  * @author Yucong
  * @since 2026-09-09
  */
-@Controller
+@RestController
 @RequestMapping("/ticket")
-@ResponseBody
+@RequiredArgsConstructor
 public class TicketController {
 
     private final TicketServiceImpl ticketService;
 
-    public TicketController(TicketServiceImpl ticketService) {
-        this.ticketService = ticketService;
+    /** Accepts a manual job post from the app and returns the created ticket. */
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public Ticket createTicket(@Valid @RequestBody CreateTicketRequest request) {
+        return ticketService.createTicket(request);
     }
-
-
 }

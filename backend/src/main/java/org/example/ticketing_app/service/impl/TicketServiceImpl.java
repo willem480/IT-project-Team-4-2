@@ -6,15 +6,20 @@ import org.example.ticketing_app.entity.User;
 import org.example.ticketing_app.mapper.TicketMapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.example.ticketing_app.service.emailServiceHelper.EmailData;
+import org.example.ticketing_app.service.ticketServiceHelper.CreateTicketRequest;
 import org.example.ticketing_app.service.ticketServiceHelper.TicketStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 /**
  * <p>
@@ -55,6 +60,33 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
 
     public String getTicketById(Long id) {
         return "Ticket " + id;
+    }
+
+    /**
+     * Creates a ticket submitted manually from the app.
+     * The server owns the posting time, poster email, and initial ticket status.
+     */
+    @Transactional
+    public Ticket createTicket(CreateTicketRequest request) {
+        User poster = userService.getById(request.getPosterId());
+        if (poster == null) {
+            throw new ResponseStatusException(NOT_FOUND, "Poster does not exist");
+        }
+        if (poster.getEmail() == null || poster.getEmail().isBlank()) {
+            throw new ResponseStatusException(BAD_REQUEST, "Poster must have an email address");
+        }
+
+        Ticket ticket = new Ticket();
+        ticket.setPosterId(poster.getIdUser());
+        ticket.setTitle(request.getTitle().trim());
+        ticket.setDescription(request.getDescription().trim());
+        ticket.setLocation(request.getLocation().trim());
+        ticket.setPay(request.getPay());
+        ticket.setEmail(poster.getEmail());
+        ticket.setDatePosted(LocalDateTime.now());
+        ticket.setStatus(TicketStatus.OPEN.name());
+        save(ticket);
+        return ticket;
     }
 
     @Transactional
