@@ -1,4 +1,5 @@
 
+import 'package:ticketing_app/FindAJobDetailUser.dart';
 import 'package:ticketing_app/SignIn.dart';
 import 'AcceptJob.dart';
 import 'PostJob.dart';
@@ -151,10 +152,162 @@ class _MyHomePageState extends State<MyHomePage> {
                     child: Column(
                       crossAxisAlignment:CrossAxisAlignment.center,
                       children: [
-                        Container(height: 200, width: 500,  color: Colors.white, margin: const EdgeInsets.all(10)),
-                        Container(height: 200, width: 500,  color: Colors.white, margin: const EdgeInsets.all(10)),
-                        Container(height: 200, width: 500,  color: Colors.white, margin: const EdgeInsets.all(10)),
-                        Container(height: 200, width: 500,  color: Colors.white, margin: const EdgeInsets.all(10)),
+                        InkWell(
+                          onTap: (){
+                            print('tap job ticket in find job page');
+                           Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser()),);
+                          },
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            width: 500,
+                            height: 250,
+                            margin: const EdgeInsets.all(10),
+                            padding: EdgeInsets.all(16),
+
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey,
+                                  spreadRadius: 1,
+                                  blurRadius: 5,
+                                  offset: const Offset(0, 2),
+                                )
+                              ]
+                            ),           
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                  // alignment: Alignment.topLeft,
+                                Text(
+                                  'Company A',
+                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                ),
+                                SizedBox(height: 8),  
+                                //more item
+                              ],
+                            )
+                          )
+                        ),
+                        InkWell(
+                          onTap: (){
+                            print('tap job ticket in find job page');
+                           Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser()),);
+                          },
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            width: 500,
+                            height: 250,
+                            margin: const EdgeInsets.all(10),
+                            padding: EdgeInsets.all(16),
+
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey,
+                                  spreadRadius: 1,
+                                  blurRadius: 5,
+                                  offset: const Offset(0, 2),
+                                )
+                              ]
+                            ),           
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                  // alignment: Alignment.topLeft,
+                                Text(
+                                  'Company B',
+                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                ),
+                                SizedBox(height: 8),  
+                                //more item
+                              ],
+                            )
+                          )
+                        ),
+                        InkWell(
+                          onTap: (){
+                            print('tap job ticket in find job page');
+                           Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser()),);
+                          },
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            width: 500,
+                            height: 250,
+                            margin: const EdgeInsets.all(10),
+                            padding: EdgeInsets.all(16),
+
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey,
+                                  spreadRadius: 1,
+                                  blurRadius: 5,
+                                  offset: const Offset(0, 2),
+                                )
+                              ]
+                            ),           
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                  // alignment: Alignment.topLeft,
+                                Text(
+                                  'Company C',
+                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                ),
+                                SizedBox(height: 8),  
+                                //more item
+                              ],
+                            )
+                          )
+                        ),
+                         InkWell(
+                          onTap: (){
+                            print('tap job ticket in find job page');
+                           Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser()),);
+                          },
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            width: 500,
+                            height: 250,
+                            margin: const EdgeInsets.all(10),
+                            padding: EdgeInsets.all(16),
+
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey,
+                                  spreadRadius: 1,
+                                  blurRadius: 5,
+                                  offset: const Offset(0, 2),
+                                )
+                              ]
+                            ),           
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                  // alignment: Alignment.topLeft,
+                                Text(
+                                  'Company D',
+                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                ),
+                                SizedBox(height: 8),  
+                                //more item
+                              ],
+                            )
+                          )
+                        ),
                       ],
                     )
                   ),
