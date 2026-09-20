@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import org.example.ticketing_app.entity.Team;
 
 import java.time.LocalDateTime;
 
@@ -19,6 +20,11 @@ public class TicketAssignmentReturn {
     private Integer assigneeID;
 
     private String assigneeName;
+
+    private Integer organizationID;
+    private String organizationName;
+    private Integer teamID;
+    private String teamName;
 
     private String title;
 
