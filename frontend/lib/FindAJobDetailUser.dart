@@ -1,8 +1,17 @@
 import 'package:flutter/material.dart';
 
 
+
 class FindAJobDetailUser extends StatelessWidget {
-  const FindAJobDetailUser({super.key});
+  final String title;
+  final String company;
+  final String price;
+
+  const FindAJobDetailUser({
+    super.key,
+    required this.title,
+    required this.company,
+    required this.price});
 
   @override
   Widget build(BuildContext context) {

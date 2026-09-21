@@ -155,7 +155,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         InkWell(
                           onTap: (){
                             print('tap job ticket in find job page');
-                           Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser()),);
+                           Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser(title: 'A', company: 'A', price:'600' ,)),);
                           },
                           borderRadius: BorderRadius.circular(12),
                           child: Container(
@@ -194,7 +194,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         InkWell(
                           onTap: (){
                             print('tap job ticket in find job page');
-                           Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser()),);
+                           Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser(title: 'B', company: 'B', price: '500',)),);
                           },
                           borderRadius: BorderRadius.circular(12),
                           child: Container(
@@ -233,7 +233,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         InkWell(
                           onTap: (){
                             print('tap job ticket in find job page');
-                           Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser()),);
+                           Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser(title: 'C', company: 'C', price: '200',)),);
                           },
                           borderRadius: BorderRadius.circular(12),
                           child: Container(
@@ -272,7 +272,7 @@ class _MyHomePageState extends State<MyHomePage> {
                          InkWell(
                           onTap: (){
                             print('tap job ticket in find job page');
-                           Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser()),);
+                           Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser(title: 'D', company: 'D', price: '100',)),);
                           },
                           borderRadius: BorderRadius.circular(12),
                           child: Container(
