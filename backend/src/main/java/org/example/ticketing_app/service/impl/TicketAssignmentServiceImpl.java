@@ -35,7 +35,7 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
     private final TeamMemberMapper teamMemberMapper;
 
     public List<TicketAssignmentReturn> getTicketAssignment(Integer assigneeID, Filter filter) {
-        List<TicketAssignment> ticketAssignments = lambdaQuery().eq(TicketAssignment:: getAssigneeId, assigneeID).list();
+        List<TicketAssignment> ticketAssignments = getAssignmentHelper(assigneeID);
         List<TicketAssignmentReturn> ticketAssignmentReturns = new ArrayList<TicketAssignmentReturn>();
         setTicketAssignmentReturn(ticketAssignments, ticketAssignmentReturns);
 
@@ -78,23 +78,31 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
     }
 
     public List<TicketAssignmentReturn> getTicketAssignment(Integer assigneeID) {
-        List<TicketAssignment> ticketAssignments = lambdaQuery().eq(TicketAssignment:: getAssigneeId, assigneeID).list();
+        List<TicketAssignment> ticketAssignments = getAssignmentHelper(assigneeID);
         List<TicketAssignmentReturn> ticketAssignmentReturns = new ArrayList<TicketAssignmentReturn>();
         setTicketAssignmentReturn(ticketAssignments, ticketAssignmentReturns);
         return ticketAssignmentReturns;
+    }
+
+    private List<TicketAssignment> getAssignmentHelper(Integer assigneeID) {
+        return lambdaQuery()
+                .eq(TicketAssignment::getAssigneeId, assigneeID)
+                .list()
+                .stream()
+                .filter(ta -> {
+                    Ticket ticket = ticketMapper.selectById(ta.getTicketId());
+                    return TicketStatus.OPEN.name().equals(ticket.getStatus())
+                            || TicketStatus.IN_PROGRESS.name().equals(ticket.getStatus());
+                })
+                .toList();
     }
 
     public List<TicketAssignmentReturn> getTicketAssignmentKeyWord(
             Integer assigneeID,
             String keyword) {
 
-        List<TicketAssignment> ticketAssignments =
-                lambdaQuery()
-                        .eq(TicketAssignment::getAssigneeId, assigneeID)
-                        .list();
-
-        List<TicketAssignmentReturn> ticketAssignmentReturns = new ArrayList<>();
-
+        List<TicketAssignment> ticketAssignments = getAssignmentHelper(assigneeID);
+        List<TicketAssignmentReturn> ticketAssignmentReturns = new ArrayList<TicketAssignmentReturn>();
         setTicketAssignmentReturn(ticketAssignments, ticketAssignmentReturns);
 
         JaroWinklerSimilarity similarity = new JaroWinklerSimilarity();
@@ -137,7 +145,16 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
     }
 
     public List<TicketAssignmentReturn> getTicketAssignmentRelatedTo(Integer assigneeID, Integer teamID) {
-        List<TicketAssignment> ticketAssignments = lambdaQuery().eq(TicketAssignment:: getAssigneeId, assigneeID).eq(TicketAssignment::getRelatedTeamId, teamID).list();
+        List<TicketAssignment> ticketAssignments = lambdaQuery()
+                .eq(TicketAssignment::getAssigneeId, assigneeID).eq(TicketAssignment::getRelatedTeamId, teamID)
+                .list()
+                .stream()
+                .filter(ta -> {
+                    Ticket ticket = ticketMapper.selectById(ta.getTicketId());
+                    return TicketStatus.OPEN.name().equals(ticket.getStatus())
+                            || TicketStatus.IN_PROGRESS.name().equals(ticket.getStatus());
+                })
+                .toList();
         List<TicketAssignmentReturn> ticketAssignmentReturns = new ArrayList<TicketAssignmentReturn>();
         setTicketAssignmentReturn(ticketAssignments, ticketAssignmentReturns);
         return ticketAssignmentReturns;
