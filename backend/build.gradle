@@ -43,6 +43,7 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
     developmentOnly("org.springframework.boot:spring-boot-devtools")
+    implementation 'org.apache.commons:commons-text:1.13.0'
 }
 
 

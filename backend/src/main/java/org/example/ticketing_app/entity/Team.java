@@ -13,7 +13,7 @@ import java.io.Serializable;
  * </p>
  *
  * @author Yucong
- * @since 2026-09-16
+ * @since 2026-09-20
  */
 @Getter
 @Setter
@@ -26,4 +26,6 @@ public class Team implements Serializable {
     private Integer idTeam;
 
     private Integer organizationId;
+
+    private String name;
 }
