@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ticketing_app/SignIn.dart';
 
 
 class SignUp extends StatelessWidget {
@@ -8,7 +9,7 @@ class SignUp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Sign in',
+      title: 'Sign up',
       theme: ThemeData(
         // This is the theme of your application.
         //
@@ -25,7 +26,7 @@ class SignUp extends StatelessWidget {
         //
         // This works for code too, not just values: Most code changes can be
         // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color.fromARGB(255, 255, 255, 255)),
       ),
       home: const SignUpPage(title: 'Flutter Demo Home Page'),
     );
@@ -47,25 +48,16 @@ class SignUpPage extends StatefulWidget {
   final String title;
 
   @override
-  State<SignUpPage> createState() => _SignInPageState();
+  State<SignUpPage> createState() => _SignUpPageState();
 }
 
-class _SignInPageState extends State<SignUpPage> {
-  int _counter = 0;
+class _SignUpPageState extends State<SignUpPage> {
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
-
+  bool isObsecure = true;
+  bool isConfirmObsecure = true;
   @override
   Widget build(BuildContext context) {
+
     // This method is rerun every time setState is called, for instance as done
     // by the _incrementCounter method above.
     //
@@ -73,47 +65,158 @@ class _SignInPageState extends State<SignUpPage> {
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
     return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text('accept job page'),
-      ),
+      backgroundColor: Colors.white,
+
       body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: .center,
-          children: [
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
+        //title
+        child: SizedBox(
+          width: 500,
+
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 64),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Center(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children:[
+                    Icon(Icons.local_activity_outlined, color: Colors.black),
+                    SizedBox(width: 8),
+                    Text('MyTi', style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold),),
+                  ]
+                ),
+              ),
+              SizedBox(height: 8),
+              Text('Create your account', style: TextStyle(fontSize: 50)),
+              Text('Create your account and get started with your ticketing system', style: TextStyle(fontSize: 12, color: Colors.grey)),
+              SizedBox(height: 8),
+              //name enter area
+              const Text('Name', style:TextStyle(fontSize: 12)),
+              const SizedBox(height: 8),
+              TextField(
+                decoration: InputDecoration(
+                  hintText: 'Your name',
+                  hintStyle: TextStyle(color: Colors.grey, fontSize: 12),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: Colors.black, width: 1.0)
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: Colors.blue, width: 1.0)
+                  ),
+                ),
+              ),
+
+              SizedBox(height: 32),
+              //email enter area
+              const Text('Email address', style:TextStyle(fontSize: 12)),
+              const SizedBox(height: 8),
+              TextField(
+                decoration: InputDecoration(
+                  hintText: 'ABC@gmail.com',
+                  hintStyle: TextStyle(color: Colors.grey, fontSize: 12),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: Colors.black, width: 1.0)
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: Colors.blue, width: 1.0)
+                  ),
+                ),
+              ),
+
+              SizedBox(height: 32),
+              Text('Password', style: TextStyle(fontSize: 12)),
+              SizedBox(height: 8),
+              TextField(
+                obscureText: isObsecure,
+                decoration: InputDecoration(
+                  hintText: '******',
+                  hintStyle: TextStyle(color: Colors.grey, fontSize: 12),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: Colors.black, width: 1.0)
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: Colors.blue, width: 1.0),
+                  ),
+                  //eye icon
+                  suffixIcon: IconButton(
+                    onPressed: () {
+                      setState(() {
+                        isObsecure = !isObsecure;
+
+                      });
+                    },
+                    icon: Icon(isObsecure ? Icons.visibility_off_outlined: Icons.visibility_outlined,
+                    color: Colors.grey)),
+                ),
+              ),
+              SizedBox(height: 32),
+              Text('Confirm your password', style: TextStyle(fontSize: 12)),
+              SizedBox(height: 8),
+              TextField(
+                obscureText: isConfirmObsecure,
+                decoration: InputDecoration(
+                  hintText: '******',
+                  hintStyle: TextStyle(color: Colors.grey, fontSize: 12),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: Colors.black, width: 1.0)
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: Colors.blue, width: 1.0),
+                  ),
+                  //eye icon
+                  suffixIcon: IconButton(
+                    onPressed: () {
+                      setState(() {
+                        isConfirmObsecure = !isConfirmObsecure;
+
+                      });
+                    },
+                    icon: Icon(isConfirmObsecure ? Icons.visibility_off_outlined: Icons.visibility_outlined,
+                    color: Colors.grey)),
+                ),
+              ),
+              SizedBox(height: 18),
+              Align(
+                alignment: Alignment.center,
+                child: TextButton(
+                  onPressed: (){Navigator.push(context, MaterialPageRoute(builder: (context) => SignIn()),);},
+                  child: Text('Already have an account? Sign in here', style: TextStyle(color: Colors.green, decoration: TextDecoration.underline),
+                  ),
+                ),
+              ),
+
+              SizedBox(height: 32),
+            ],
+          ),
         ),
+        )
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
+
+
+      floatingActionButton: Padding(
+        padding: EdgeInsets.only(bottom: 50),
+        child: SizedBox(
+          width: 200,
+          height: 50,
+          child: FloatingActionButton(
+            onPressed: (){Navigator.push(context, MaterialPageRoute(builder: (context) => SignIn()),);},
+            backgroundColor: Colors.green,
+            tooltip: 'Sign up',
+            child: const Text('Sign up & back to sign in', style: TextStyle(color: Colors.white))),
+        )
       ),
+
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 }
