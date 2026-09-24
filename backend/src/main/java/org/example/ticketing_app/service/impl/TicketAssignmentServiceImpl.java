@@ -91,8 +91,7 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
                 .stream()
                 .filter(ta -> {
                     Ticket ticket = ticketMapper.selectById(ta.getTicketId());
-                    return TicketStatus.OPEN.name().equals(ticket.getStatus())
-                            || TicketStatus.IN_PROGRESS.name().equals(ticket.getStatus());
+                    return TicketStatus.IN_PROGRESS.name().equals(ticket.getStatus()) || TicketStatus.CLOSED.name().equals(ticket.getStatus());
                 })
                 .toList();
     }
@@ -151,8 +150,7 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
                 .stream()
                 .filter(ta -> {
                     Ticket ticket = ticketMapper.selectById(ta.getTicketId());
-                    return TicketStatus.OPEN.name().equals(ticket.getStatus())
-                            || TicketStatus.IN_PROGRESS.name().equals(ticket.getStatus());
+                    return TicketStatus.IN_PROGRESS.name().equals(ticket.getStatus()) || TicketStatus.CLOSED.name().equals(ticket.getStatus());
                 })
                 .toList();
         List<TicketAssignmentReturn> ticketAssignmentReturns = new ArrayList<TicketAssignmentReturn>();

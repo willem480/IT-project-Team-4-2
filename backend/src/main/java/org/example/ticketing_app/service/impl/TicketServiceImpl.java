@@ -1,20 +1,24 @@
 package org.example.ticketing_app.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.text.similarity.JaroWinklerSimilarity;
 import org.example.ticketing_app.entity.Ticket;
+import org.example.ticketing_app.entity.TicketAssignment;
 import org.example.ticketing_app.entity.User;
 import org.example.ticketing_app.mapper.TicketMapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.example.ticketing_app.service.emailServiceHelper.EmailData;
 import org.example.ticketing_app.service.ticketServiceHelper.CreateTicketRequest;
+import org.example.ticketing_app.service.ticketServiceHelper.Filter;
+import org.example.ticketing_app.service.ticketServiceHelper.TicketAssignmentReturn;
 import org.example.ticketing_app.service.ticketServiceHelper.TicketStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
-import java.util.Locale;
-import java.util.Optional;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -30,6 +34,7 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
  * @since 2026-09-09
  */
 @Service
+@RequiredArgsConstructor
 public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
 
     /** Only emails with this phrase in the subject are treated as job postings. */
@@ -50,17 +55,6 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
     );
 
     private final UserServiceImpl userService;
-
-    public TicketServiceImpl(UserServiceImpl userService) {
-        this.userService = userService;
-    }
-    public String getAllTickets() {
-        return "get all tickets is working";
-    }
-
-    public String getTicketById(Long id) {
-        return "Ticket " + id;
-    }
 
     /**
      * Creates a ticket submitted manually from the app.
@@ -198,5 +192,95 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
 
     /** Parsed values that map directly to the ticket table columns. */
     private record JobPosting(String title, String description, String location, Integer pay) {
+    }
+
+    public List<Ticket> getOpenTickets(){
+        return lambdaQuery()
+                .eq(Ticket::getStatus, TicketStatus.OPEN.name()).list();
+    }
+
+    public List<Ticket> getOpenTickets(Filter filter) {
+        List<Ticket> tickets = lambdaQuery()
+                .eq(Ticket::getStatus, TicketStatus.OPEN.name())
+                .list();
+
+        if (filter == null) {
+            return tickets;
+        }
+
+        switch (filter) {
+            case timeAscending -> {
+                return tickets.stream()
+                        .sorted(Comparator.comparing(Ticket::getDatePosted))
+                        .toList();
+            }
+
+            case timeDescending -> {
+                return tickets.stream()
+                        .sorted(Comparator.comparing(Ticket::getDatePosted).reversed())
+                        .toList();
+            }
+
+            case payAscending -> {
+                return tickets.stream()
+                        .sorted(Comparator.comparing(Ticket::getPay))
+                        .toList();
+            }
+
+            case payDescending -> {
+                return tickets.stream()
+                        .sorted(Comparator.comparing(Ticket::getPay).reversed())
+                        .toList();
+            }
+
+            default -> {
+                return tickets;
+            }
+        }
+    }
+
+    public List<Ticket> getOpenTicketsKeyword(String keyword) {
+
+        List<Ticket> tickets = lambdaQuery()
+                .eq(Ticket::getStatus, TicketStatus.OPEN.name())
+                .list();
+
+        JaroWinklerSimilarity similarity = new JaroWinklerSimilarity();
+
+        String search = keyword.toLowerCase();
+
+        return tickets.stream()
+                .sorted(
+                        Comparator
+                                .comparingInt((Ticket t) -> {
+                                    String title = t.getTitle().toLowerCase();
+                                    String description = t.getDescription().toLowerCase();
+
+                                    if (title.equals(search)) {
+                                        return 0;
+                                    }
+
+                                    if (title.contains(search)) {
+                                        return 1;
+                                    }
+
+                                    if (description.contains(search)) {
+                                        return 2;
+                                    }
+
+                                    return 3;
+                                })
+                                .thenComparingDouble(t -> {
+                                    double titleScore = similarity.apply(
+                                            search,
+                                            t.getTitle().toLowerCase());
+
+                                    double descriptionScore = similarity.apply(
+                                            search,
+                                            t.getDescription().toLowerCase());
+
+                                    return -Math.max(titleScore, descriptionScore);
+                                }))
+                .toList();
     }
 }

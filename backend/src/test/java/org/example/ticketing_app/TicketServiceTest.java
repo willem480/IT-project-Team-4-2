@@ -3,6 +3,7 @@ package org.example.ticketing_app;
 import org.example.ticketing_app.entity.*;
 import org.example.ticketing_app.mapper.*;
 import org.example.ticketing_app.service.impl.TicketAssignmentServiceImpl;
+import org.example.ticketing_app.service.impl.TicketServiceImpl;
 import org.example.ticketing_app.service.ticketServiceHelper.Filter;
 import org.example.ticketing_app.service.ticketServiceHelper.TicketAssignmentReturn;
 import org.example.ticketing_app.service.ticketServiceHelper.TicketStatus;
@@ -30,7 +31,8 @@ public class TicketServiceTest {
     private TeamMapper teamMapper;
     @Autowired
     private TeamMemberMapper teamMemberMapper;
-
+    @Autowired
+    private TicketServiceImpl ticketService;
     @BeforeEach
     void setUp() {
 
@@ -194,7 +196,7 @@ public class TicketServiceTest {
         ticket5.setLocation("Building D");
         ticket5.setPay(60);
         ticket5.setEmail("alice@example.com");
-        ticket5.setStatus(TicketStatus.OPEN.name());
+        ticket5.setStatus(TicketStatus.IN_PROGRESS.name());
 
         Ticket ticket6 = new Ticket();
         ticket6.setIdTicket(6);
@@ -207,75 +209,93 @@ public class TicketServiceTest {
         ticket6.setEmail("bob@example.com");
         ticket6.setStatus(TicketStatus.IN_PROGRESS.name());
 
+        Ticket ticket7 = new Ticket();
+        ticket7.setIdTicket(7);
+        ticket7.setPosterId(1002);
+        ticket7.setTitle("Old server decommission");
+        ticket7.setDescription("Retire legacy server.");
+        ticket7.setDatePosted(LocalDateTime.of(2026, 9, 12, 10, 0));
+        ticket7.setLocation("Building F");
+        ticket7.setPay(90);
+        ticket7.setEmail("alice@example.com");
+        ticket7.setStatus(TicketStatus.CLOSED.name());
+
         ticketMapper.insertOrUpdate(ticket1);
         ticketMapper.insertOrUpdate(ticket2);
         ticketMapper.insertOrUpdate(ticket3);
         ticketMapper.insertOrUpdate(ticket4);
         ticketMapper.insertOrUpdate(ticket5);
         ticketMapper.insertOrUpdate(ticket6);
+        ticketMapper.insertOrUpdate(ticket7);
 
         // Ticket Assignments
 
-// Ticket 1 individually assigned to David
+        // Ticket 2 assigned to Team 3 (David + Emma)
+
         TicketAssignment assignment1 = new TicketAssignment();
         assignment1.setIdTicketAssignment(1);
         assignment1.setAssigneeId(2001);
-        assignment1.setTicketId(1);
-        assignment1.setDateAssigned(LocalDateTime.of(2026, 9, 15, 10, 0));
-        assignment1.setRelatedTeamId(null);
+        assignment1.setTicketId(2);
+        assignment1.setDateAssigned(LocalDateTime.of(2026, 9, 15, 15, 0));
+        assignment1.setRelatedTeamId(3);
 
-// Ticket 2 assigned to Team 3 (David + Emma)
         TicketAssignment assignment2 = new TicketAssignment();
         assignment2.setIdTicketAssignment(2);
-        assignment2.setAssigneeId(2001);
+        assignment2.setAssigneeId(2003);
         assignment2.setTicketId(2);
         assignment2.setDateAssigned(LocalDateTime.of(2026, 9, 15, 15, 0));
         assignment2.setRelatedTeamId(3);
 
+        // Ticket 3 closed and assigned to Emma
+
         TicketAssignment assignment3 = new TicketAssignment();
         assignment3.setIdTicketAssignment(3);
         assignment3.setAssigneeId(2003);
-        assignment3.setTicketId(2);
-        assignment3.setDateAssigned(LocalDateTime.of(2026, 9, 15, 15, 0));
-        assignment3.setRelatedTeamId(3);
+        assignment3.setTicketId(3);
+        assignment3.setDateAssigned(LocalDateTime.of(2026, 9, 16, 9, 0));
+        assignment3.setRelatedTeamId(null);
 
-// Ticket 3 individually assigned to Emma
+        // Ticket 4 closed and assigned to Team 1
+
         TicketAssignment assignment4 = new TicketAssignment();
         assignment4.setIdTicketAssignment(4);
-        assignment4.setAssigneeId(2003);
-        assignment4.setTicketId(3);
-        assignment4.setDateAssigned(LocalDateTime.of(2026, 9, 16, 9, 0));
-        assignment4.setRelatedTeamId(null);
+        assignment4.setAssigneeId(1001);
+        assignment4.setTicketId(4);
+        assignment4.setDateAssigned(LocalDateTime.of(2026, 9, 14, 12, 0));
+        assignment4.setRelatedTeamId(1);
 
-// Ticket 4 assigned to Team 1 (John + Bob)
         TicketAssignment assignment5 = new TicketAssignment();
         assignment5.setIdTicketAssignment(5);
-        assignment5.setAssigneeId(1001);
+        assignment5.setAssigneeId(1003);
         assignment5.setTicketId(4);
         assignment5.setDateAssigned(LocalDateTime.of(2026, 9, 14, 12, 0));
         assignment5.setRelatedTeamId(1);
 
+        // Ticket 5 assigned directly to David
+
         TicketAssignment assignment6 = new TicketAssignment();
         assignment6.setIdTicketAssignment(6);
-        assignment6.setAssigneeId(1003);
-        assignment6.setTicketId(4);
-        assignment6.setDateAssigned(LocalDateTime.of(2026, 9, 14, 12, 0));
-        assignment6.setRelatedTeamId(1);
+        assignment6.setAssigneeId(2001);
+        assignment6.setTicketId(5);
+        assignment6.setDateAssigned(LocalDateTime.of(2026, 9, 17, 11, 0));
+        assignment6.setRelatedTeamId(null);
 
-// Ticket 5 individually assigned to David
+        // Ticket 6 assigned directly to Emma
+
         TicketAssignment assignment7 = new TicketAssignment();
         assignment7.setIdTicketAssignment(7);
-        assignment7.setAssigneeId(2001);
-        assignment7.setTicketId(5);
-        assignment7.setDateAssigned(LocalDateTime.of(2026, 9, 17, 11, 0));
+        assignment7.setAssigneeId(2003);
+        assignment7.setTicketId(6);
+        assignment7.setDateAssigned(LocalDateTime.of(2026, 9, 13, 17, 0));
         assignment7.setRelatedTeamId(null);
 
-// Ticket 6 individually assigned to Emma
+        // Ticket 7 closed and assigned directly to David
+
         TicketAssignment assignment8 = new TicketAssignment();
         assignment8.setIdTicketAssignment(8);
-        assignment8.setAssigneeId(2003);
-        assignment8.setTicketId(6);
-        assignment8.setDateAssigned(LocalDateTime.of(2026, 9, 13, 17, 0));
+        assignment8.setAssigneeId(2001);
+        assignment8.setTicketId(7);
+        assignment8.setDateAssigned(LocalDateTime.of(2026, 9, 13, 10, 0));
         assignment8.setRelatedTeamId(null);
 
         ticketAssignmentMapper.insertOrUpdate(assignment1);
@@ -289,7 +309,7 @@ public class TicketServiceTest {
     }
 
     @Test
-    void ticketAssignmentFilter() throws Exception {
+    void acceptedJobPageTest() throws Exception {
         ticketAssignmentService.getTicketAssignment(2001, Filter.timeAscending);
         ticketAssignmentService.getTicketAssignmentKeyWord(2001, "Network");
         List<TicketAssignmentReturn> result =
@@ -297,5 +317,11 @@ public class TicketServiceTest {
                         2001,
                         3
                 );
+
+    }
+
+    @Test
+    void findAJobPageTest(){
+        ticketService.getOpenTickets();
     }
 }
