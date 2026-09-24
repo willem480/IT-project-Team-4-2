@@ -5,6 +5,7 @@ import org.example.ticketing_app.mapper.OrganizationMapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -17,7 +18,5 @@ import java.util.List;
  */
 @Service
 public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Organization> {
-    public List<Organization> getOrganizations() {
-        return list();
-    }
+
 }

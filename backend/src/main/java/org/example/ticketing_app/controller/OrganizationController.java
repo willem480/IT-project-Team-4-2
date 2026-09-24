@@ -25,8 +25,4 @@ import java.util.List;
 public class OrganizationController {
     private final OrganizationServiceImpl organizationService;
 
-    @GetMapping("getOrganizations")
-    public List<Organization> getOrganizations() {
-        return organizationService.getOrganizations();
-    }
 }
