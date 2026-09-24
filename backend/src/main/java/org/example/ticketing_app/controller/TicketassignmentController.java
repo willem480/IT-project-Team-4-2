@@ -47,4 +47,14 @@ public class TicketassignmentController {
     public List<TicketAssignmentReturn> getTicketAssignmentRelatedTo(@RequestParam Integer assigneeID, @RequestParam Integer teamID) {
         return ticketAssignmentService.getTicketAssignmentRelatedTo(assigneeID, teamID);
     }
+
+    @PostMapping("delegateJobIndividual")
+    public void delegateJobIndividual(@RequestParam int ticketId, @RequestParam int assigneeId) {
+        ticketAssignmentService.delegateJobIndividual(ticketId, assigneeId);
+    }
+
+    @PostMapping("delegateJobTeam")
+    public void delegateJobTeam(@RequestParam int ticketId, @RequestParam int teamId) {
+        ticketAssignmentService.delegationJobTeam(ticketId, teamId);
+    }
 }

@@ -1,5 +1,6 @@
 package org.example.ticketing_app.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.Getter;
 import lombok.Setter;
@@ -13,7 +14,7 @@ import java.io.Serializable;
  * </p>
  *
  * @author Yucong
- * @since 2026-09-20
+ * @since 2026-09-24
  */
 @Getter
 @Setter
@@ -22,7 +23,7 @@ public class Manager implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @TableId("idManager")
+    @TableId(value = "idManager", type = IdType.AUTO)
     private Integer idManager;
 
     private Integer userId;

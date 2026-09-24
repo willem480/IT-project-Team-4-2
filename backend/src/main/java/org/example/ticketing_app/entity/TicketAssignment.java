@@ -1,5 +1,6 @@
 package org.example.ticketing_app.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Getter;
@@ -15,7 +16,7 @@ import java.time.LocalDateTime;
  * </p>
  *
  * @author Yucong
- * @since 2026-09-20
+ * @since 2026-09-24
  */
 @Getter
 @Setter
@@ -25,7 +26,7 @@ public class TicketAssignment implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @TableId("idTicketAssignment")
+    @TableId(value = "idTicketAssignment", type = IdType.AUTO)
     private Integer idTicketAssignment;
 
     private Integer assigneeId;

@@ -2,18 +2,19 @@ package org.example.ticketing_app.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.text.similarity.JaroWinklerSimilarity;
-import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.example.ticketing_app.entity.*;
 import org.example.ticketing_app.mapper.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.example.ticketing_app.service.ticketServiceHelper.Filter;
 import org.example.ticketing_app.service.ticketServiceHelper.TicketAssignmentReturn;
 import org.example.ticketing_app.service.ticketServiceHelper.TicketStatus;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -188,6 +189,54 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
             ticketAssignmentReturn.setLocation(ticket.getLocation());
             ticketAssignmentReturn.setStatus(ticket.getStatus());
             ticketAssignmentReturns.add(ticketAssignmentReturn);
+        }
+    }
+
+    public void delegateJobIndividual(Integer ticketID, Integer assigneeID) {
+        TicketAssignment ticketAssignment = lambdaQuery().eq(TicketAssignment::getTicketId, ticketID).eq(TicketAssignment::getAssigneeId, assigneeID).one();
+        if (ticketAssignment == null) {
+            ticketAssignment = new TicketAssignment();
+            ticketAssignment.setTicketId(ticketID);
+            ticketAssignment.setAssigneeId(assigneeID);
+            ticketAssignment.setRelatedTeamId(null);
+            ticketAssignment.setDateAssigned(LocalDateTime.now());
+            Ticket ticket = ticketMapper.selectById(ticketID);
+            ticket.setStatus(TicketStatus.IN_PROGRESS.name());
+            ticketMapper.insertOrUpdate(ticket);
+            save(ticketAssignment);
+        }
+        else{
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    String.format("Ticket with id: %d is already assigned to user with id: %d", ticketID, assigneeID));
+        }
+    }
+
+    public void delegationJobTeam(Integer ticketID, Integer teamID) {
+        Team team = teamMapper.selectById(teamID);
+        List<TeamMember> teamMembers = teamMemberMapper.selectList(
+                new LambdaQueryWrapper<TeamMember>()
+                        .eq(TeamMember::getTeamId, teamID)
+        );
+
+        for(TeamMember teamMember : teamMembers ){
+            Integer assigneeID = teamMember.getUserId();
+            TicketAssignment ticketAssignment = lambdaQuery().eq(TicketAssignment::getTicketId, ticketID).eq(TicketAssignment::getAssigneeId, assigneeID).one();
+            if (ticketAssignment == null) {
+                ticketAssignment = new TicketAssignment();
+                ticketAssignment.setTicketId(ticketID);
+                ticketAssignment.setAssigneeId(assigneeID);
+                ticketAssignment.setRelatedTeamId(teamID);
+                ticketAssignment.setDateAssigned(LocalDateTime.now());
+                Ticket ticket = ticketMapper.selectById(ticketID);
+                ticket.setStatus(TicketStatus.IN_PROGRESS.name());
+                ticketMapper.insertOrUpdate(ticket);
+                save(ticketAssignment);
+            }
+            else{
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        String.format("Ticket with id: %d is already assigned to user with id: %d", ticketID, assigneeID));
+            }
+
         }
     }
 }
