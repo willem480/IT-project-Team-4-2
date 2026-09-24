@@ -36,7 +36,7 @@ class _PostJobPageState extends State<PostJob> {
         // Center is a layout widget. It takes a single child and positions it
         // in the middle of the parent.
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
+          padding: const EdgeInsets.symmetric(horizontal: 200, vertical: 24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
 
@@ -142,7 +142,6 @@ class _PostJobPageState extends State<PostJob> {
 
             SizedBox(height: 32.0),
           
-
 
             //Company
  
