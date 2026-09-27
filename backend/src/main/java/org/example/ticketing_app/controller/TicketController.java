@@ -47,4 +47,9 @@ public class TicketController {
     public List<Ticket> getTicketsKeyword(String keyword){
         return ticketService.getOpenTicketsKeyword(keyword);
     }
+
+    @GetMapping("complete ticket")
+    public void completeTicket(@RequestParam int ticketId) {
+        ticketService.completeTicket(ticketId);
+    }
 }

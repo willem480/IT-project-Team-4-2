@@ -283,4 +283,12 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
                                 }))
                 .toList();
     }
+
+    @Transactional
+    public void completeTicket(int ticketId) {
+        Ticket ticket = baseMapper.selectById(ticketId);
+        ticket.setStatus(TicketStatus.CLOSED.name());
+        ticket.setDateCompleted(LocalDateTime.now());
+        saveOrUpdate(ticket);
+    }
 }

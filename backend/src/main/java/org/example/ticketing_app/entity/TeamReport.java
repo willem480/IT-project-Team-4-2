@@ -8,6 +8,7 @@ import lombok.Setter;
 import lombok.ToString;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 
 /**
  * <p>
@@ -15,7 +16,7 @@ import java.io.Serializable;
  * </p>
  *
  * @author Yucong
- * @since 2026-09-24
+ * @since 2026-09-27
  */
 @Getter
 @Setter
@@ -29,4 +30,10 @@ public class TeamReport implements Serializable {
     private Integer idTeamReport;
 
     private Integer teamId;
+
+    private String title;
+
+    private String body;
+
+    private LocalDateTime dateGenerated;
 }

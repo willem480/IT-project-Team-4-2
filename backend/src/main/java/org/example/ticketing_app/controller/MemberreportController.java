@@ -1,7 +1,13 @@
 package org.example.ticketing_app.controller;
 
+import lombok.RequiredArgsConstructor;
+import org.example.ticketing_app.entity.MemberReport;
+import org.example.ticketing_app.service.impl.MemberReportServiceImpl;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * <p>
@@ -11,8 +17,14 @@ import org.springframework.stereotype.Controller;
  * @author Yucong
  * @since 2026-09-09
  */
-@Controller
+@RestController
 @RequestMapping("/memberreport")
+@RequiredArgsConstructor
 public class MemberreportController {
+    private final MemberReportServiceImpl memberReportService;
 
+    @PostMapping("generateTeamMemberReport")
+    public MemberReport getMemberReport(@RequestParam int userId, @RequestParam int teamId) {
+        return memberReportService.generateTeamMemberReport(userId, teamId);
+    }
 }

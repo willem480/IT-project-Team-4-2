@@ -2,6 +2,7 @@ package org.example.ticketing_app.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -20,28 +21,19 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @ToString
-public class Ticket implements Serializable {
+@TableName("ticket_comment")
+public class TicketComment implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @TableId(value = "idTicket", type = IdType.AUTO)
-    private Integer idTicket;
+    @TableId(value = "idticket_comment", type = IdType.AUTO)
+    private Integer idticketComment;
 
-    private Integer posterId;
+    private Integer ticketIdticket;
 
-    private String title;
+    private Integer userIduser;
 
-    private String description;
+    private LocalDateTime date;
 
-    private LocalDateTime datePosted;
-
-    private String location;
-
-    private Integer pay;
-
-    private String email;
-
-    private String status;
-
-    private LocalDateTime dateCompleted;
+    private String content;
 }

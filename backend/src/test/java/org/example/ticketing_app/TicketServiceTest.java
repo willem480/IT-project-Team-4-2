@@ -2,8 +2,7 @@ package org.example.ticketing_app;
 
 import org.example.ticketing_app.entity.*;
 import org.example.ticketing_app.mapper.*;
-import org.example.ticketing_app.service.impl.TicketAssignmentServiceImpl;
-import org.example.ticketing_app.service.impl.TicketServiceImpl;
+import org.example.ticketing_app.service.impl.*;
 import org.example.ticketing_app.service.ticketServiceHelper.Filter;
 import org.example.ticketing_app.service.ticketServiceHelper.TicketAssignmentReturn;
 import org.example.ticketing_app.service.ticketServiceHelper.TicketStatus;
@@ -33,6 +32,10 @@ public class TicketServiceTest {
     private TeamMemberMapper teamMemberMapper;
     @Autowired
     private TicketServiceImpl ticketService;
+    @Autowired
+    private MemberReportServiceImpl memberReportService;
+    @Autowired
+    private TeamReportServiceImpl teamReportService;
     @BeforeEach
     void setUp() {
 
@@ -220,6 +223,15 @@ public class TicketServiceTest {
         ticket7.setEmail("alice@example.com");
         ticket7.setStatus(TicketStatus.CLOSED.name());
 
+        ticket3.setDateCompleted(
+                LocalDateTime.of(2026, 9, 20, 14, 0));
+
+        ticket4.setDateCompleted(
+                LocalDateTime.of(2026, 9, 18, 16, 30));
+
+        ticket7.setDateCompleted(
+                LocalDateTime.of(2026, 9, 18, 14, 0));
+
         ticketMapper.insertOrUpdate(ticket1);
         ticketMapper.insertOrUpdate(ticket2);
         ticketMapper.insertOrUpdate(ticket3);
@@ -323,5 +335,16 @@ public class TicketServiceTest {
     @Test
     void findAJobPageTest(){
         ticketService.getOpenTickets();
+    }
+
+    @Test
+    void reportTest(){
+        MemberReport report =
+                memberReportService.generateTeamMemberReport(
+                        2001,
+                        3
+                );
+        TeamReport teamReport = teamReportService.generateReport(3);
+        System.out.println(report.getBody());
     }
 }

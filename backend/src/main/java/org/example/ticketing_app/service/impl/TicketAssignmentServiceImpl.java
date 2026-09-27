@@ -12,6 +12,7 @@ import org.example.ticketing_app.service.ticketServiceHelper.TicketAssignmentRet
 import org.example.ticketing_app.service.ticketServiceHelper.TicketStatus;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
@@ -192,6 +193,7 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
         }
     }
 
+    @Transactional
     public void delegateJobIndividual(Integer ticketID, Integer assigneeID) {
         TicketAssignment ticketAssignment = lambdaQuery().eq(TicketAssignment::getTicketId, ticketID).eq(TicketAssignment::getAssigneeId, assigneeID).one();
         if (ticketAssignment == null) {
@@ -211,6 +213,7 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
         }
     }
 
+    @Transactional
     public void delegationJobTeam(Integer ticketID, Integer teamID) {
         Team team = teamMapper.selectById(teamID);
         List<TeamMember> teamMembers = teamMemberMapper.selectList(

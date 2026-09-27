@@ -28,6 +28,7 @@ public class CodeGenerator {
 
                         .mapperBuilder()
 
+
                         .serviceBuilder()
                         .disableService()
 
