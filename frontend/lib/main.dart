@@ -1,5 +1,6 @@
 
 import 'package:ticketing_app/FindAJobDetailUser.dart';
+import 'package:ticketing_app/Profile.dart';
 import 'package:ticketing_app/SignIn.dart';
 import 'AcceptJob.dart';
 import 'PostJob.dart';
@@ -79,6 +80,26 @@ class _MyHomePageState extends State<MyHomePage> {
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
         title: Text('Good morning, Alan', style: TextStyle(color:Colors.black)),
+
+        actions:[
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: GestureDetector(
+              onTap: () {
+                print('profile open');
+                Navigator.push(context, MaterialPageRoute(builder: (context) => Profile()),);
+
+              },
+              child: CircleAvatar(
+                radius: 18.0,
+                backgroundColor: Colors.blue,
+                child: Text('Alan'),
+              ),
+
+            )
+
+          )
+        ]
         
       ),
       //body
@@ -136,9 +157,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 padding:  EdgeInsets.all(16.0),
                 child: Row(// from left to right
                   children: [
-                    OutlinedButton(onPressed:() {}, child:  Text('Distance')),
                     OutlinedButton(onPressed:() {}, child:  Text('Pay')),
-                   
                   ]
                 )
               ),
