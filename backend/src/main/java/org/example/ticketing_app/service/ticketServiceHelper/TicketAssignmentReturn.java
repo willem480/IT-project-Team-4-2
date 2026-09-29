@@ -34,6 +34,8 @@ public class TicketAssignmentReturn {
 
     private LocalDateTime dateAssigned;
 
+    private LocalDateTime dateCompleted;
+
     private String location;
 
     private Integer pay;

@@ -4,14 +4,12 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.text.similarity.JaroWinklerSimilarity;
 import org.example.ticketing_app.entity.Ticket;
-import org.example.ticketing_app.entity.TicketAssignment;
 import org.example.ticketing_app.entity.User;
 import org.example.ticketing_app.mapper.TicketMapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.example.ticketing_app.service.emailServiceHelper.EmailData;
 import org.example.ticketing_app.service.ticketServiceHelper.CreateTicketRequest;
 import org.example.ticketing_app.service.ticketServiceHelper.Filter;
-import org.example.ticketing_app.service.ticketServiceHelper.TicketAssignmentReturn;
 import org.example.ticketing_app.service.ticketServiceHelper.TicketStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -290,5 +288,41 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
         ticket.setStatus(TicketStatus.CLOSED.name());
         ticket.setDateCompleted(LocalDateTime.now());
         saveOrUpdate(ticket);
+    }
+
+    public List<Ticket> getPostedTickets(int posterId, Filter filter) {
+        List<Ticket> tickets = lambdaQuery().eq(Ticket::getPosterId, posterId).eq(Ticket::getStatus, TicketStatus.OPEN).list();
+        if (filter != null){
+            switch (filter) {
+                case timeAscending -> {
+                    return tickets.stream()
+                            .sorted(Comparator.comparing(Ticket::getDatePosted))
+                            .toList();
+                }
+
+                case timeDescending -> {
+                    return tickets.stream()
+                            .sorted(Comparator.comparing(Ticket::getDatePosted).reversed())
+                            .toList();
+                }
+
+                case payAscending -> {
+                    return tickets.stream()
+                            .sorted(Comparator.comparing(Ticket::getPay))
+                            .toList();
+                }
+
+                case payDescending -> {
+                    return tickets.stream()
+                            .sorted(Comparator.comparing(Ticket::getPay).reversed())
+                            .toList();
+                }
+
+                default -> {
+                    return tickets;
+                }
+            }
+        }
+        else return tickets;
     }
 }

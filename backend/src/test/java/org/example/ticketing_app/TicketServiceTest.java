@@ -40,6 +40,8 @@ public class TicketServiceTest {
     private OrganizationReportServiceImpl organizationReportService;
     @Autowired
     private ManagerMapper managerMapper;
+    @Autowired
+    private UserServiceImpl userService;
     @BeforeEach
     void setUp() {
 
@@ -408,5 +410,10 @@ public class TicketServiceTest {
         TeamReport teamReport = teamReportService.generateReport(3);
         OrganizationReport organizationReport = organizationReportService.generateReport(1);
         System.out.println(organizationReport.getBody());
+    }
+
+    @Test
+    void profileTest(){
+        System.out.println(userService.getUserById(2001));
     }
 }

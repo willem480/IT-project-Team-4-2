@@ -1,7 +1,6 @@
 package org.example.ticketing_app.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.text.similarity.JaroWinklerSimilarity;
 import org.example.ticketing_app.entity.*;
@@ -84,6 +83,52 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
         List<TicketAssignmentReturn> ticketAssignmentReturns = new ArrayList<TicketAssignmentReturn>();
         setTicketAssignmentReturn(ticketAssignments, ticketAssignmentReturns);
         return ticketAssignmentReturns;
+    }
+
+    public List<TicketAssignmentReturn> getCompletedTickets(Integer assigneeID, Filter filter) {
+        List<TicketAssignment> ticketAssignments = lambdaQuery()
+                .eq(TicketAssignment::getAssigneeId, assigneeID)
+                .list()
+                .stream()
+                .filter(ta -> {
+                    Ticket ticket = ticketMapper.selectById(ta.getTicketId());
+                    return TicketStatus.CLOSED.name().equals(ticket.getStatus());
+                })
+                .toList();
+        List<TicketAssignmentReturn> ticketAssignmentReturns = new ArrayList<TicketAssignmentReturn>();
+        setTicketAssignmentReturn(ticketAssignments, ticketAssignmentReturns);
+        if (filter == null){
+            return ticketAssignmentReturns;
+        }
+        switch (filter) {
+            case timeAscending -> {
+                return ticketAssignmentReturns.stream()
+                        .sorted(Comparator.comparing(TicketAssignmentReturn::getDateCompleted))
+                        .toList();
+            }
+
+            case timeDescending -> {
+                return ticketAssignmentReturns.stream()
+                        .sorted(Comparator.comparing(TicketAssignmentReturn::getDateCompleted).reversed())
+                        .toList();
+            }
+
+            case payAscending -> {
+                return ticketAssignmentReturns.stream()
+                        .sorted(Comparator.comparing(TicketAssignmentReturn::getPay))
+                        .toList();
+            }
+
+            case payDescending -> {
+                return ticketAssignmentReturns.stream()
+                        .sorted(Comparator.comparing(TicketAssignmentReturn :: getPay).reversed())
+                        .toList();
+            }
+
+            default -> {
+                return ticketAssignmentReturns;
+            }
+        }
     }
 
     private List<TicketAssignment> getAssignmentHelper(Integer assigneeID) {
@@ -189,6 +234,7 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
             ticketAssignmentReturn.setEmail(ticket.getEmail());
             ticketAssignmentReturn.setLocation(ticket.getLocation());
             ticketAssignmentReturn.setStatus(ticket.getStatus());
+            ticketAssignmentReturn.setDateCompleted(ticket.getDateCompleted());
             ticketAssignmentReturns.add(ticketAssignmentReturn);
         }
     }
