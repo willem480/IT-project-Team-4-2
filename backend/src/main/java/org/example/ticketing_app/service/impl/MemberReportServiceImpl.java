@@ -15,6 +15,8 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+
 /**
  * <p>
  *  服务实现类
@@ -42,7 +44,7 @@ public class MemberReportServiceImpl extends ServiceImpl<MemberReportMapper, Mem
         );
 
         if (teamMember == null) {
-            throw new RuntimeException("Team member not found");
+            throw new ResponseStatusException(BAD_REQUEST, "Team member not found");
         }
 
         User user = userMapper.selectById(userId);

@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 2026-09-09
  */
 @RestController
-@RequestMapping("/teamreport")
+@RequestMapping("/teamReport")
 @RequiredArgsConstructor
 public class TeamreportController {
     private final TeamReportServiceImpl teamReportService;

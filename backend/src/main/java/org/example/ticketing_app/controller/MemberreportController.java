@@ -18,13 +18,13 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 2026-09-09
  */
 @RestController
-@RequestMapping("/memberreport")
+@RequestMapping("/memberReport")
 @RequiredArgsConstructor
 public class MemberreportController {
     private final MemberReportServiceImpl memberReportService;
 
     @PostMapping("generateTeamMemberReport")
-    public MemberReport getMemberReport(@RequestParam int userId, @RequestParam int teamId) {
+    public MemberReport generateMemberReport(@RequestParam int userId, @RequestParam int teamId) {
         return memberReportService.generateTeamMemberReport(userId, teamId);
     }
 }

@@ -19,6 +19,9 @@ import java.util.stream.Collectors;
 import org.example.ticketing_app.entity.OrganizationReport;
 
 import org.example.ticketing_app.mapper.OrganizationReportMapper;
+import org.springframework.web.server.ResponseStatusException;
+
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
 /**
  * <p>
@@ -48,7 +51,7 @@ public class OrganizationReportServiceImpl
                 organizationMapper.selectById(organizationId);
 
         if (organization == null) {
-            throw new RuntimeException(
+            throw new ResponseStatusException(BAD_REQUEST,
                     "Organization not found");
         }
 

@@ -9,10 +9,13 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.example.ticketing_app.service.ticketServiceHelper.TicketStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
 /**
  * <p>
@@ -39,7 +42,7 @@ public class TeamReportServiceImpl
         Team team = teamMapper.selectById(teamId);
 
         if (team == null) {
-            throw new RuntimeException("Team not found");
+            throw new ResponseStatusException(BAD_REQUEST, "Team not found");
         }
 
         List<TeamMember> teamMembers =
