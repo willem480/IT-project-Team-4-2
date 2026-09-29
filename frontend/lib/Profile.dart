@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:ticketing_app/FindAJobDetailUser.dart';
 import 'package:ticketing_app/main.dart';
+import 'package:ticketing_app/PostAJobDetailUser.dart';
 
 
 
@@ -35,14 +37,14 @@ class _ProfilePage extends State<Profile> {
         children: [
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(100),
+              padding: const EdgeInsets.all(50),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   //intro
                   Container(
-                    height: 300,
+                    height: 250,
                     width: 500,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -54,11 +56,12 @@ class _ProfilePage extends State<Profile> {
                     child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Total earnings', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey)), 
-                          const SizedBox(height: 20),
-                          Text('\$ Total money',style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),),
-                          const SizedBox(height: 6),
-                          Text('This month: \$ money and times payouts', style: const TextStyle(fontWeight:FontWeight.bold, fontSize: 30, color: Colors.grey)),
+                          
+                          Text('TOTAL EARNING', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.grey)), 
+                          const SizedBox(height: 25),
+                          Text('\$ Total money',style: TextStyle(fontSize: 50, fontWeight: FontWeight.bold),),
+                          const SizedBox(height: 60),
+                          Text('This month: \$ money and times payouts', style: const TextStyle(fontWeight:FontWeight.bold, fontSize: 15, color: Colors.grey)),
                         ],
                     )
                   ),
@@ -67,22 +70,26 @@ class _ProfilePage extends State<Profile> {
                   //button
                   Row(
                     children: [
-                      _buildTabButton('details', is_Detail_Tab, (){
+                      _buildTabButton('Posted jobs', is_Detail_Tab, (){
                         setState(() => is_Detail_Tab = true);
 
                       }),
                       const SizedBox(width: 12),
-                      _buildTabButton('comment', !is_Detail_Tab, (){
+                      _buildTabButton('Completed jobs', !is_Detail_Tab, (){
                         setState(() => is_Detail_Tab = false);
                       })
                     ],
                   ),
-                  SizedBox(height: 16),
+                  SizedBox(height: 25),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: OutlinedButton(onPressed:() {}, 
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [Text('Time'), SizedBox(width: 8), Icon(Icons.arrow_downward)]))),
 
-                  is_Detail_Tab ? _buildDetailsSection() : _buildCommentsSection(), 
+                  is_Detail_Tab ? _buildPostedJobSection(context) : _buildCompletedJobs(), 
 
-
-                  
 
                 ],
               ),
@@ -97,72 +104,124 @@ class _ProfilePage extends State<Profile> {
         ],
       ),
       
-      floatingActionButton: Padding( 
-        padding: EdgeInsets.only(bottom: 20),
-        child: SizedBox(
-          width: 200,
-          height: 80,
-          child: FloatingActionButton(
-          onPressed: () {Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const MyHomePage(title: 'Find a job')), (Route<dynamic> route) => false);},
-          backgroundColor: Colors.blue,
-          shape:  RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
-          child: Text('OK', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),),
-          )
-        ),
+          bottomNavigationBar: BottomAppBar(
+        color: Colors.white,
+        shape: const CircularNotchedRectangle(),
+        notchMargin: 8.0,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            TextButton.icon(
+              onPressed: () {}, 
+              icon: Icon(Icons.search), 
+              label: Text('My Profile', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+  
+            const SizedBox(width: 60),
+            TextButton.icon(
+              onPressed: () {}, 
+              icon: Icon(Icons.check_circle_outlined), 
+              label: Text('Organization', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        )
       ),
-      
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-
     );
   }
 
   // The Details View (Description + Map)
-  Widget _buildDetailsSection() {
+  Widget _buildPostedJobSection(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      
+      crossAxisAlignment: CrossAxisAlignment.center,
+      
       children: [
-        const Text('Description', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-        const SizedBox(height: 8),
-        const Text('The HVAC unit in the North Wing is not cooling properly...', style: TextStyle(color: Colors.black54)),
-        const SizedBox(height: 20),
-        const Text('Location', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-        const SizedBox(height: 8),
-        // Placeholder for Map Integration
-        Container(
-          height: 150,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: Colors.grey.shade300,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Center(child: Icon(Icons.location_on, color: Colors.red, size: 40)),
+        InkWell(
+          onTap: (){
+            print('check your posted jobs');
+            Navigator.push(context, MaterialPageRoute(builder: (context) => PostAJobDetailUser(title: 'title: B', company: 'Company: B', price: '500',)),);
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            width: 800,
+            height: 250,
+            margin: const EdgeInsets.all(50),
+            padding: EdgeInsets.all(16),
+
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey,
+                  spreadRadius: 1,
+                  blurRadius: 5,
+                  offset: const Offset(0, 2),
+                )
+              ]
+            ),           
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                  // alignment: Alignment.topLeft,
+                Text(
+                  'Company B',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                SizedBox(height: 8),  
+                //more item
+              ],
+            )
+          )
         ),
       ],
     );
   }
 
 
-  Widget _buildCommentsSection() {
+  Widget _buildCompletedJobs() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Comments', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-        const SizedBox(height: 12),
-        TextField(
-          maxLines: 4,
-          decoration: InputDecoration(
-            hintText: 'Add a comment...',
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
+        InkWell(
+          onTap: (){
+            print('check your completed jobs');
+            Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser(title: 'title: A', company: 'Company: A', price: '600',)),);
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            width: 800,
+            height: 250,
+            margin: const EdgeInsets.all(50),
+            padding: EdgeInsets.all(16),
+
+            decoration: BoxDecoration(
+              color: Colors.white,
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade300),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade300),
-            ),
-          ),
+              border: Border.all(color: Colors.grey),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey,
+                  spreadRadius: 1,
+                  blurRadius: 5,
+                  offset: const Offset(0, 2),
+                )
+              ]
+            ),           
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                  // alignment: Alignment.topLeft,
+                Text(
+                  'Company A',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                SizedBox(height: 8),  
+                //more item
+              ],
+            )
+          )
         ),
       ],
     );
@@ -174,13 +233,13 @@ class _ProfilePage extends State<Profile> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.blue.shade100 : Colors.grey.shade200,
+          color: isSelected ? const Color.fromARGB(255, 0, 0, 0) : Colors.grey.shade200,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
           text,
           style: TextStyle(
-            color: isSelected ? Colors.blue.shade800 : Colors.black54,
+            color: isSelected ? const Color.fromARGB(255, 255, 255, 255) : Colors.black54,
             fontWeight: FontWeight.bold,
           ),
         ),

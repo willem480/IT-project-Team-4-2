@@ -3,23 +3,23 @@ import 'package:ticketing_app/main.dart';
 
 
 
-class FindAJobDetailUser extends StatefulWidget {
+class PostAJobDetailUser extends StatefulWidget {
   final String title;
   final String company;
   final String price;
 
-  const FindAJobDetailUser({
+  const PostAJobDetailUser({
     super.key,
     required this.title,
     required this.company,
     required this.price});
 
   @override
-  State<FindAJobDetailUser> createState() => _FindAJobDetailUserPage();
+  State<PostAJobDetailUser> createState() => _PostAJobDetailUserPage();
   
 }
 
-class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
+class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
   bool is_Detail_Tab = true;
   @override
   Widget build(BuildContext context) {
