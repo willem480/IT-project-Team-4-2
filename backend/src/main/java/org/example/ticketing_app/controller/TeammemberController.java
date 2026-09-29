@@ -12,7 +12,7 @@ import org.springframework.stereotype.Controller;
  * @since 2026-09-09
  */
 @Controller
-@RequestMapping("/teammember")
+@RequestMapping("/teamMember")
 public class TeammemberController {
 
 }
