@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
 
+import 'Profile.dart';
+
 class TeamsPage extends StatelessWidget {
-  const TeamsPage({super.key});
+  const TeamsPage({
+    super.key,
+    required this.organisationId,
+    required this.organisationName,
+  });
+
+  final String organisationId;
+  final String organisationName;
 
   @override
   Widget build(BuildContext context) {
@@ -139,28 +148,48 @@ class TeamsPage extends StatelessWidget {
       ),
       bottomNavigationBar: BottomAppBar(
         color: Colors.white,
+        shape: const CircularNotchedRectangle(),
+        notchMargin: 8.0,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             TextButton.icon(
               onPressed: () => Navigator.maybePop(context),
-              style: TextButton.styleFrom(
-                foregroundColor: Theme.of(context).colorScheme.primary,
-                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+              icon: const Icon(
+                Icons.bookmark_border,
+                size: 25,
+                color: Colors.black,
               ),
-              icon: const Icon(Icons.business),
               label: const Text(
-                'Organizations',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                'Organization',
+                style: TextStyle(
+                  color: Colors.blueGrey,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
+            const SizedBox(width: 60),
             TextButton.icon(
-              onPressed: () {},
-              style: TextButton.styleFrom(foregroundColor: Colors.grey[600]),
-              icon: const Icon(Icons.person_outline),
+              onPressed: () {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (context) => const Profile(),
+                  ),
+                  (route) => route.isFirst,
+                );
+              },
+              icon: const Icon(
+                Icons.person_2_outlined,
+                size: 25,
+                color: Colors.black,
+              ),
               label: const Text(
                 'My Profile',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.blueGrey,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],
