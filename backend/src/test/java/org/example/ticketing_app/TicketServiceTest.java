@@ -36,6 +36,10 @@ public class TicketServiceTest {
     private MemberReportServiceImpl memberReportService;
     @Autowired
     private TeamReportServiceImpl teamReportService;
+    @Autowired
+    private OrganizationReportServiceImpl organizationReportService;
+    @Autowired
+    private ManagerMapper managerMapper;
     @BeforeEach
     void setUp() {
 
@@ -85,6 +89,33 @@ public class TicketServiceTest {
         organizationMapper.insertOrUpdate(organization1);
         organizationMapper.insertOrUpdate(organization2);
 
+        // Managers
+
+        Manager manager1 = new Manager();
+        manager1.setIdManager(1);
+        manager1.setUserId(1001);
+        manager1.setOrganizationId(1);
+
+        Manager manager2 = new Manager();
+        manager2.setIdManager(2);
+        manager2.setUserId(1002);
+        manager2.setOrganizationId(1);
+
+        Manager manager3 = new Manager();
+        manager3.setIdManager(3);
+        manager3.setUserId(2001);
+        manager3.setOrganizationId(2);
+
+        Manager manager4 = new Manager();
+        manager4.setIdManager(4);
+        manager4.setUserId(2003);
+        manager4.setOrganizationId(2);
+
+        managerMapper.insertOrUpdate(manager1);
+        managerMapper.insertOrUpdate(manager2);
+        managerMapper.insertOrUpdate(manager3);
+        managerMapper.insertOrUpdate(manager4);
+
         // Teams
 
         Team team1 = new Team();
@@ -102,9 +133,15 @@ public class TicketServiceTest {
         team3.setOrganizationId(2);
         team3.setName("Field Support Team");
 
+        Team team4 = new Team();
+        team4.setIdTeam(4);
+        team4.setOrganizationId(2);
+        team4.setName("Logistics Team");
+
         teamMapper.insertOrUpdate(team1);
         teamMapper.insertOrUpdate(team2);
         teamMapper.insertOrUpdate(team3);
+        teamMapper.insertOrUpdate(team4);
 
         // Team Members
 
@@ -128,7 +165,7 @@ public class TicketServiceTest {
 
         TeamMember teamMember4 = new TeamMember();
         teamMember4.setIdTeamMember(4);
-        teamMember4.setTeamId(3);
+        teamMember4.setTeamId(4);
         teamMember4.setOrganizationId(2);
         teamMember4.setUserId(2001);
 
@@ -223,6 +260,20 @@ public class TicketServiceTest {
         ticket7.setEmail("alice@example.com");
         ticket7.setStatus(TicketStatus.CLOSED.name());
 
+        Ticket ticket8 = new Ticket();
+        ticket8.setIdTicket(8);
+        ticket8.setPosterId(1001);
+        ticket8.setTitle("Warehouse inventory audit");
+        ticket8.setDescription("Perform quarterly inventory audit.");
+        ticket8.setDatePosted(LocalDateTime.of(2026, 9, 11, 9, 0));
+        ticket8.setLocation("Warehouse A");
+        ticket8.setPay(120);
+        ticket8.setEmail("john@example.com");
+        ticket8.setStatus(TicketStatus.CLOSED.name());
+
+        ticket8.setDateCompleted(
+                LocalDateTime.of(2026, 9, 17, 10, 0));
+
         ticket3.setDateCompleted(
                 LocalDateTime.of(2026, 9, 20, 14, 0));
 
@@ -232,6 +283,7 @@ public class TicketServiceTest {
         ticket7.setDateCompleted(
                 LocalDateTime.of(2026, 9, 18, 14, 0));
 
+        ticketMapper.insertOrUpdate(ticket8);
         ticketMapper.insertOrUpdate(ticket1);
         ticketMapper.insertOrUpdate(ticket2);
         ticketMapper.insertOrUpdate(ticket3);
@@ -310,6 +362,14 @@ public class TicketServiceTest {
         assignment8.setDateAssigned(LocalDateTime.of(2026, 9, 13, 10, 0));
         assignment8.setRelatedTeamId(null);
 
+        TicketAssignment assignment9 = new TicketAssignment();
+        assignment9.setIdTicketAssignment(9);
+        assignment9.setAssigneeId(2001);
+        assignment9.setTicketId(8);
+        assignment9.setDateAssigned(
+                LocalDateTime.of(2026, 9, 12, 8, 0));
+        assignment9.setRelatedTeamId(4);
+
         ticketAssignmentMapper.insertOrUpdate(assignment1);
         ticketAssignmentMapper.insertOrUpdate(assignment2);
         ticketAssignmentMapper.insertOrUpdate(assignment3);
@@ -318,6 +378,7 @@ public class TicketServiceTest {
         ticketAssignmentMapper.insertOrUpdate(assignment6);
         ticketAssignmentMapper.insertOrUpdate(assignment7);
         ticketAssignmentMapper.insertOrUpdate(assignment8);
+        ticketAssignmentMapper.insertOrUpdate(assignment9);
     }
 
     @Test
@@ -342,9 +403,10 @@ public class TicketServiceTest {
         MemberReport report =
                 memberReportService.generateTeamMemberReport(
                         2001,
-                        3
+                        4
                 );
         TeamReport teamReport = teamReportService.generateReport(3);
-        System.out.println(report.getBody());
+        OrganizationReport organizationReport = organizationReportService.generateReport(1);
+        System.out.println(organizationReport.getBody());
     }
 }
