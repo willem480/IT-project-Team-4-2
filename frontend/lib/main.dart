@@ -189,10 +189,9 @@ class _MyHomePageState extends State<MyHomePage> {
                               border: Border.all(color: Colors.grey),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.grey,
-                                  spreadRadius: 1,
-                                  blurRadius: 5,
-                                  offset: const Offset(0, 2),
+                                  color: Colors.grey.withOpacity(0.1),
+                                  blurRadius: 2,
+                                  offset: const Offset(0, 1),
                                 )
                               ]
                             ),           
@@ -228,10 +227,10 @@ class _MyHomePageState extends State<MyHomePage> {
                               border: Border.all(color: Colors.grey),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.grey,
-                                  spreadRadius: 1,
-                                  blurRadius: 5,
-                                  offset: const Offset(0, 2),
+                                  color: Colors.grey.withOpacity(0.1),
+                                  
+                                  blurRadius: 2,
+                                  offset: const Offset(0, 1),
                                 )
                               ]
                             ),           
@@ -267,10 +266,10 @@ class _MyHomePageState extends State<MyHomePage> {
                               border: Border.all(color: Colors.grey),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.grey,
+                                  color: Colors.grey.withOpacity(0.1),
                                   spreadRadius: 1,
-                                  blurRadius: 5,
-                                  offset: const Offset(0, 2),
+                                  blurRadius: 2,
+                                  offset: const Offset(0, 1),
                                 )
                               ]
                             ),           
@@ -306,10 +305,9 @@ class _MyHomePageState extends State<MyHomePage> {
                               border: Border.all(color: Colors.grey),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.grey,
-                                  spreadRadius: 1,
-                                  blurRadius: 5,
-                                  offset: const Offset(0, 2),
+                                  color: Colors.grey.withOpacity(0.1),
+                                  blurRadius: 2,
+                                  offset: const Offset(0, 1),
                                 )
                               ]
                             ),           
@@ -361,15 +359,15 @@ class _MyHomePageState extends State<MyHomePage> {
           children: [
             TextButton.icon(
               onPressed: () {}, 
-              icon: Icon(Icons.search), 
-              label: Text('Find a Job', style: TextStyle(fontWeight: FontWeight.bold)),
+              icon: Icon(Icons.search, color: Colors.black,), 
+              label: Text('Find a Job', style: TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.bold)),
             ),
   
             const SizedBox(width: 60),
             TextButton.icon(
               onPressed: () {Navigator.push(context, MaterialPageRoute(builder: (context) => AcceptJobPage()),);}, 
-              icon: Icon(Icons.check_circle_outlined), 
-              label: Text('Accept a Job', style: TextStyle(fontWeight: FontWeight.bold)),
+              icon: Icon(Icons.check_circle_outlined, color: Colors.black,), 
+              label: Text('Accept a Job', style: TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.bold)),
             ),
           ],
         )

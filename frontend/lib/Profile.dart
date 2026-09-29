@@ -113,15 +113,15 @@ class _ProfilePage extends State<Profile> {
           children: [
             TextButton.icon(
               onPressed: () {}, 
-              icon: Icon(Icons.search), 
-              label: Text('My Profile', style: TextStyle(fontWeight: FontWeight.bold)),
+              icon: Icon(Icons.person_2_outlined, size: 25, color: Colors.black), 
+              label: Text('My Profile', style: TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.bold)),
             ),
   
             const SizedBox(width: 60),
             TextButton.icon(
               onPressed: () {}, 
-              icon: Icon(Icons.check_circle_outlined), 
-              label: Text('Organization', style: TextStyle(fontWeight: FontWeight.bold)),
+              icon: Icon(Icons.bookmark_border, size: 25, color: Colors.black), 
+              label: Text('Organization', style: TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.bold)),
             ),
           ],
         )
@@ -154,10 +154,10 @@ class _ProfilePage extends State<Profile> {
               border: Border.all(color: Colors.grey),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey,
-                  spreadRadius: 1,
-                  blurRadius: 5,
-                  offset: const Offset(0, 2),
+                  color: Colors.grey.withOpacity(0.1),
+                  
+                  blurRadius: 2,
+                  offset: const Offset(0, 1),
                 )
               ]
             ),           
@@ -202,10 +202,10 @@ class _ProfilePage extends State<Profile> {
               border: Border.all(color: Colors.grey),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey,
-                  spreadRadius: 1,
-                  blurRadius: 5,
-                  offset: const Offset(0, 2),
+                  color: Colors.grey.withOpacity(0.1),
+                  
+                  blurRadius: 2,
+                  offset: const Offset(0, 1),
                 )
               ]
             ),           
