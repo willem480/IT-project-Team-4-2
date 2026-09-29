@@ -6,16 +6,16 @@ import org.example.ticketing_app.entity.Manager;
 import org.example.ticketing_app.entity.Organization;
 import org.example.ticketing_app.entity.Team;
 import org.example.ticketing_app.entity.TeamMember;
-import org.example.ticketing_app.entity.User;
+import org.example.ticketing_app.entity.TicketAssignment;
 import org.example.ticketing_app.mapper.ManagerMapper;
 import org.example.ticketing_app.mapper.OrganizationMapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.example.ticketing_app.mapper.TeamMapper;
 import org.example.ticketing_app.mapper.TeamMemberMapper;
-import org.example.ticketing_app.mapper.UserMapper;
-import org.example.ticketing_app.service.organizationServiceHelper.AddOrganizationMemberRequest;
-import org.example.ticketing_app.service.organizationServiceHelper.OrganizationMemberListResponse;
-import org.example.ticketing_app.service.organizationServiceHelper.OrganizationMemberSummary;
+import org.example.ticketing_app.mapper.TicketAssignmentMapper;
+import org.example.ticketing_app.service.organizationServiceHelper.AddTeamRequest;
+import org.example.ticketing_app.service.organizationServiceHelper.OrganizationTeamListResponse;
+import org.example.ticketing_app.service.organizationServiceHelper.OrganizationTeamSummary;
 import org.example.ticketing_app.service.organizationServiceHelper.OrganizationSummary;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -40,7 +40,7 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
     private final ManagerMapper managerMapper;
     private final TeamMemberMapper teamMemberMapper;
     private final TeamMapper teamMapper;
-    private final UserMapper userMapper;
+    private final TicketAssignmentMapper ticketAssignmentMapper;
 
     /**
      * Returns the organization cards needed by the organization-list page.
@@ -57,80 +57,80 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
                 .toList();
     }
 
-    /** Returns organization members and whether the current viewer may edit them. */
-    public OrganizationMemberListResponse getOrganizationMembers(
+    /** Returns organization teams and whether the current viewer may manage them. */
+    public OrganizationTeamListResponse getOrganizationTeams(
             Integer organizationId,
             Integer viewerUserId
     ) {
         requireOrganization(organizationId);
 
-        List<OrganizationMemberSummary> members = teamMemberMapper.selectList(
-                        new LambdaQueryWrapper<TeamMember>()
-                                .eq(TeamMember::getOrganizationId, organizationId)
+        List<OrganizationTeamSummary> teams = teamMapper.selectList(
+                        new LambdaQueryWrapper<Team>()
+                                .eq(Team::getOrganizationId, organizationId)
                 ).stream()
-                .map(this::toMemberSummary)
+                .map(this::toTeamSummary)
                 .toList();
 
-        return new OrganizationMemberListResponse(
+        return new OrganizationTeamListResponse(
                 organizationId,
                 canManageOrganization(viewerUserId, organizationId),
-                members
+                teams
         );
     }
 
-    /**
-     * Creates one user-to-team membership. The manager check is enforced here,
-     * so callers cannot bypass it by hiding or changing a front-end button.
-     */
+    /** Creates one team in an organization after enforcing the manager permission. */
     @Transactional
-    public OrganizationMemberSummary addOrganizationMember(AddOrganizationMemberRequest request) {
+    public OrganizationTeamSummary addTeam(AddTeamRequest request) {
         requireOrganization(request.getOrganizationId());
         requireManager(request.getActorUserId(), request.getOrganizationId());
 
-        Team team = teamMapper.selectById(request.getTeamId());
-        if (team == null || !Objects.equals(team.getOrganizationId(), request.getOrganizationId())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Team does not belong to the organization");
-        }
-        if (userMapper.selectById(request.getUserId()) == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User does not exist");
-        }
-
-        Long existingMemberships = teamMemberMapper.selectCount(
-                new LambdaQueryWrapper<TeamMember>()
-                        .eq(TeamMember::getOrganizationId, request.getOrganizationId())
-                        .eq(TeamMember::getTeamId, request.getTeamId())
-                        .eq(TeamMember::getUserId, request.getUserId())
+        Long duplicateNames = teamMapper.selectCount(
+                new LambdaQueryWrapper<Team>()
+                        .eq(Team::getOrganizationId, request.getOrganizationId())
+                        .eq(Team::getName, request.getName().trim())
         );
-        if (existingMemberships != null && existingMemberships > 0) {
+        if (duplicateNames != null && duplicateNames > 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "User is already a member of this team");
+                    "A team with this name already exists in the organization");
         }
 
-        TeamMember membership = new TeamMember();
-        membership.setOrganizationId(request.getOrganizationId());
-        membership.setTeamId(request.getTeamId());
-        membership.setUserId(request.getUserId());
-        teamMemberMapper.insert(membership);
-        return toMemberSummary(membership);
+        Team team = new Team();
+        team.setOrganizationId(request.getOrganizationId());
+        team.setName(request.getName().trim());
+        teamMapper.insert(team);
+        return toTeamSummary(team);
     }
 
-    /** Removes exactly one membership record and does not affect the user's other teams. */
+    /**
+     * Removes an empty team only. Membership and assignment records are retained,
+     * so callers must first remove members and resolve historical assignments.
+     */
     @Transactional
-    public void removeOrganizationMember(
+    public void removeTeam(
             Integer actorUserId,
             Integer organizationId,
-            Integer teamMemberId
+            Integer teamId
     ) {
         requireOrganization(organizationId);
         requireManager(actorUserId, organizationId);
 
-        TeamMember membership = teamMemberMapper.selectById(teamMemberId);
-        if (membership == null || !Objects.equals(membership.getOrganizationId(), organizationId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "Organization membership does not exist");
+        Team team = teamMapper.selectById(teamId);
+        if (team == null || !Objects.equals(team.getOrganizationId(), organizationId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Team does not exist in the organization");
         }
-        teamMemberMapper.deleteById(teamMemberId);
+        if (countTeamMembers(teamId) > 0) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Remove all team members before deleting the team");
+        }
+        Long assignmentCount = ticketAssignmentMapper.selectCount(
+                new LambdaQueryWrapper<TicketAssignment>()
+                        .eq(TicketAssignment::getRelatedTeamId, teamId)
+        );
+        if (assignmentCount != null && assignmentCount > 0) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Team has ticket assignments and cannot be deleted");
+        }
+        teamMapper.deleteById(teamId);
     }
 
     /** A user can manage an organization only when a matching manager row exists. */
@@ -146,7 +146,7 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
         return managerCount != null && managerCount > 0;
     }
 
-    /** Rejects every membership change made by a user who is not an organization manager. */
+    /** Rejects every team change made by a user who is not an organization manager. */
     private void requireManager(Integer actorUserId, Integer organizationId) {
         if (!canManageOrganization(actorUserId, organizationId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
@@ -165,6 +165,14 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
                 .count();
     }
 
+    private long countTeamMembers(Integer teamId) {
+        Long memberCount = teamMemberMapper.selectCount(
+                new LambdaQueryWrapper<TeamMember>()
+                        .eq(TeamMember::getTeamId, teamId)
+        );
+        return memberCount == null ? 0 : memberCount;
+    }
+
     private Organization requireOrganization(Integer organizationId) {
         Organization organization = getById(organizationId);
         if (organization == null) {
@@ -173,16 +181,11 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
         return organization;
     }
 
-    private OrganizationMemberSummary toMemberSummary(TeamMember membership) {
-        User user = userMapper.selectById(membership.getUserId());
-        Team team = teamMapper.selectById(membership.getTeamId());
-        return new OrganizationMemberSummary(
-                membership.getIdTeamMember(),
-                membership.getUserId(),
-                user == null ? null : user.getName(),
-                user == null ? null : user.getEmail(),
-                membership.getTeamId(),
-                team == null ? null : team.getName()
+    private OrganizationTeamSummary toTeamSummary(Team team) {
+        return new OrganizationTeamSummary(
+                team.getIdTeam(),
+                team.getName(),
+                countTeamMembers(team.getIdTeam())
         );
     }
 }

@@ -2,9 +2,9 @@ package org.example.ticketing_app.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.example.ticketing_app.service.impl.OrganizationServiceImpl;
-import org.example.ticketing_app.service.organizationServiceHelper.AddOrganizationMemberRequest;
-import org.example.ticketing_app.service.organizationServiceHelper.OrganizationMemberListResponse;
-import org.example.ticketing_app.service.organizationServiceHelper.OrganizationMemberSummary;
+import org.example.ticketing_app.service.organizationServiceHelper.AddTeamRequest;
+import org.example.ticketing_app.service.organizationServiceHelper.OrganizationTeamListResponse;
+import org.example.ticketing_app.service.organizationServiceHelper.OrganizationTeamSummary;
 import org.example.ticketing_app.service.organizationServiceHelper.OrganizationSummary;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -41,32 +41,32 @@ public class OrganizationController {
         return organizationService.getOrganizations(viewerUserId);
     }
 
-    /** Lists the membership records for one organization. */
-    @GetMapping("getOrganizationMembers")
-    public OrganizationMemberListResponse getOrganizationMembers(
+    /** Lists the teams that belong to one organization. */
+    @GetMapping("getOrganizationTeams")
+    public OrganizationTeamListResponse getOrganizationTeams(
             @RequestParam Integer organizationId,
             @RequestParam(required = false) Integer viewerUserId
     ) {
-        return organizationService.getOrganizationMembers(organizationId, viewerUserId);
+        return organizationService.getOrganizationTeams(organizationId, viewerUserId);
     }
 
-    /** Adds a user to a team after verifying that the acting user manages the organization. */
-    @PostMapping("addOrganizationMember")
+    /** Adds a team after verifying that the acting user manages the organization. */
+    @PostMapping("addTeam")
     @ResponseStatus(HttpStatus.CREATED)
-    public OrganizationMemberSummary addOrganizationMember(
-            @Valid @RequestBody AddOrganizationMemberRequest request
+    public OrganizationTeamSummary addTeam(
+            @Valid @RequestBody AddTeamRequest request
     ) {
-        return organizationService.addOrganizationMember(request);
+        return organizationService.addTeam(request);
     }
 
-    /** Removes one team-membership record after verifying manager permission again. */
-    @DeleteMapping("removeOrganizationMember")
+    /** Removes an empty team after verifying manager permission again. */
+    @DeleteMapping("removeTeam")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void removeOrganizationMember(
+    public void removeTeam(
             @RequestParam Integer actorUserId,
             @RequestParam Integer organizationId,
-            @RequestParam Integer teamMemberId
+            @RequestParam Integer teamId
     ) {
-        organizationService.removeOrganizationMember(actorUserId, organizationId, teamMemberId);
+        organizationService.removeTeam(actorUserId, organizationId, teamId);
     }
 }
