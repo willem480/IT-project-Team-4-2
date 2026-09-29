@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'PostJob.dart';
 
 const _ink = Color(0xFF111827);
 const _muted = Color(0xFF6B7280);
@@ -19,8 +20,6 @@ class AcceptJobPage extends StatefulWidget {
 
 class _AcceptJobPageState extends State<AcceptJobPage> {
   String? _time;
-  String? _distance;
-  String? _priority;
 
   @override
   Widget build(BuildContext context) {
@@ -99,25 +98,6 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
                         ],
                         onSelected: (value) => setState(() => _time = value),
                       ),
-                      _FilterButton(
-                        label: 'Distance',
-                        value: _distance,
-                        options: const [
-                          'Less than 1 km',
-                          '1–5 km',
-                          '5–10 km',
-                          '10+ km',
-                        ],
-                        onSelected: (value) =>
-                            setState(() => _distance = value),
-                      ),
-                      _FilterButton(
-                        label: 'Priority',
-                        value: _priority,
-                        options: const ['Urgent', 'Medium', 'Low'],
-                        onSelected: (value) =>
-                            setState(() => _priority = value),
-                      ),
                     ],
                   ),
                   const SizedBox(height: 20),
@@ -177,7 +157,48 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
           ),
         ),
       ),
-      bottomNavigationBar: const _AcceptedJobBottomBar(),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => PostJob()),
+          );
+        },
+        backgroundColor: Colors.blue,
+        shape: const CircleBorder(),
+        tooltip: 'Post a Job',
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: BottomAppBar(
+        color: Colors.white,
+        shape: const CircularNotchedRectangle(),
+        notchMargin: 8.0,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            TextButton.icon(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              icon: const Icon(Icons.search),
+              label: const Text(
+                'Find a Job',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(width: 60),
+            TextButton.icon(
+              onPressed: () {},
+              icon: const Icon(Icons.check_circle_outlined),
+              label: const Text(
+                'Accept a Job',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -188,7 +209,6 @@ class Job {
     required this.position,
     required this.jobType,
     required this.status,
-    required this.priority,
     required this.dueDate,
     required this.dueTime,
   });
@@ -197,7 +217,6 @@ class Job {
   final String position;
   final String jobType;
   final String status;
-  final String priority;
   final String dueDate;
   final String dueTime;
 }
@@ -208,7 +227,6 @@ const _jobs = [
     position: 'Building C',
     jobType: 'The University of Melbourne',
     status: 'In Progress',
-    priority: 'Urgent',
     dueDate: 'today',
     dueTime: '2:00 PM',
   ),
@@ -217,7 +235,6 @@ const _jobs = [
     position: 'Floor 2',
     jobType: 'Provision IT',
     status: 'Open',
-    priority: 'Medium',
     dueDate: 'tomorrow',
     dueTime: '10:00 AM',
   ),
@@ -226,7 +243,6 @@ const _jobs = [
     position: 'Warehouse B',
     jobType: 'Microsoft',
     status: 'Open',
-    priority: 'Low',
     dueDate: 'Fri',
     dueTime: '4:00 PM',
   ),
@@ -264,34 +280,6 @@ class JobCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              _PriorityBadge(priority: job.priority),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const CircleAvatar(
-                radius: 13,
-                backgroundColor: Color(0xFFEFF6FF),
-                child: Icon(
-                  Icons.business_outlined,
-                  size: 17,
-                  color: Color(0xFF64748B),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  job.jobType,
-                  style: const TextStyle(
-                    color: Color(0xFF374151),
-                    fontSize: 14,
-                    height: 1.7,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
               ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 120),
                 child: Row(
@@ -320,6 +308,32 @@ class JobCard extends StatelessWidget {
                       ),
                     ),
                   ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const CircleAvatar(
+                radius: 13,
+                backgroundColor: Color(0xFFEFF6FF),
+                child: Icon(
+                  Icons.business_outlined,
+                  size: 17,
+                  color: Color(0xFF64748B),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  job.jobType,
+                  style: const TextStyle(
+                    color: Color(0xFF374151),
+                    fontSize: 14,
+                    height: 1.7,
+                  ),
                 ),
               ),
             ],
@@ -467,142 +481,6 @@ class _FilterButton extends StatelessWidget {
             const SizedBox(width: 6),
             const Icon(Icons.keyboard_arrow_down, size: 18, color: _muted),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PriorityBadge extends StatelessWidget {
-  const _PriorityBadge({required this.priority});
-
-  final String priority;
-
-  @override
-  Widget build(BuildContext context) {
-    final (background, foreground) = switch (priority) {
-      'Urgent' => (const Color(0xFFFEE2E2), const Color(0xFF991B1B)),
-      'Medium' => (const Color(0xFFFEF3C7), const Color(0xFF92400E)),
-      _ => (const Color(0xFFDBEAFE), const Color(0xFF1E40AF)),
-    };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        priority,
-        style: TextStyle(
-          color: foreground,
-          fontSize: 13,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
-/// Local bottom bar; only Find a Job returns to the previous page.
-class _AcceptedJobBottomBar extends StatelessWidget {
-  const _AcceptedJobBottomBar();
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: _border)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            children: [
-              Expanded(
-                child: _BottomBarItem(
-                  label: 'Find a Job',
-                  icon: Icons.search,
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Semantics(
-                  label: 'Post a Job',
-                  child: const DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: Color(0xFF3B82F6),
-                      shape: BoxShape.circle,
-                    ),
-                    child: SizedBox(
-                      width: 44,
-                      height: 44,
-                      child: Icon(Icons.add, color: Colors.white, size: 32),
-                    ),
-                  ),
-                ),
-              ),
-              const Expanded(
-                child: _BottomBarItem(
-                  label: 'Accepted Job',
-                  icon: Icons.check_circle_outlined,
-                  selected: true,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _BottomBarItem extends StatelessWidget {
-  const _BottomBarItem({
-    required this.label,
-    required this.icon,
-    this.selected = false,
-    this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final bool selected;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = selected ? _ink : _muted;
-    return GestureDetector(
-      onTap: onTap,
-      child: Semantics(
-        selected: selected,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-          decoration: BoxDecoration(
-            color: selected ? const Color(0xFFD6D5D3) : Colors.transparent,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 26, color: color),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: color,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );

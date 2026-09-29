@@ -1,5 +1,6 @@
 
 import 'package:ticketing_app/FindAJobDetailUser.dart';
+import 'package:ticketing_app/Profile.dart';
 import 'package:ticketing_app/SignIn.dart';
 import 'AcceptJob.dart';
 import 'PostJob.dart';
@@ -79,6 +80,26 @@ class _MyHomePageState extends State<MyHomePage> {
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
         title: Text('Good morning, Alan', style: TextStyle(color:Colors.black)),
+
+        actions:[
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: GestureDetector(
+              onTap: () {
+                print('profile open');
+                Navigator.push(context, MaterialPageRoute(builder: (context) => Profile()),);
+
+              },
+              child: CircleAvatar(
+                radius: 18.0,
+                backgroundColor: Colors.blue,
+                child: Text('Alan'),
+              ),
+
+            )
+
+          )
+        ]
         
       ),
       //body
@@ -136,9 +157,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 padding:  EdgeInsets.all(16.0),
                 child: Row(// from left to right
                   children: [
-                    OutlinedButton(onPressed:() {}, child:  Text('Distance')),
-                    OutlinedButton(onPressed:() {}, child:  Text('Pay')),
-                   
+                    OutlinedButton(onPressed:() {}, child: Row(children: [Text('Pay'), Icon(Icons.arrow_downward)])),
                   ]
                 )
               ),
@@ -155,7 +174,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         InkWell(
                           onTap: (){
                             print('tap job ticket in find job page');
-                           Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser(title: 'A', company: 'A', price:'600' ,)),);
+                           Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser(title: 'title: A', company: 'company: A', price:'600' ,)),);
                           },
                           borderRadius: BorderRadius.circular(12),
                           child: Container(
@@ -170,10 +189,9 @@ class _MyHomePageState extends State<MyHomePage> {
                               border: Border.all(color: Colors.grey),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.grey,
-                                  spreadRadius: 1,
-                                  blurRadius: 5,
-                                  offset: const Offset(0, 2),
+                                  color: Colors.grey.withOpacity(0.1),
+                                  blurRadius: 2,
+                                  offset: const Offset(0, 1),
                                 )
                               ]
                             ),           
@@ -194,7 +212,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         InkWell(
                           onTap: (){
                             print('tap job ticket in find job page');
-                           Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser(title: 'B', company: 'B', price: '500',)),);
+                           Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser(title: 'title: B', company: 'Company: B', price: '500',)),);
                           },
                           borderRadius: BorderRadius.circular(12),
                           child: Container(
@@ -209,10 +227,10 @@ class _MyHomePageState extends State<MyHomePage> {
                               border: Border.all(color: Colors.grey),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.grey,
-                                  spreadRadius: 1,
-                                  blurRadius: 5,
-                                  offset: const Offset(0, 2),
+                                  color: Colors.grey.withOpacity(0.1),
+                                  
+                                  blurRadius: 2,
+                                  offset: const Offset(0, 1),
                                 )
                               ]
                             ),           
@@ -233,7 +251,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         InkWell(
                           onTap: (){
                             print('tap job ticket in find job page');
-                           Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser(title: 'C', company: 'C', price: '200',)),);
+                           Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser(title: 'title: C', company: 'company: C', price: '200',)),);
                           },
                           borderRadius: BorderRadius.circular(12),
                           child: Container(
@@ -248,10 +266,10 @@ class _MyHomePageState extends State<MyHomePage> {
                               border: Border.all(color: Colors.grey),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.grey,
+                                  color: Colors.grey.withOpacity(0.1),
                                   spreadRadius: 1,
-                                  blurRadius: 5,
-                                  offset: const Offset(0, 2),
+                                  blurRadius: 2,
+                                  offset: const Offset(0, 1),
                                 )
                               ]
                             ),           
@@ -272,7 +290,7 @@ class _MyHomePageState extends State<MyHomePage> {
                          InkWell(
                           onTap: (){
                             print('tap job ticket in find job page');
-                           Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser(title: 'D', company: 'D', price: '100',)),);
+                           Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser(title: 'title: D', company: 'company: D', price: '100',)),);
                           },
                           borderRadius: BorderRadius.circular(12),
                           child: Container(
@@ -287,10 +305,9 @@ class _MyHomePageState extends State<MyHomePage> {
                               border: Border.all(color: Colors.grey),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.grey,
-                                  spreadRadius: 1,
-                                  blurRadius: 5,
-                                  offset: const Offset(0, 2),
+                                  color: Colors.grey.withOpacity(0.1),
+                                  blurRadius: 2,
+                                  offset: const Offset(0, 1),
                                 )
                               ]
                             ),           
@@ -342,15 +359,15 @@ class _MyHomePageState extends State<MyHomePage> {
           children: [
             TextButton.icon(
               onPressed: () {}, 
-              icon: Icon(Icons.search), 
-              label: Text('Find a Job', style: TextStyle(fontWeight: FontWeight.bold)),
+              icon: Icon(Icons.search, color: Colors.black,), 
+              label: Text('Find a Job', style: TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.bold)),
             ),
   
             const SizedBox(width: 60),
             TextButton.icon(
               onPressed: () {Navigator.push(context, MaterialPageRoute(builder: (context) => AcceptJobPage()),);}, 
-              icon: Icon(Icons.check_circle_outlined), 
-              label: Text('Accept a Job', style: TextStyle(fontWeight: FontWeight.bold)),
+              icon: Icon(Icons.check_circle_outlined, color: Colors.black,), 
+              label: Text('Accept a Job', style: TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.bold)),
             ),
           ],
         )
