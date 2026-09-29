@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'Orgnisation.dart';
+import 'Organisation.dart';
 import 'PostJob.dart';
 
 const _ink = Color(0xFF111827);
@@ -61,28 +61,20 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
                       ],
                     ),
                   ),
-                  Align(
+                  /*Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
                       onPressed: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => OrganisationPage(
-                              // Temporary destination while Teams.dart is empty.
-                              teamsPageBuilder: (context) => Scaffold(
-                                appBar: AppBar(title: const Text('Teams')),
-                                body: const Center(
-                                  child: Text('Teams 页面暂未实现'),
-                                ),
-                              ),
-                            ),
+                            builder: (context) => const OrganisationPage(),
                           ),
                         );
                       },
                       child: const Text('测试'),
                     ),
-                  ),
+                  ),*/
                   const SizedBox(height: 20),
                   const _SearchField(),
                   const SizedBox(height: 16),
