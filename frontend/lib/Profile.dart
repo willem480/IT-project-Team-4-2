@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ticketing_app/FindAJobDetailUser.dart';
 import 'package:ticketing_app/main.dart';
 import 'package:ticketing_app/PostAJobDetailUser.dart';
+import 'Organisation.dart';
 
 
 
@@ -26,7 +27,17 @@ class _ProfilePage extends State<Profile> {
     return Scaffold(
       backgroundColor: Color(0xFFF9FAFB),
       appBar: AppBar(
-
+        leading: BackButton(
+          onPressed: () {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute<void>(
+                builder: (context) => const MyHomePage(title: 'Find a job'),
+              ),
+              (route) => false,
+            );
+          },
+        ),
         title: Text('Profile', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
 
       ),
@@ -112,7 +123,14 @@ class _ProfilePage extends State<Profile> {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             TextButton.icon(
-              onPressed: () {}, 
+              onPressed: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (context) => const OrganisationPage(),
+                  ),
+                );
+              }, 
               icon: Icon(Icons.bookmark_border, size: 25, color: Colors.black), 
               label: Text('Organization', style: TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.bold)),
             ),
