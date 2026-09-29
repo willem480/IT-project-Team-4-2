@@ -29,12 +29,12 @@ public class ProfileController {
     }
 
     @PostMapping("getPostedTickets")
-    public List<Ticket> getPostedTickets(int userId, @RequestParam(required = false)Filter filter) {
+    public List<Ticket> getPostedTickets(@RequestParam int userId, @RequestParam(required = false)Filter filter) {
         return ticketService.getPostedTickets(userId, filter);
     }
 
     @PostMapping("getUser")
-    public UserReturn getUser(int userId) {
+    public UserReturn getUser(@RequestParam int userId) {
         return userService.getUserById(userId);
     }
 }
