@@ -157,7 +157,37 @@ class _MyHomePageState extends State<MyHomePage> {
                 padding:  EdgeInsets.all(16.0),
                 child: Row(// from left to right
                   children: [
-                    OutlinedButton(onPressed:() {}, child: Row(children: [Text('Pay'), Icon(Icons.arrow_downward)])),
+                    PopupMenuButton<String>(
+                      onSelected:  (String value){
+                        print("User selected: $value");
+                      },
+                      itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                        const PopupMenuItem<String>(
+                          value: 'up',
+                          child: Row(
+                            children: [
+                              Icon(Icons.arrow_upward, size: 16),
+                              SizedBox(width: 8),
+                              Text('Pay: Low to High'),
+                            ]
+                          )
+                        ),
+                        const PopupMenuItem<String>(
+                          value: 'down',
+                          child: Row(
+                            children: [
+                              Icon(Icons.arrow_downward, size: 16),
+                              SizedBox(width: 8),
+                              Text('Pay: High to Low'),
+                            ]
+                          )
+                        )
+                      ],
+
+                      //visual button
+                      
+                    ),
+                    
                   ]
                 )
               ),
@@ -171,160 +201,15 @@ class _MyHomePageState extends State<MyHomePage> {
                     child: Column(
                       crossAxisAlignment:CrossAxisAlignment.center,
                       children: [
-                        InkWell(
-                          onTap: (){
-                            print('tap job ticket in find job page');
-                           Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser(title: 'title: A', company: 'company: A', price:'600' ,)),);
-                          },
-                          borderRadius: BorderRadius.circular(12),
-                          child: Container(
-                            width: 500,
-                            height: 250,
-                            margin: const EdgeInsets.all(10),
-                            padding: EdgeInsets.all(16),
+                        _buildJobCard(context, 'title: A', 'Company A', '600'),
+                        _buildJobCard(context, 'title: B', 'Company B', '500'),
+                        _buildJobCard(context, 'title: C', 'Company C', '400'),
+                        _buildJobCard(context, 'title: D', 'Company D', '300'),
 
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.grey),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.grey.withOpacity(0.1),
-                                  blurRadius: 2,
-                                  offset: const Offset(0, 1),
-                                )
-                              ]
-                            ),           
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                  // alignment: Alignment.topLeft,
-                                Text(
-                                  'Company A',
-                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                ),
-                                SizedBox(height: 8),  
-                                //more item
-                              ],
-                            )
-                          )
-                        ),
-                        InkWell(
-                          onTap: (){
-                            print('tap job ticket in find job page');
-                           Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser(title: 'title: B', company: 'Company: B', price: '500',)),);
-                          },
-                          borderRadius: BorderRadius.circular(12),
-                          child: Container(
-                            width: 500,
-                            height: 250,
-                            margin: const EdgeInsets.all(10),
-                            padding: EdgeInsets.all(16),
 
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.grey),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.grey.withOpacity(0.1),
-                                  
-                                  blurRadius: 2,
-                                  offset: const Offset(0, 1),
-                                )
-                              ]
-                            ),           
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                  // alignment: Alignment.topLeft,
-                                Text(
-                                  'Company B',
-                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                ),
-                                SizedBox(height: 8),  
-                                //more item
-                              ],
-                            )
-                          )
-                        ),
-                        InkWell(
-                          onTap: (){
-                            print('tap job ticket in find job page');
-                           Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser(title: 'title: C', company: 'company: C', price: '200',)),);
-                          },
-                          borderRadius: BorderRadius.circular(12),
-                          child: Container(
-                            width: 500,
-                            height: 250,
-                            margin: const EdgeInsets.all(10),
-                            padding: EdgeInsets.all(16),
+  
 
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.grey),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.grey.withOpacity(0.1),
-                                  spreadRadius: 1,
-                                  blurRadius: 2,
-                                  offset: const Offset(0, 1),
-                                )
-                              ]
-                            ),           
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                  // alignment: Alignment.topLeft,
-                                Text(
-                                  'Company C',
-                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                ),
-                                SizedBox(height: 8),  
-                                //more item
-                              ],
-                            )
-                          )
-                        ),
-                         InkWell(
-                          onTap: (){
-                            print('tap job ticket in find job page');
-                           Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser(title: 'title: D', company: 'company: D', price: '100',)),);
-                          },
-                          borderRadius: BorderRadius.circular(12),
-                          child: Container(
-                            width: 500,
-                            height: 250,
-                            margin: const EdgeInsets.all(10),
-                            padding: EdgeInsets.all(16),
 
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.grey),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.grey.withOpacity(0.1),
-                                  blurRadius: 2,
-                                  offset: const Offset(0, 1),
-                                )
-                              ]
-                            ),           
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                  // alignment: Alignment.topLeft,
-                                Text(
-                                  'Company D',
-                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                ),
-                                SizedBox(height: 8),  
-                                //more item
-                              ],
-                            )
-                          )
-                        ),
                       ],
                     )
                   ),
@@ -375,5 +260,46 @@ class _MyHomePageState extends State<MyHomePage> {
 
 
     );
+  }
+
+  Widget _buildJobCard(BuildContext context, String title, String companyName, String price){
+      return InkWell(
+        onTap: (){
+          print('tap job ticket in find job page');
+          Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser(title: title, company: companyName, price: price,)),);
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: 500,
+          height: 250,
+          margin: const EdgeInsets.all(10),
+          padding: EdgeInsets.all(16),
+
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                blurRadius: 2,
+                offset: const Offset(0, 1),
+              )
+            ]
+          ),           
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+                // alignment: Alignment.topLeft,
+              Text(
+                companyName,
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              SizedBox(height: 8),  
+              //more item
+            ],
+          )
+        )
+      );
   }
 }
