@@ -48,7 +48,7 @@ class TicketModel {
 
     factory TicketModel.fromJson(Map<String, dynamic> json) => TicketModel(
         idTicket: json["idTicket"],
-        // 2. 兼容 Apifox 里的拼写不一致，既认大写 D 也认小写 d
+        
         posterId: json["posterID"] ?? json["posterId"],
         posterName: json["posterName"],
         assigneeId: json["assigneeID"] ?? json["assigneeId"],
@@ -59,7 +59,7 @@ class TicketModel {
         teamName: json["teamName"],
         title: json["title"],
         description: json["description"],
-        // 3. 安全解析时间，如果接口没传时间就不会崩溃
+        
         datePosted: json["datePosted"] != null ? DateTime.tryParse(json["datePosted"]) : null,
         dateAssigned: json["dateAssigned"] != null ? DateTime.tryParse(json["dateAssigned"]) : null,
         dateCompleted: json["dateCompleted"] != null ? DateTime.tryParse(json["dateCompleted"]) : null,

@@ -59,7 +59,7 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
                           Text(widget.title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 30)), 
                           const SizedBox(height: 12),
                           Text(widget.company,style: TextStyle(fontSize: 18),),
-                          const SizedBox(height: 140),
+                          const SizedBox(height: 90),
                           Text('\$ ${widget.price}', style: const TextStyle(fontWeight:FontWeight.bold, fontSize: 30)),
                         ],
                     )
@@ -127,7 +127,7 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
         const SizedBox(height: 8),
         const Text('The HVAC unit in the North Wing is not cooling properly...', style: TextStyle(color: Colors.black54)),
         const SizedBox(height: 20),
-        const Text('Location', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        const Text('Location', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 5)),
         const SizedBox(height: 8),
         // Placeholder for Map Integration
         Container(

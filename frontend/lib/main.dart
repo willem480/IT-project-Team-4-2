@@ -5,6 +5,9 @@ import 'package:ticketing_app/SignIn.dart';
 import 'AcceptJob.dart';
 import 'PostJob.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:ticketing_app/models/ticket_model.dart';
 
 void main() {
   runApp(const MyApp());
@@ -19,21 +22,6 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
         colorScheme: .fromSeed(seedColor: const Color(0xFFF9FAFB)),
       ),
       home: const SignInPage(title: 'Find a job'),
@@ -44,15 +32,6 @@ class MyApp extends StatelessWidget {
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
 
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
   final String title;
 
   @override
@@ -60,16 +39,41 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  List<TicketModel> openTickets = [];
 
+  void fetchOpenTickets() async {
+      
+      final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/ticket/getOpenTickets');
+
+      try {
+        final response = await http.post(
+          url,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({}), 
+        );
+
+        if (response.statusCode == 200) {
+          List<TicketModel> parsedTickets = ticketFromJson(response.body);
+          
+          setState(() {
+            openTickets = parsedTickets;
+          });
+          print("✅ 首页工单获取成功，共 ${openTickets.length} 条");
+        }
+      } catch (e) {
+        print("💥 首页工单获取失败: $e");
+      }
+    }
+    void initState(){
+      super.initState();
+      fetchOpenTickets();
+    }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
+    
+
+ 
     return Scaffold(
       appBar: AppBar(
         // TRY THIS: Try changing the color here to a specific color (to
@@ -200,25 +204,21 @@ class _MyHomePageState extends State<MyHomePage> {
                     width: double.infinity,
                     child: Column(
                       crossAxisAlignment:CrossAxisAlignment.center,
-                      children: [
-                        _buildJobCard(context, 'title: A', 'Company A', '600'),
-                        _buildJobCard(context, 'title: B', 'Company B', '500'),
-                        _buildJobCard(context, 'title: C', 'Company C', '400'),
-                        _buildJobCard(context, 'title: D', 'Company D', '300'),
-
-
-  
-
-
-                      ],
-                    )
+                      children: openTickets.isEmpty 
+                      ? [ const Padding(padding: EdgeInsets.all(20), child:Text("No Jobs yet"))]
+                      : openTickets.map((ticket) {
+                        return _buildJobCard(
+                          context,
+                          ticket.title ?? "No title",
+                          ticket.location ?? ticket.posterName ?? "Unknown Location",
+                          ticket.pay?.toString() ?? '0'
+                      );
+                    }).toList(),
                   ),
-
                   //jobs
-
                 ),
               ),
-
+              ),
             ],
           ),
       ),
@@ -271,7 +271,7 @@ class _MyHomePageState extends State<MyHomePage> {
         borderRadius: BorderRadius.circular(12),
         child: Container(
           width: 500,
-          height: 250,
+          height: 200,
           margin: const EdgeInsets.all(10),
           padding: EdgeInsets.all(16),
 
@@ -290,12 +290,22 @@ class _MyHomePageState extends State<MyHomePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Text(
+                title,
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+              SizedBox(height: 60),
                 // alignment: Alignment.topLeft,
               Text(
                 companyName,
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
-              SizedBox(height: 8),  
+              
+              SizedBox(height: 5),  
+
+              Text(
+                '\$$price',
+                style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
               //more item
             ],
           )

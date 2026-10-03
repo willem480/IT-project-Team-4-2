@@ -261,7 +261,7 @@ class _ProfilePage extends State<Profile> {
         return _buildTicket(
           context, 
           ticket.title.toString() ?? 'No title', 
-          ticket.location ?? 'Unknown company', 
+          ticket.location ?? 'Unknown Location', 
           ticket.pay?.toString() ?? '0');
       }).toList(),
     );
@@ -283,7 +283,7 @@ class _ProfilePage extends State<Profile> {
         return _buildTicket(
           context, 
           ticket.title.toString() ?? 'No title', 
-          ticket.location ?? 'Unknown company', 
+          ticket.location ?? 'Unknown Location', 
           ticket.pay?.toString() ?? '0');
       }).toList(),
     );
@@ -313,7 +313,7 @@ class _ProfilePage extends State<Profile> {
       return InkWell(
           onTap: (){
             print('check your posted jobs');
-            Navigator.push(context, MaterialPageRoute(builder: (context) => PostAJobDetailUser(title: title, company: location, price: pay.toString())),);
+            Navigator.push(context, MaterialPageRoute(builder: (context) => PostAJobDetailUser(title: title, company: companyName, price: price)),);
           },
           borderRadius: BorderRadius.circular(12),
           child: Container(
