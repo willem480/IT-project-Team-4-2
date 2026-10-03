@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:ticketing_app/models/ticket_model.dart';
+import 'package:ticketing_app/models/user_profile.dart';
 
 void main() {
   runApp(const MyApp());
@@ -40,7 +41,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   List<TicketModel> openTickets = [];
-
+  String userName = 'Loading...';
   void fetchOpenTickets() async {
       
       final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/ticket/getOpenTickets');
@@ -53,10 +54,14 @@ class _MyHomePageState extends State<MyHomePage> {
         );
 
         if (response.statusCode == 200) {
+          
           List<TicketModel> parsedTickets = ticketFromJson(response.body);
           
+          
           setState(() {
+            
             openTickets = parsedTickets;
+
           });
           print("✅ 首页工单获取成功，共 ${openTickets.length} 条");
         }
@@ -64,9 +69,30 @@ class _MyHomePageState extends State<MyHomePage> {
         print("💥 首页工单获取失败: $e");
       }
     }
+
+    void fetchUserData() async{
+      final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/profilePage/getUser');
+
+      //Post
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+      
+        final Map<String, dynamic> jsonData = jsonDecode(response.body);
+        UserProfile myUser = UserProfile.fromJson(jsonData);
+        setState(() {
+          userName = myUser.name ?? 'User';
+        });
+      }
+
+    }
     void initState(){
       super.initState();
       fetchOpenTickets();
+      fetchUserData();
     }
 
   @override
@@ -83,7 +109,7 @@ class _MyHomePageState extends State<MyHomePage> {
         elevation: 0,
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
-        title: Text('Good morning, Alan', style: TextStyle(color:Colors.black)),
+        title: Text('Hello, $userName', style: TextStyle(color:Colors.black)),
 
         actions:[
           Padding(
@@ -271,7 +297,7 @@ class _MyHomePageState extends State<MyHomePage> {
         borderRadius: BorderRadius.circular(12),
         child: Container(
           width: 500,
-          height: 200,
+          height: 250,
           margin: const EdgeInsets.all(10),
           padding: EdgeInsets.all(16),
 
@@ -294,7 +320,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 title,
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
               ),
-              SizedBox(height: 60),
+              SizedBox(height: 80),
                 // alignment: Alignment.topLeft,
               Text(
                 companyName,

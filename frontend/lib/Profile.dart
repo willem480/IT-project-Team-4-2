@@ -318,7 +318,7 @@ class _ProfilePage extends State<Profile> {
           borderRadius: BorderRadius.circular(12),
           child: Container(
             width: 800,
-            height: 250,
+            height: 225,
             margin: const EdgeInsets.all(50),
             padding: EdgeInsets.all(16),
 
@@ -343,7 +343,7 @@ class _ProfilePage extends State<Profile> {
                 title,
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
               ),
-              SizedBox(height: 60),
+              SizedBox(height: 70),
                 // alignment: Alignment.topLeft,
               Text(
                 companyName,
