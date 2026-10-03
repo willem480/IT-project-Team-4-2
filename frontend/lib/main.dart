@@ -298,7 +298,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 // alignment: Alignment.topLeft,
               Text(
                 companyName,
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
               ),
               
               SizedBox(height: 5),  

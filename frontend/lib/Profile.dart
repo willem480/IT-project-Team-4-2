@@ -340,10 +340,22 @@ class _ProfilePage extends State<Profile> {
               children: [
                   // alignment: Alignment.topLeft,
                 Text(
-                  title,
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-                SizedBox(height: 8),  
+                title,
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+              SizedBox(height: 60),
+                // alignment: Alignment.topLeft,
+              Text(
+                companyName,
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+              ),
+              
+              SizedBox(height: 5),  
+
+              Text(
+                '\$$price',
+                style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+              //more item
                 //more item
               ],
             )
