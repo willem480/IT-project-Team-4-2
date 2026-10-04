@@ -163,7 +163,7 @@ public final class EmailServiceHelper {
             throw new IllegalArgumentException("message must not be null");
         }
 
-        String from = concatAddresses(message.getFrom());
+        String from = getSenderAddress(message);
         String to = concatAddresses(message.getRecipients(Message.RecipientType.TO));
         String subject =
                 message.getSubject();
@@ -187,6 +187,23 @@ public final class EmailServiceHelper {
                 subject == null ? "" : subject,
                 body
         );
+    }
+
+    public static String getSenderAddress(Message message) throws MessagingException {
+
+        Address[] fromAddresses = message.getFrom();
+
+        if (fromAddresses == null || fromAddresses.length == 0) {
+            return "";
+        }
+
+        Address firstAddress = fromAddresses[0];
+
+        if (firstAddress instanceof InternetAddress internetAddress) {
+            return internetAddress.getAddress();
+        }
+
+        return firstAddress.toString();
     }
 
     public static String concatAddresses(Address[] addresses) throws MessagingException {
@@ -381,9 +398,9 @@ public final class EmailServiceHelper {
                 new InternetAddress(smtpUsername)
         );
 
-        reply.setRecipients(
+        reply.setRecipient(
                 Message.RecipientType.TO,
-                InternetAddress.parse(recipient)
+                new InternetAddress(recipient)
         );
 
         reply.setSubject(
