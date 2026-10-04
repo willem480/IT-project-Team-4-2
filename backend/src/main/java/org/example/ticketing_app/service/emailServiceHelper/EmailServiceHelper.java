@@ -6,6 +6,7 @@ import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.search.FlagTerm;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.example.ticketing_app.entity.Ticket;
 
 import java.util.Arrays;
 import java.util.List;
@@ -418,6 +419,79 @@ public final class EmailServiceHelper {
                         "Location: [Job location]\n" +
                         "Pay: [Amount]"
         );
+
+        Transport.send(reply);
+    }
+
+    public static void sendStatusSummaryReply(
+            String recipient,
+            List<Ticket> tickets
+    ) throws Exception {
+
+        Properties props = new Properties();
+
+        props.put("mail.smtp.host", smtpHost);
+        props.put("mail.smtp.port", String.valueOf(smtpPort));
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.ssl.enable", "true");
+
+        Session session = Session.getInstance(
+                props,
+                new Authenticator() {
+                    @Override
+                    protected PasswordAuthentication getPasswordAuthentication() {
+                        return new PasswordAuthentication(
+                                smtpUsername,
+                                smtpPassword
+                        );
+                    }
+                }
+        );
+
+        MimeMessage reply = new MimeMessage(session);
+
+        reply.setFrom(
+                new InternetAddress(smtpUsername)
+        );
+
+        reply.setRecipient(
+                Message.RecipientType.TO,
+                new InternetAddress(recipient)
+        );
+
+        reply.setSubject("Ticket Status Summary");
+
+        StringBuilder body = new StringBuilder();
+
+        body.append("Thank you for contacting us.\n\n");
+
+        if (tickets == null || tickets.isEmpty()) {
+
+            body.append(
+                    "We could not find any tickets associated with this email address."
+            );
+
+        } else {
+
+            body.append("Here is a summary of your tickets:\n\n");
+
+            for (Ticket ticket : tickets) {
+
+                body.append("Ticket #")
+                        .append(ticket.getIdTicket())
+                        .append("\n");
+
+                body.append("Title: ")
+                        .append(ticket.getTitle())
+                        .append("\n");
+
+                body.append("Status: ")
+                        .append(ticket.getStatus())
+                        .append("\n\n");
+            }
+        }
+
+        reply.setText(body.toString());
 
         Transport.send(reply);
     }

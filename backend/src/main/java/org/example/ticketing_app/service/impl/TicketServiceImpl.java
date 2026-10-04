@@ -38,6 +38,8 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
     /** Only emails with this phrase in the subject are treated as job postings. */
     private static final String POST_JOB_SUBJECT_MARKER = "post job";
 
+    private static final String STATUS_SUBJECT_MARKER = "status";
+
     /** Each expression reads one required field from the agreed email body template. */
     private static final Pattern TITLE_PATTERN = Pattern.compile(
             "(?im)^\\s*Title\\s*:\\s*(.+?)\\s*$"
@@ -121,6 +123,23 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
         }
 
         return parseJobPosting(emailData.getBody()).isPresent();
+    }
+
+    public boolean isStatusRequest(EmailData emailData) {
+        return emailData != null
+                && emailData.getSubject() != null
+                && emailData.getSubject().trim().equalsIgnoreCase(STATUS_SUBJECT_MARKER);
+    }
+
+    public List<Ticket> getTicketsByEmail(String email) {
+        if (email == null || email.isBlank()) {
+            return Collections.emptyList();
+        }
+
+        return lambdaQuery()
+                .eq(Ticket::getEmail, email)
+                .orderByDesc(Ticket::getDatePosted)
+                .list();
     }
 
 
