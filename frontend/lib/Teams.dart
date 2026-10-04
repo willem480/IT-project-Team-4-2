@@ -1,16 +1,29 @@
 import 'package:flutter/material.dart';
 
 import 'Profile.dart';
+import 'Members.dart';
 
 class TeamsPage extends StatelessWidget {
   const TeamsPage({
     super.key,
     required this.organisationId,
     required this.organisationName,
+    required this.isManager,
   });
 
   final String organisationId;
   final String organisationName;
+  // Inherited from the organisation that opened this page.
+  final bool isManager;
+
+  void _openMembers(BuildContext context, String teamId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (context) => MembersPage(teamId: teamId, isManager: isManager),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -106,6 +119,9 @@ class TeamsPage extends StatelessWidget {
                     ScrollViewKeyboardDismissBehavior.onDrag,
                 children: [
                   _TeamCard(
+                    isManager: isManager,
+                    teamId: '$organisationId-product-design',
+                    onOpenMembers: (id) => _openMembers(context, id),
                     name: 'Product Design',
                     description: 'Design & research',
                     members: 12,
@@ -115,6 +131,9 @@ class TeamsPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   _TeamCard(
+                    isManager: isManager,
+                    teamId: '$organisationId-engineering',
+                    onOpenMembers: (id) => _openMembers(context, id),
                     name: 'Engineering',
                     description: 'Platform & development',
                     members: 34,
@@ -124,6 +143,9 @@ class TeamsPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   _TeamCard(
+                    isManager: isManager,
+                    teamId: '$organisationId-marketing',
+                    onOpenMembers: (id) => _openMembers(context, id),
                     name: 'Marketing',
                     description: 'Brand & growth',
                     members: 8,
@@ -133,6 +155,9 @@ class TeamsPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   _TeamCard(
+                    isManager: isManager,
+                    teamId: '$organisationId-customer-success',
+                    onOpenMembers: (id) => _openMembers(context, id),
                     name: 'Customer Success',
                     description: 'Support & experience',
                     members: 10,
@@ -201,14 +226,20 @@ class TeamsPage extends StatelessWidget {
 
 class _TeamCard extends StatelessWidget {
   const _TeamCard({
+    required this.teamId,
+    required this.onOpenMembers,
     required this.initials,
     required this.name,
     required this.description,
     required this.members,
     required this.avatarColor,
     required this.onManage,
+    required this.isManager,
   });
 
+  final String teamId;
+  final bool isManager;
+  final ValueChanged<String> onOpenMembers;
   final String initials;
   final String name;
   final String description;
@@ -218,131 +249,139 @@ class _TeamCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: avatarColor,
-                child: Text(
-                  initials,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+    return GestureDetector(
+      onTap: () => onOpenMembers(teamId),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE5E7EB)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 24,
+                  backgroundColor: avatarColor,
+                  child: Text(
+                    initials,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        color: Color(0xFF111827),
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          color: Color(0xFF111827),
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      description,
-                      style: const TextStyle(
-                        color: Color(0xFF6B7280),
-                        fontSize: 14,
+                      const SizedBox(height: 4),
+                      Text(
+                        description,
+                        style: const TextStyle(
+                          color: Color(0xFF6B7280),
+                          fontSize: 14,
+                        ),
                       ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  // A disabled Manage button must not trigger the card's tap.
+                  onTap: isManager ? null : () {},
+                  excludeFromSemantics: true,
+                  child: TextButton(
+                    onPressed: isManager ? onManage : null,
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFF065F46),
+                      backgroundColor: const Color(0xFFD1FAE5),
+                      disabledForegroundColor: const Color(0xFF9CA3AF),
+                      disabledBackgroundColor: const Color(0xFFF3F4F6),
+                      shape: const StadiumBorder(),
                     ),
-                  ],
+                    child: const Text(
+                      'Manage',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              TextButton(
-                onPressed: onManage,
-                style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFF4B5563),
-                  backgroundColor: const Color(0xFFF3F4F6),
-                  overlayColor: Colors.blue,
-                  shape: const StadiumBorder(),
-                ),
-                child: const Text(
-                  'Manage',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-          const Divider(height: 28, color: Color(0xFFE5E7EB)),
-          Row(
-            children: [
-              SizedBox(
-                width: 52,
-                height: 20,
-                child: Stack(
-                  children: [
-                    for (var index = 0; index < 3; index++)
-                      Positioned(
-                        left: index * 16.0,
-                        child: CircleAvatar(
-                          radius: 10,
-                          backgroundColor: Colors.white,
+              ],
+            ),
+            const Divider(height: 28, color: Color(0xFFE5E7EB)),
+            Row(
+              children: [
+                SizedBox(
+                  width: 52,
+                  height: 20,
+                  child: Stack(
+                    children: [
+                      for (var index = 0; index < 3; index++)
+                        Positioned(
+                          left: index * 16.0,
                           child: CircleAvatar(
-                            radius: 9,
-                            backgroundColor: const [
-                              Color(0xFFFCE7F3),
-                              Color(0xFFCCFBF1),
-                              Color(0xFFDBEAFE),
-                            ][index],
-                            child: const Icon(
-                              Icons.person,
-                              size: 13,
-                              color: Color(0xFF6B7280),
+                            radius: 10,
+                            backgroundColor: Colors.white,
+                            child: CircleAvatar(
+                              radius: 9,
+                              backgroundColor: const [
+                                Color(0xFFFCE7F3),
+                                Color(0xFFCCFBF1),
+                                Color(0xFFDBEAFE),
+                              ][index],
+                              child: const Icon(
+                                Icons.person,
+                                size: 13,
+                                color: Color(0xFF6B7280),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  '$members members',
-                  style: const TextStyle(
-                    color: Color(0xFF6B7280),
-                    fontSize: 14,
+                    ],
                   ),
                 ),
-              ),
-              Material(
-                type: MaterialType.transparency,
-                child: InkResponse(
-                  // Member List navigation will be connected when it exists.
-                  onTap: () {},
-                  radius: 20,
-                  child: Tooltip(
-                    message: 'View members of $name',
-                    child: const Icon(
-                      Icons.chevron_right,
-                      size: 20,
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '$members members',
+                    style: const TextStyle(
                       color: Color(0xFF6B7280),
+                      fontSize: 14,
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
+                Material(
+                  type: MaterialType.transparency,
+                  child: InkResponse(
+                    onTap: () => onOpenMembers(teamId),
+                    radius: 20,
+                    child: Tooltip(
+                      message: 'View members of $name',
+                      child: const Icon(
+                        Icons.chevron_right,
+                        size: 20,
+                        color: Color(0xFF6B7280),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
