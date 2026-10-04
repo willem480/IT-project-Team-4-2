@@ -4,7 +4,9 @@ import 'Profile.dart';
 import 'Teams.dart';
 
 class OrganisationPage extends StatelessWidget {
-  const OrganisationPage({super.key});
+  const OrganisationPage({super.key, this.isManager = true});
+
+  final bool isManager;
 
   void _openTeams(
     BuildContext context,
@@ -17,6 +19,7 @@ class OrganisationPage extends StatelessWidget {
         builder: (context) => TeamsPage(
           organisationId: organisationId,
           organisationName: organisationName,
+          isManager: isManager,
         ),
       ),
     );
@@ -102,6 +105,7 @@ class OrganisationPage extends StatelessWidget {
                     ScrollViewKeyboardDismissBehavior.onDrag,
                 children: [
                   OrganizationCard(
+                    isManager: isManager,
                     organizationId: 'org-1',
                     name: 'Org Sample 1',
                     link: 'org1.com',
@@ -112,6 +116,7 @@ class OrganisationPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   OrganizationCard(
+                    isManager: isManager,
                     organizationId: 'org-2',
                     name: 'Org Sample 2',
                     link: 'org2.com',
@@ -122,6 +127,7 @@ class OrganisationPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   OrganizationCard(
+                    isManager: isManager,
                     organizationId: 'org-3',
                     name: 'Org Sample 3',
                     link: 'org3.com',
@@ -198,9 +204,11 @@ class OrganizationCard extends StatelessWidget {
     required this.avatarColor,
     required this.onManage,
     required this.onOpenTeams,
+    required this.isManager,
   });
 
   final String organizationId;
+  final bool isManager;
   final String name;
   final String link;
   final int members;
@@ -261,11 +269,12 @@ class OrganizationCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               TextButton(
-                onPressed: onManage,
+                onPressed: isManager ? onManage : null,
                 style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFF4B5563),
-                  backgroundColor: const Color(0xFFF3F4F6),
-                  overlayColor: Colors.blue,
+                  foregroundColor: const Color(0xFF065F46),
+                  backgroundColor: const Color(0xFFD1FAE5),
+                  disabledForegroundColor: const Color(0xFF9CA3AF),
+                  disabledBackgroundColor: const Color(0xFFF3F4F6),
                   shape: const StadiumBorder(),
                 ),
                 child: const Text(
