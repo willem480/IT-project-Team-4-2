@@ -31,6 +31,7 @@ class _ProfilePage extends State<Profile> {
   String userName = 'Loading...';
   String title = 'Loading...';
   String location = 'Loading...';
+  String description = "No description";
   double pay = 0.0;
   double totalEarnings = 0.0;
   double thisMonthEarnings = 0.0;
@@ -262,7 +263,10 @@ class _ProfilePage extends State<Profile> {
           context, 
           ticket.title.toString() ?? 'No title', 
           ticket.organizationName ?? 'Unknown Location', 
-          ticket.pay?.toString() ?? '0');
+          ticket.pay?.toString() ?? '0',
+          ticket.description ?? "No description"
+          );
+          
       }).toList(),
     );
   }
@@ -284,7 +288,10 @@ class _ProfilePage extends State<Profile> {
           context, 
           ticket.title.toString() ?? 'No title', 
           ticket.organizationName ?? 'Unknown Location', 
-          ticket.pay?.toString() ?? '0');
+          ticket.pay?.toString() ?? '0',
+          ticket.description ?? "No description",
+          );
+          
       }).toList(),
     );
   }
@@ -309,11 +316,11 @@ class _ProfilePage extends State<Profile> {
     );
   }
 
-  Widget _buildTicket(BuildContext context, String title, String companyName, String price){
+  Widget _buildTicket(BuildContext context, String title, String companyName, String price, String description){
       return InkWell(
           onTap: (){
             print('check your posted jobs');
-            Navigator.push(context, MaterialPageRoute(builder: (context) => PostAJobDetailUser(title: title, company: companyName, price: price)),);
+            Navigator.push(context, MaterialPageRoute(builder: (context) => PostAJobDetailUser(title: title, company: companyName, price: price, description: description)),);
           },
           borderRadius: BorderRadius.circular(12),
           child: Container(

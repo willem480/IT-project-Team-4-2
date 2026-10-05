@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ticketing_app/SuccessPage.dart';
 import 'package:http/http.dart' as http;
+import 'package:ticketing_app/models/ticket_model.dart';
 import 'package:ticketing_app/models/user_profile.dart';
 import 'dart:convert';
 class PostJob extends StatefulWidget {
@@ -13,31 +14,29 @@ class PostJob extends StatefulWidget {
 
 class _PostJobPageState extends State<PostJob> {
   String? selectedCompany;
-  String? description;
+  String? description = "No Description";
   String userName= "Loading";
 
-  void fetchUserData() async{
-    final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/profilePage/getUser');
+  void fetchPostData() async{
+    final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/ticket/createTicket');
 
     //Post
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
     );
-
     if (response.statusCode == 200) {
     
       final Map<String, dynamic> jsonData = jsonDecode(response.body);
-      UserProfile myUser = UserProfile.fromJson(jsonData);
+      TicketModel description = TicketModel.fromJson(jsonData);
       setState(() {
-        userName = myUser.name ?? 'User';
       });
     }
   }
 
       void initState(){
-      super.initState();
-      fetchUserData();
+        super.initState();
+        fetchPostData();
     }
 
 
