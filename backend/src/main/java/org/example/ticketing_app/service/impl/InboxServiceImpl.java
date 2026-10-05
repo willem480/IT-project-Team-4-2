@@ -3,6 +3,7 @@ package org.example.ticketing_app.service.impl;
 import jakarta.mail.*;
 import lombok.RequiredArgsConstructor;
 import org.example.ticketing_app.entity.Inbox;
+import org.example.ticketing_app.entity.Ticket;
 import org.example.ticketing_app.mapper.InboxMapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.example.ticketing_app.service.emailServiceHelper.*;
@@ -99,10 +100,19 @@ public class InboxServiceImpl extends ServiceImpl<InboxMapper, Inbox> {
 
                 } else if (ticketService.isValidPostJobEmail(emailData)) {
 
-                    ticketService.createTicketFromEmail(
+                    Ticket createdTicket = ticketService.createTicketFromEmail(
                             emailData,
                             dateSent
                     );
+
+                    // Only a successfully created ticket receives a confirmation email.
+                    if (createdTicket != null) {
+                        EmailServiceHelper.sendTicketCreatedReply(
+                                emailData.getFrom(),
+                                emailData.getSubject(),
+                                createdTicket
+                        );
+                    }
 
                 } else {
 
