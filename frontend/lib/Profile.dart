@@ -350,7 +350,7 @@ class _ProfilePage extends State<Profile> {
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
               ),
               
-              SizedBox(height: 5),  
+              const Spacer(),
 
               Text(
                 '\$$price',
