@@ -55,12 +55,18 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
 
                     child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
+        
                           Text(widget.title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 30)), 
                           const SizedBox(height: 12),
                           Text(widget.company,style: TextStyle(fontSize: 18),),
-                          const SizedBox(height: 90),
+                          const Spacer(), 
                           Text('\$ ${widget.price}', style: const TextStyle(fontWeight:FontWeight.bold, fontSize: 30)),
+                        
+                            
+                          
+                          
                         ],
                     )
                   ),

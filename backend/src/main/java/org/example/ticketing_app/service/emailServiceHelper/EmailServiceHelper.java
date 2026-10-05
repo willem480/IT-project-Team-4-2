@@ -6,9 +6,12 @@ import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.search.FlagTerm;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.example.ticketing_app.entity.Ticket;
 
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Properties;
 
 @Service
@@ -188,6 +191,7 @@ public final class EmailServiceHelper {
                 body
         );
     }
+
 
     public static String concatAddresses(Address[] addresses) throws MessagingException {
         String result = "";
@@ -400,6 +404,133 @@ public final class EmailServiceHelper {
                         "[Job description]\n" +
                         "Location: [Job location]\n" +
                         "Pay: [Amount]"
+        );
+
+        Transport.send(reply);
+    }
+
+    public static void sendStatusSummaryReply(
+            String recipient,
+            List<Ticket> tickets
+    ) throws Exception {
+
+        Properties props = new Properties();
+
+        props.put("mail.smtp.host", smtpHost);
+        props.put("mail.smtp.port", String.valueOf(smtpPort));
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.ssl.enable", "true");
+
+        Session session = Session.getInstance(
+                props,
+                new Authenticator() {
+                    @Override
+                    protected PasswordAuthentication getPasswordAuthentication() {
+                        return new PasswordAuthentication(
+                                smtpUsername,
+                                smtpPassword
+                        );
+                    }
+                }
+        );
+
+        MimeMessage reply = new MimeMessage(session);
+
+        reply.setFrom(
+                new InternetAddress(smtpUsername)
+        );
+
+        reply.setRecipients(
+                Message.RecipientType.TO,
+                InternetAddress.parse(recipient)
+        );
+
+        reply.setSubject("Ticket Status Summary");
+
+        StringBuilder body = new StringBuilder();
+
+        body.append("Thank you for contacting us.\n\n");
+
+        if (tickets == null || tickets.isEmpty()) {
+
+            body.append(
+                    "We could not find any tickets associated with this email address."
+            );
+
+        } else {
+
+            body.append("Here is a summary of your tickets:\n\n");
+
+            for (Ticket ticket : tickets) {
+
+                body.append("Ticket #")
+                        .append(ticket.getIdTicket())
+                        .append("\n");
+
+                body.append("Title: ")
+                        .append(ticket.getTitle())
+                        .append("\n");
+
+                body.append("Status: ")
+                        .append(ticket.getStatus())
+                        .append("\n\n");
+            }
+        }
+
+        reply.setText(body.toString());
+
+        Transport.send(reply);
+    }
+
+    /** Sends an English confirmation only after a valid job-posting email creates a ticket. */
+    public static void sendTicketCreatedReply(
+            String recipient,
+            String originalSubject,
+            Ticket ticket
+    ) throws Exception {
+
+        Properties props = new Properties();
+
+        props.put("mail.smtp.host", smtpHost);
+        props.put("mail.smtp.port", String.valueOf(smtpPort));
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.ssl.enable", "true");
+
+        Session session = Session.getInstance(
+                props,
+                new Authenticator() {
+                    @Override
+                    protected PasswordAuthentication getPasswordAuthentication() {
+                        return new PasswordAuthentication(
+                                smtpUsername,
+                                smtpPassword
+                        );
+                    }
+                }
+        );
+
+        MimeMessage reply = new MimeMessage(session);
+        reply.setFrom(new InternetAddress(smtpUsername));
+        reply.setRecipient(Message.RecipientType.TO, new InternetAddress(recipient));
+        reply.setSubject("Re: " + originalSubject);
+
+        String createdAt = ticket.getDatePosted() == null
+                ? "Not available"
+                : ticket.getDatePosted().format(
+                        DateTimeFormatter.ofPattern("MMMM d, uuuu 'at' HH:mm", Locale.ENGLISH)
+                );
+
+        reply.setText(
+                "Thank you for your job posting.\n\n" +
+                        "Your ticket has been created successfully.\n\n" +
+                        "Ticket ID: " + ticket.getIdTicket() + "\n" +
+                        "Title: " + ticket.getTitle() + "\n" +
+                        "Description: " + ticket.getDescription() + "\n" +
+                        "Location: " + ticket.getLocation() + "\n" +
+                        "Pay: $" + ticket.getPay() + "\n" +
+                        "Status: " + ticket.getStatus() + "\n" +
+                        "Created at: " + createdAt + "\n\n" +
+                        "We will notify you when there is an update to your ticket."
         );
 
         Transport.send(reply);

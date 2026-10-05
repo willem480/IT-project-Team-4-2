@@ -261,7 +261,7 @@ class _ProfilePage extends State<Profile> {
         return _buildTicket(
           context, 
           ticket.title.toString() ?? 'No title', 
-          ticket.location ?? 'Unknown Location', 
+          ticket.organizationName ?? 'Unknown Location', 
           ticket.pay?.toString() ?? '0');
       }).toList(),
     );
@@ -283,7 +283,7 @@ class _ProfilePage extends State<Profile> {
         return _buildTicket(
           context, 
           ticket.title.toString() ?? 'No title', 
-          ticket.location ?? 'Unknown Location', 
+          ticket.organizationName ?? 'Unknown Location', 
           ticket.pay?.toString() ?? '0');
       }).toList(),
     );
@@ -350,7 +350,7 @@ class _ProfilePage extends State<Profile> {
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
               ),
               
-              SizedBox(height: 5),  
+              const Spacer(),
 
               Text(
                 '\$$price',

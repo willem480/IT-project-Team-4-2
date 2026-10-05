@@ -236,7 +236,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         return _buildJobCard(
                           context,
                           ticket.title ?? "No title",
-                          ticket.location ?? ticket.posterName ?? "Unknown Location",
+                          ticket.organizationName ?? ticket.posterName ?? "Unknown Location",
                           ticket.pay?.toString() ?? '0'
                       );
                     }).toList(),
@@ -320,14 +320,14 @@ class _MyHomePageState extends State<MyHomePage> {
                 title,
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
               ),
-              SizedBox(height: 80),
+              
                 // alignment: Alignment.topLeft,
               Text(
                 companyName,
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
               ),
               
-              SizedBox(height: 5),  
+              const Spacer(), 
 
               Text(
                 '\$$price',

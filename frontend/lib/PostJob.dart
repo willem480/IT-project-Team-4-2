@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:ticketing_app/SuccessPage.dart';
-
-
+import 'package:http/http.dart' as http;
+import 'package:ticketing_app/models/user_profile.dart';
+import 'dart:convert';
 class PostJob extends StatefulWidget {
   const PostJob({super.key});
   // This widget is the root of your application.
@@ -12,6 +13,34 @@ class PostJob extends StatefulWidget {
 
 class _PostJobPageState extends State<PostJob> {
   String? selectedCompany;
+  String? description;
+  String userName= "Loading";
+
+  void fetchUserData() async{
+    final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/profilePage/getUser');
+
+    //Post
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+    
+      final Map<String, dynamic> jsonData = jsonDecode(response.body);
+      UserProfile myUser = UserProfile.fromJson(jsonData);
+      setState(() {
+        userName = myUser.name ?? 'User';
+      });
+    }
+  }
+
+      void initState(){
+      super.initState();
+      fetchUserData();
+    }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +59,7 @@ class _PostJobPageState extends State<PostJob> {
         elevation: 0,
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
-        title: Text('Good morning, Alan', style: TextStyle(color:Colors.black)),
+        title: Text('Good morning, $userName', style: TextStyle(color:Colors.black)),
       ),
       body: SafeArea(
         // Center is a layout widget. It takes a single child and positions it
