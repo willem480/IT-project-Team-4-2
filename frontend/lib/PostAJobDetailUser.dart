@@ -59,7 +59,7 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
                           Text(widget.title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 30)), 
                           const SizedBox(height: 12),
                           Text(widget.company,style: TextStyle(fontSize: 18),),
-                          const SizedBox(height: 140),
+                          const Spacer(),
                           Text('\$ ${widget.price}', style: const TextStyle(fontWeight:FontWeight.bold, fontSize: 30)),
                         ],
                     )
