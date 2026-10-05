@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'Profile.dart';
 import 'Members.dart';
 
-class TeamsPage extends StatelessWidget {
+class TeamsPage extends StatefulWidget {
   const TeamsPage({
     super.key,
     required this.organisationId,
@@ -16,17 +16,63 @@ class TeamsPage extends StatelessWidget {
   // Inherited from the organisation that opened this page.
   final bool isManager;
 
+  @override
+  State<TeamsPage> createState() => _TeamsPageState();
+}
+
+class _TeamsPageState extends State<TeamsPage> {
+  String _query = '';
+
   void _openMembers(BuildContext context, String teamId) {
     Navigator.push(
       context,
       MaterialPageRoute<void>(
-        builder: (context) => MembersPage(teamId: teamId, isManager: isManager),
+        builder: (context) =>
+            MembersPage(teamId: teamId, isManager: widget.isManager),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final teams = [
+      (
+        teamId: '${widget.organisationId}-product-design',
+        name: 'Product Design',
+        description: 'Design & research',
+        members: 12,
+        initials: 'PD',
+        avatarColor: Colors.pink,
+      ),
+      (
+        teamId: '${widget.organisationId}-engineering',
+        name: 'Engineering',
+        description: 'Platform & development',
+        members: 34,
+        initials: 'EN',
+        avatarColor: Colors.teal,
+      ),
+      (
+        teamId: '${widget.organisationId}-marketing',
+        name: 'Marketing',
+        description: 'Brand & growth',
+        members: 8,
+        initials: 'MK',
+        avatarColor: Colors.red,
+      ),
+      (
+        teamId: '${widget.organisationId}-customer-success',
+        name: 'Customer Success',
+        description: 'Support & experience',
+        members: 10,
+        initials: 'CS',
+        avatarColor: Colors.blue,
+      ),
+    ];
+    final visibleTeams = teams
+        .where((team) => team.name.toLowerCase().contains(_query))
+        .toList();
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFFF9FAFB),
@@ -61,6 +107,9 @@ class TeamsPage extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: TextField(
+                onChanged: (value) {
+                  setState(() => _query = value.trim().toLowerCase());
+                },
                 decoration: InputDecoration(
                   hintText: 'Search teams, members...',
                   hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
@@ -85,12 +134,12 @@ class TeamsPage extends StatelessWidget {
                 ),
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.all(16.0),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Flexible(
+                  const Flexible(
                     child: Text(
                       'Your Teams',
                       style: TextStyle(
@@ -100,10 +149,10 @@ class TeamsPage extends StatelessWidget {
                       ),
                     ),
                   ),
-                  SizedBox(width: 12),
+                  const SizedBox(width: 12),
                   Text(
-                    '4 results',
-                    style: TextStyle(
+                    '${visibleTeams.length} results',
+                    style: const TextStyle(
                       color: Color(0xFF6B7280),
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -113,59 +162,26 @@ class TeamsPage extends StatelessWidget {
               ),
             ),
             Expanded(
-              child: ListView(
+              child: ListView.separated(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 keyboardDismissBehavior:
                     ScrollViewKeyboardDismissBehavior.onDrag,
-                children: [
-                  _TeamCard(
-                    isManager: isManager,
-                    teamId: '$organisationId-product-design',
+                itemCount: visibleTeams.length,
+                separatorBuilder: (context, index) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final team = visibleTeams[index];
+                  return _TeamCard(
+                    isManager: widget.isManager,
+                    teamId: team.teamId,
                     onOpenMembers: (id) => _openMembers(context, id),
-                    name: 'Product Design',
-                    description: 'Design & research',
-                    members: 12,
-                    initials: 'PD',
-                    avatarColor: Colors.pink,
+                    name: team.name,
+                    description: team.description,
+                    members: team.members,
+                    initials: team.initials,
+                    avatarColor: team.avatarColor,
                     onManage: () {},
-                  ),
-                  const SizedBox(height: 12),
-                  _TeamCard(
-                    isManager: isManager,
-                    teamId: '$organisationId-engineering',
-                    onOpenMembers: (id) => _openMembers(context, id),
-                    name: 'Engineering',
-                    description: 'Platform & development',
-                    members: 34,
-                    initials: 'EN',
-                    avatarColor: Colors.teal,
-                    onManage: () {},
-                  ),
-                  const SizedBox(height: 12),
-                  _TeamCard(
-                    isManager: isManager,
-                    teamId: '$organisationId-marketing',
-                    onOpenMembers: (id) => _openMembers(context, id),
-                    name: 'Marketing',
-                    description: 'Brand & growth',
-                    members: 8,
-                    initials: 'MK',
-                    avatarColor: Colors.red,
-                    onManage: () {},
-                  ),
-                  const SizedBox(height: 12),
-                  _TeamCard(
-                    isManager: isManager,
-                    teamId: '$organisationId-customer-success',
-                    onOpenMembers: (id) => _openMembers(context, id),
-                    name: 'Customer Success',
-                    description: 'Support & experience',
-                    members: 10,
-                    initials: 'CS',
-                    avatarColor: Colors.blue,
-                    onManage: () {},
-                  ),
-                ],
+                  );
+                },
               ),
             ),
           ],
