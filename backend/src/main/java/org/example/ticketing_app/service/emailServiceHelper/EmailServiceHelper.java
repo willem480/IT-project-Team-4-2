@@ -8,8 +8,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.example.ticketing_app.entity.Ticket;
 
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Properties;
 
 @Service
@@ -164,7 +166,7 @@ public final class EmailServiceHelper {
             throw new IllegalArgumentException("message must not be null");
         }
 
-        String from = getSenderAddress(message);
+        String from = concatAddresses(message.getFrom());
         String to = concatAddresses(message.getRecipients(Message.RecipientType.TO));
         String subject =
                 message.getSubject();
@@ -190,22 +192,6 @@ public final class EmailServiceHelper {
         );
     }
 
-    public static String getSenderAddress(Message message) throws MessagingException {
-
-        Address[] fromAddresses = message.getFrom();
-
-        if (fromAddresses == null || fromAddresses.length == 0) {
-            return "";
-        }
-
-        Address firstAddress = fromAddresses[0];
-
-        if (firstAddress instanceof InternetAddress internetAddress) {
-            return internetAddress.getAddress();
-        }
-
-        return firstAddress.toString();
-    }
 
     public static String concatAddresses(Address[] addresses) throws MessagingException {
         String result = "";
@@ -399,9 +385,9 @@ public final class EmailServiceHelper {
                 new InternetAddress(smtpUsername)
         );
 
-        reply.setRecipient(
+        reply.setRecipients(
                 Message.RecipientType.TO,
-                new InternetAddress(recipient)
+                InternetAddress.parse(recipient)
         );
 
         reply.setSubject(
@@ -454,9 +440,9 @@ public final class EmailServiceHelper {
                 new InternetAddress(smtpUsername)
         );
 
-        reply.setRecipient(
+        reply.setRecipients(
                 Message.RecipientType.TO,
-                new InternetAddress(recipient)
+                InternetAddress.parse(recipient)
         );
 
         reply.setSubject("Ticket Status Summary");
@@ -492,6 +478,60 @@ public final class EmailServiceHelper {
         }
 
         reply.setText(body.toString());
+
+        Transport.send(reply);
+    }
+
+    /** Sends an English confirmation only after a valid job-posting email creates a ticket. */
+    public static void sendTicketCreatedReply(
+            String recipient,
+            String originalSubject,
+            Ticket ticket
+    ) throws Exception {
+
+        Properties props = new Properties();
+
+        props.put("mail.smtp.host", smtpHost);
+        props.put("mail.smtp.port", String.valueOf(smtpPort));
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.ssl.enable", "true");
+
+        Session session = Session.getInstance(
+                props,
+                new Authenticator() {
+                    @Override
+                    protected PasswordAuthentication getPasswordAuthentication() {
+                        return new PasswordAuthentication(
+                                smtpUsername,
+                                smtpPassword
+                        );
+                    }
+                }
+        );
+
+        MimeMessage reply = new MimeMessage(session);
+        reply.setFrom(new InternetAddress(smtpUsername));
+        reply.setRecipient(Message.RecipientType.TO, new InternetAddress(recipient));
+        reply.setSubject("Re: " + originalSubject);
+
+        String createdAt = ticket.getDatePosted() == null
+                ? "Not available"
+                : ticket.getDatePosted().format(
+                        DateTimeFormatter.ofPattern("MMMM d, uuuu 'at' HH:mm", Locale.ENGLISH)
+                );
+
+        reply.setText(
+                "Thank you for your job posting.\n\n" +
+                        "Your ticket has been created successfully.\n\n" +
+                        "Ticket ID: " + ticket.getIdTicket() + "\n" +
+                        "Title: " + ticket.getTitle() + "\n" +
+                        "Description: " + ticket.getDescription() + "\n" +
+                        "Location: " + ticket.getLocation() + "\n" +
+                        "Pay: $" + ticket.getPay() + "\n" +
+                        "Status: " + ticket.getStatus() + "\n" +
+                        "Created at: " + createdAt + "\n\n" +
+                        "We will notify you when there is an update to your ticket."
+        );
 
         Transport.send(reply);
     }

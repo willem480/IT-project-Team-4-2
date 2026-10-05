@@ -47,6 +47,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> {
         userReturn.setName(user.getName());
         userReturn.setEmail(user.getEmail());
         userReturn.setIdUser(user.getIdUser());
+        userReturn.setDescription(user.getDescription());
 
         float totalEarnings = 0;
         float totalEarningsThisMonth = 0;

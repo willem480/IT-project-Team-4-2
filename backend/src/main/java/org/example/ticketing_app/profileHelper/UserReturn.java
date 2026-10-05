@@ -13,7 +13,7 @@ public class UserReturn {
     private Integer idUser;
 
     private String name;
-
+    private String description;
     private String email;
     private float totalEarnings;
     private float totalEarningsThisMonth;
