@@ -1,0 +1,396 @@
+import 'package:flutter/material.dart';
+
+import 'Profile.dart';
+import 'Members.dart';
+
+class TeamsPage extends StatefulWidget {
+  const TeamsPage({
+    super.key,
+    required this.organisationId,
+    required this.organisationName,
+    required this.isManager,
+  });
+
+  final String organisationId;
+  final String organisationName;
+  // Inherited from the organisation that opened this page.
+  final bool isManager;
+
+  @override
+  State<TeamsPage> createState() => _TeamsPageState();
+}
+
+class _TeamsPageState extends State<TeamsPage> {
+  String _query = '';
+
+  void _openMembers(BuildContext context, String teamId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (context) =>
+            MembersPage(teamId: teamId, isManager: widget.isManager),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final teams = [
+      (
+        teamId: '${widget.organisationId}-product-design',
+        name: 'Product Design',
+        description: 'Design & research',
+        members: 12,
+        initials: 'PD',
+        avatarColor: Colors.pink,
+      ),
+      (
+        teamId: '${widget.organisationId}-engineering',
+        name: 'Engineering',
+        description: 'Platform & development',
+        members: 34,
+        initials: 'EN',
+        avatarColor: Colors.teal,
+      ),
+      (
+        teamId: '${widget.organisationId}-marketing',
+        name: 'Marketing',
+        description: 'Brand & growth',
+        members: 8,
+        initials: 'MK',
+        avatarColor: Colors.red,
+      ),
+      (
+        teamId: '${widget.organisationId}-customer-success',
+        name: 'Customer Success',
+        description: 'Support & experience',
+        members: 10,
+        initials: 'CS',
+        avatarColor: Colors.blue,
+      ),
+    ];
+    final visibleTeams = teams
+        .where((team) => team.name.toLowerCase().contains(_query))
+        .toList();
+
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFF9FAFB),
+        elevation: 0,
+        leading: const BackButton(color: Colors.black),
+      ),
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Good morning,',
+                    style: TextStyle(color: Color(0xFF6B7280), fontSize: 14),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Alan',
+                    style: TextStyle(
+                      color: Color(0xFF111827),
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: TextField(
+                onChanged: (value) {
+                  setState(() => _query = value.trim().toLowerCase());
+                },
+                decoration: InputDecoration(
+                  hintText: 'Search teams, members...',
+                  hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+                  prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                  filled: true,
+                  fillColor: Colors.white,
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30.0),
+                    borderSide: BorderSide(
+                      color: Colors.grey.shade300,
+                      width: 1.0,
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30.0),
+                    borderSide: const BorderSide(
+                      color: Colors.blue,
+                      width: 1.0,
+                    ),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 14.0),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Flexible(
+                    child: Text(
+                      'Your Teams',
+                      style: TextStyle(
+                        color: Color(0xFF111827),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    '${visibleTeams.length} results',
+                    style: const TextStyle(
+                      color: Color(0xFF6B7280),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView.separated(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                itemCount: visibleTeams.length,
+                separatorBuilder: (context, index) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final team = visibleTeams[index];
+                  return _TeamCard(
+                    isManager: widget.isManager,
+                    teamId: team.teamId,
+                    onOpenMembers: (id) => _openMembers(context, id),
+                    name: team.name,
+                    description: team.description,
+                    members: team.members,
+                    initials: team.initials,
+                    avatarColor: team.avatarColor,
+                    onManage: () {},
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: BottomAppBar(
+        color: Colors.white,
+        shape: const CircularNotchedRectangle(),
+        notchMargin: 8.0,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            TextButton.icon(
+              onPressed: () => Navigator.maybePop(context),
+              icon: const Icon(
+                Icons.bookmark_border,
+                size: 25,
+                color: Colors.black,
+              ),
+              label: const Text(
+                'Organization',
+                style: TextStyle(
+                  color: Colors.blueGrey,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(width: 60),
+            TextButton.icon(
+              onPressed: () {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (context) => const Profile(),
+                  ),
+                  (route) => route.isFirst,
+                );
+              },
+              icon: const Icon(
+                Icons.person_2_outlined,
+                size: 25,
+                color: Colors.black,
+              ),
+              label: const Text(
+                'My Profile',
+                style: TextStyle(
+                  color: Colors.blueGrey,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TeamCard extends StatelessWidget {
+  const _TeamCard({
+    required this.teamId,
+    required this.onOpenMembers,
+    required this.initials,
+    required this.name,
+    required this.description,
+    required this.members,
+    required this.avatarColor,
+    required this.onManage,
+    required this.isManager,
+  });
+
+  final String teamId;
+  final bool isManager;
+  final ValueChanged<String> onOpenMembers;
+  final String initials;
+  final String name;
+  final String description;
+  final int members;
+  final Color avatarColor;
+  final VoidCallback onManage;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: avatarColor,
+                child: Text(
+                  initials,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        color: Color(0xFF111827),
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      description,
+                      style: const TextStyle(
+                        color: Color(0xFF6B7280),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              TextButton(
+                onPressed: isManager ? onManage : null,
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFF065F46),
+                  backgroundColor: const Color(0xFFD1FAE5),
+                  disabledForegroundColor: const Color(0xFF9CA3AF),
+                  disabledBackgroundColor: const Color(0xFFF3F4F6),
+                  shape: const StadiumBorder(),
+                ),
+                child: const Text(
+                  'Manage',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 28, color: Color(0xFFE5E7EB)),
+          Row(
+            children: [
+              SizedBox(
+                width: 52,
+                height: 20,
+                child: Stack(
+                  children: [
+                    for (var index = 0; index < 3; index++)
+                      Positioned(
+                        left: index * 16.0,
+                        child: CircleAvatar(
+                          radius: 10,
+                          backgroundColor: Colors.white,
+                          child: CircleAvatar(
+                            radius: 9,
+                            backgroundColor: const [
+                              Color(0xFFFCE7F3),
+                              Color(0xFFCCFBF1),
+                              Color(0xFFDBEAFE),
+                            ][index],
+                            child: const Icon(
+                              Icons.person,
+                              size: 13,
+                              color: Color(0xFF6B7280),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '$members members',
+                  style: const TextStyle(
+                    color: Color(0xFF6B7280),
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              Material(
+                type: MaterialType.transparency,
+                child: InkResponse(
+                  onTap: () => onOpenMembers(teamId),
+                  radius: 20,
+                  child: Tooltip(
+                    message: 'View members of $name',
+                    child: const Icon(
+                      Icons.chevron_right,
+                      size: 20,
+                      color: Color(0xFF6B7280),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'Organisation.dart';
 import 'PostJob.dart';
 
 const _ink = Color(0xFF111827);
@@ -23,6 +24,11 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
 
   @override
   Widget build(BuildContext context) {
+    final openCount = _jobs.where((job) => job.status == JobStatus.open).length;
+    final inProgressCount =
+        _jobs.where((job) => job.status == JobStatus.inProgress).length;
+    final closedCount = _jobs.where((job) => job.status == JobStatus.closed).length;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       body: SafeArea(
@@ -55,28 +61,45 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
                       ],
                     ),
                   ),
+                  /*Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const OrganisationPage(),
+                          ),
+                        );
+                      },
+                      child: const Text('测试'),
+                    ),
+                  ),*/
                   const SizedBox(height: 20),
                   const _SearchField(),
                   const SizedBox(height: 16),
-                  const IntrinsicHeight(
+                  IntrinsicHeight(
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Expanded(
-                          child: _StatusSummaryCard(label: 'Open', count: '12'),
-                        ),
-                        SizedBox(width: 12),
-                        Expanded(
                           child: _StatusSummaryCard(
-                            label: 'In Progress',
-                            count: '7',
+                            label: JobStatus.open.displayText,
+                            count: '$openCount',
                           ),
                         ),
                         SizedBox(width: 12),
                         Expanded(
                           child: _StatusSummaryCard(
-                            label: 'Completed',
-                            count: '34',
+                            label: JobStatus.inProgress.displayText,
+                            count: '$inProgressCount',
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: _StatusSummaryCard(
+                            label: JobStatus.closed.displayText,
+                            count: '$closedCount',
                           ),
                         ),
                       ],
@@ -101,7 +124,7 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
                     ],
                   ),
                   const SizedBox(height: 20),
-                  const Row(
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Flexible(
@@ -116,7 +139,7 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
                       ),
                       SizedBox(width: 12),
                       Text(
-                        '3 results',
+                        '${_jobs.length} results',
                         style: TextStyle(
                           color: _muted,
                           fontSize: 14,
@@ -203,11 +226,31 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
   }
 }
 
+enum JobStatus {
+  open,
+  inProgress,
+  closed,
+}
+
+extension on JobStatus {
+  String get displayText => switch (this) {
+    JobStatus.open => 'Open',
+    JobStatus.inProgress => 'In Progress',
+    JobStatus.closed => 'Closed',
+  };
+
+  Color get color => switch (this) {
+    JobStatus.open => const Color(0xFF10B981),
+    JobStatus.inProgress => const Color(0xFFF59E0B),
+    JobStatus.closed => Colors.grey,
+  };
+}
+
 class Job {
   const Job({
     required this.jobName,
     required this.position,
-    required this.jobType,
+    required this.organization,
     required this.status,
     required this.dueDate,
     required this.dueTime,
@@ -215,8 +258,8 @@ class Job {
 
   final String jobName;
   final String position;
-  final String jobType;
-  final String status;
+  final String organization;
+  final JobStatus status;
   final String dueDate;
   final String dueTime;
 }
@@ -225,24 +268,24 @@ const _jobs = [
   Job(
     jobName: 'Emergency light fitting',
     position: 'Building C',
-    jobType: 'The University of Melbourne',
-    status: 'In Progress',
+    organization: 'The University of Melbourne',
+    status: JobStatus.inProgress,
     dueDate: 'today',
     dueTime: '2:00 PM',
   ),
   Job(
     jobName: 'Network printer offline',
     position: 'Floor 2',
-    jobType: 'Provision IT',
-    status: 'Open',
+    organization: 'Provision IT',
+    status: JobStatus.open,
     dueDate: 'tomorrow',
     dueTime: '10:00 AM',
   ),
   Job(
     jobName: 'Door access request',
     position: 'Warehouse B',
-    jobType: 'Microsoft',
-    status: 'Open',
+    organization: 'Microsoft',
+    status: JobStatus.open,
     dueDate: 'Fri',
     dueTime: '4:00 PM',
   ),
@@ -290,15 +333,13 @@ class JobCard extends StatelessWidget {
                       height: 6,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: job.status == 'In Progress'
-                            ? const Color(0xFFF59E0B)
-                            : const Color(0xFF10B981),
+                        color: job.status.color,
                       ),
                     ),
                     const SizedBox(width: 6),
                     Flexible(
                       child: Text(
-                        job.status,
+                        job.status.displayText,
                         style: const TextStyle(
                           color: _muted,
                           fontSize: 14,
@@ -328,7 +369,7 @@ class JobCard extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  job.jobType,
+                  job.organization,
                   style: const TextStyle(
                     color: Color(0xFF374151),
                     fontSize: 14,

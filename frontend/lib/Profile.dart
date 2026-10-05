@@ -2,6 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:ticketing_app/FindAJobDetailUser.dart';
 import 'package:ticketing_app/main.dart';
 import 'package:ticketing_app/PostAJobDetailUser.dart';
+import 'package:ticketing_app/models/ticket_model.dart';
+import 'Organisation.dart';
+import 'models/user_profile.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+
 
 
 
@@ -20,14 +27,116 @@ class Profile extends StatefulWidget {
 
 
 class _ProfilePage extends State<Profile> {
+
+  String userName = 'Loading...';
+  String title = 'Loading...';
+  String location = 'Loading...';
+  double pay = 0.0;
+  double totalEarnings = 0.0;
+  double thisMonthEarnings = 0.0;
+  int thisMonthTimes = 0;
+  UserProfile? userProfile;
+  List<TicketModel> postedTickets = [];
+  List<TicketModel> completedTickets = [];
+
+
+  void fetchFirstUserData() async {
+
+    final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/profilePage/getUser');
+
+      //Post
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+      
+        final Map<String, dynamic> jsonData = jsonDecode(response.body);
+        UserProfile myUser = UserProfile.fromJson(jsonData);
+        setState(() {
+          userName = myUser.name ?? 'User';
+          totalEarnings = myUser.totalEarnings.toDouble() ?? 0.0;
+          thisMonthEarnings = myUser.totalEarningsThisMonth.toDouble() ?? 0.0;
+          thisMonthTimes = myUser.numberOfEarningsThisMonth.toInt() ?? 0;
+        });
+      }
+  }
+
+  void fetchPostedTickets() async {
+
+    final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/profilePage/getPostedTickets');
+
+    try{
+      //Post
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'userId': 1}),
+      );
+
+      if (response.statusCode == 200) {
+        List<TicketModel> parsedTickets = ticketFromJson(response.body);
+        setState(() {
+          postedTickets = parsedTickets;
+        });
+      }
+    }catch(e){
+      print("ticket crash");
+    }
+
+  }
+
+  void fetchCompletedTickets() async {
+
+    final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/profilePage/getCompletedTickets');
+
+      //Post
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'userId': 1}),
+      );
+
+      if (response.statusCode == 200) {
+        List<TicketModel> parsedTickets = ticketFromJson(response.body);
+        setState(() {
+          completedTickets = parsedTickets;
+        });
+      }
+  }
+
+
+
+  @override
+  void initState() {
+    super.initState();
+    fetchFirstUserData();
+    fetchPostedTickets();
+    fetchCompletedTickets();
+
+  }
+
+
+  
   bool is_Detail_Tab = true;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFFF9FAFB),
       appBar: AppBar(
-
-        title: Text('Profile', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        leading: BackButton(
+          onPressed: () {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute<void>(
+                builder: (context) => const MyHomePage(title: 'Find a job'),
+              ),
+              (route) => false,
+            );
+          },
+        ),
+        title: Text('Hello! $userName', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
 
       ),
       body: Column(
@@ -57,11 +166,11 @@ class _ProfilePage extends State<Profile> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           
-                          Text('TOTAL EARNING', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.grey)), 
+                          Text('TOTAL EARNINGS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.grey)), 
                           const SizedBox(height: 25),
-                          Text('\$ Total money',style: TextStyle(fontSize: 50, fontWeight: FontWeight.bold),),
+                          Text('\$$totalEarnings',style: TextStyle(fontSize: 50, fontWeight: FontWeight.bold),),
                           const SizedBox(height: 60),
-                          Text('This month: \$ money and times payouts', style: const TextStyle(fontWeight:FontWeight.bold, fontSize: 15, color: Colors.grey)),
+                          Text('This month: \$$thisMonthEarnings and $thisMonthTimes times payouts', style: const TextStyle(fontWeight:FontWeight.bold, fontSize: 15, color: Colors.grey)),
                         ],
                     )
                   ),
@@ -112,16 +221,23 @@ class _ProfilePage extends State<Profile> {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             TextButton.icon(
-              onPressed: () {}, 
-              icon: Icon(Icons.person_2_outlined, size: 25, color: Colors.black), 
-              label: Text('My Profile', style: TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.bold)),
+              onPressed: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (context) => const OrganisationPage(),
+                  ),
+                );
+              }, 
+              icon: Icon(Icons.bookmark_border, size: 25, color: Colors.black), 
+              label: Text('Organization', style: TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.bold)),
             ),
   
             const SizedBox(width: 60),
             TextButton.icon(
               onPressed: () {}, 
-              icon: Icon(Icons.bookmark_border, size: 25, color: Colors.black), 
-              label: Text('Organization', style: TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.bold)),
+              icon: Icon(Icons.person_2_outlined, size: 25, color: Colors.black), 
+              label: Text('My Profile', style: TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.bold)),
             ),
           ],
         )
@@ -131,99 +247,45 @@ class _ProfilePage extends State<Profile> {
 
   // The Details View (Description + Map)
   Widget _buildPostedJobSection(BuildContext context) {
+    //if no ticket
+    if (postedTickets.isEmpty){
+        return Padding(
+          padding: const EdgeInsets.all(50.0),
+          child: Text('No jobs yet.', style: TextStyle(color: Colors.grey)),
+          );
+      }
+    
     return Column(
-      
       crossAxisAlignment: CrossAxisAlignment.center,
-      
-      children: [
-        InkWell(
-          onTap: (){
-            print('check your posted jobs');
-            Navigator.push(context, MaterialPageRoute(builder: (context) => PostAJobDetailUser(title: 'title: B', company: 'Company: B', price: '500',)),);
-          },
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            width: 800,
-            height: 250,
-            margin: const EdgeInsets.all(50),
-            padding: EdgeInsets.all(16),
-
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  
-                  blurRadius: 2,
-                  offset: const Offset(0, 1),
-                )
-              ]
-            ),           
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                  // alignment: Alignment.topLeft,
-                Text(
-                  'Company B',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-                SizedBox(height: 8),  
-                //more item
-              ],
-            )
-          )
-        ),
-      ],
+      children: postedTickets.map((ticket){ // assign postedTicket to ticket
+        return _buildTicket(
+          context, 
+          ticket.title.toString() ?? 'No title', 
+          ticket.organizationName ?? 'Unknown Location', 
+          ticket.pay?.toString() ?? '0');
+      }).toList(),
     );
   }
 
 
   Widget _buildCompletedJobs() {
+     //if no ticket
+    if (completedTickets.isEmpty){
+        return Padding(
+          padding: const EdgeInsets.all(50.0),
+          child: Text('No jobs yet.', style: TextStyle(color: Colors.grey)),
+          );
+      }
+    
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        InkWell(
-          onTap: (){
-            print('check your completed jobs');
-            Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser(title: 'title: A', company: 'Company: A', price: '600',)),);
-          },
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            width: 800,
-            height: 250,
-            margin: const EdgeInsets.all(50),
-            padding: EdgeInsets.all(16),
-
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  
-                  blurRadius: 2,
-                  offset: const Offset(0, 1),
-                )
-              ]
-            ),           
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                  // alignment: Alignment.topLeft,
-                Text(
-                  'Company A',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-                SizedBox(height: 8),  
-                //more item
-              ],
-            )
-          )
-        ),
-      ],
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: completedTickets.map((ticket){ // assign completedTicket to ticket
+        return _buildTicket(
+          context, 
+          ticket.title.toString() ?? 'No title', 
+          ticket.organizationName ?? 'Unknown Location', 
+          ticket.pay?.toString() ?? '0');
+      }).toList(),
     );
   }
   // Helper method for the pill-shaped toggle buttons
@@ -247,5 +309,58 @@ class _ProfilePage extends State<Profile> {
     );
   }
 
+  Widget _buildTicket(BuildContext context, String title, String companyName, String price){
+      return InkWell(
+          onTap: (){
+            print('check your posted jobs');
+            Navigator.push(context, MaterialPageRoute(builder: (context) => PostAJobDetailUser(title: title, company: companyName, price: price)),);
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            width: 800,
+            height: 225,
+            margin: const EdgeInsets.all(50),
+            padding: EdgeInsets.all(16),
+
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  
+                  blurRadius: 2,
+                  offset: const Offset(0, 1),
+                )
+              ]
+            ),           
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                  // alignment: Alignment.topLeft,
+                Text(
+                title,
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+              SizedBox(height: 70),
+                // alignment: Alignment.topLeft,
+              Text(
+                companyName,
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+              ),
+              
+              const Spacer(),
+
+              Text(
+                '\$$price',
+                style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+              //more item
+                //more item
+              ],
+            )
+          )
+        );
+  }
 
 }

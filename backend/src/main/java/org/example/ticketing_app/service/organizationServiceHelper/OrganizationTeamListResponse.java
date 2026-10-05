@@ -5,12 +5,12 @@ import lombok.Getter;
 
 import java.util.List;
 
-/** Member-list data and the permission used to decide whether edit controls are shown. */
+/** Team-list data and the permission used to decide whether team controls are shown. */
 @Getter
 @AllArgsConstructor
-public class OrganizationMemberListResponse {
+public class OrganizationTeamListResponse {
 
     private final Integer organizationId;
     private final boolean canManage;
-    private final List<OrganizationMemberSummary> members;
+    private final List<OrganizationTeamSummary> teams;
 }
