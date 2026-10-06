@@ -40,6 +40,8 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
 
     private static final String STATUS_SUBJECT_MARKER = "status";
 
+    private static final String UPDATE_TICKET_SUBJECT_MARKER = "update ticket";
+
     /** Each expression reads one required field from the agreed email body template. */
     private static final Pattern TITLE_PATTERN = Pattern.compile(
             "(?im)^\\s*Title\\s*:\\s*(.+?)\\s*$"
@@ -52,6 +54,21 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
     );
     private static final Pattern PAY_PATTERN = Pattern.compile(
             "(?im)^\\s*Pay\\s*:\\s*\\$?\\s*(\\d+)\\s*$"
+    );
+    private static final Pattern TICKET_ID_PATTERN = Pattern.compile(
+            "(?im)^\\s*Ticket\\s*ID\\s*:\\s*(.*?)\\s*$"
+    );
+    private static final Pattern UPDATE_TITLE_PATTERN = Pattern.compile(
+            "(?im)^\\s*Title\\s*:\\s*(.*?)\\s*$"
+    );
+    private static final Pattern UPDATE_DESCRIPTION_PATTERN = Pattern.compile(
+            "(?ims)^\\s*Description\\s*:\\s*(.*?)(?=^\\s*(?:Ticket\\s*ID|Title|Location|Pay)\\s*:|\\z)"
+    );
+    private static final Pattern UPDATE_LOCATION_PATTERN = Pattern.compile(
+            "(?im)^\\s*Location\\s*:\\s*(.*?)\\s*$"
+    );
+    private static final Pattern UPDATE_PAY_PATTERN = Pattern.compile(
+            "(?im)^\\s*Pay\\s*:\\s*(.*?)\\s*$"
     );
 
     private final UserServiceImpl userService;
@@ -131,6 +148,54 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
                 && emailData.getSubject().trim().equalsIgnoreCase(STATUS_SUBJECT_MARKER);
     }
 
+    /** Identifies emails that request a change to an existing ticket. */
+    public boolean isUpdateTicketEmail(EmailData emailData) {
+        return emailData != null
+                && emailData.getSubject() != null
+                && emailData.getSubject().toLowerCase(Locale.ROOT).contains(UPDATE_TICKET_SUBJECT_MARKER);
+    }
+
+    /**
+     * Updates only the fields supplied by a valid Update Ticket email.
+     * The sender must own the ticket and the ticket must still be open.
+     */
+    @Transactional
+    public Ticket updateTicketFromEmail(EmailData emailData) {
+        if (!isUpdateTicketEmail(emailData) || emailData.getFrom() == null || emailData.getFrom().isBlank()) {
+            return null;
+        }
+
+        Optional<TicketUpdate> updateRequest = parseTicketUpdate(emailData.getBody());
+        if (updateRequest.isEmpty()) {
+            return null;
+        }
+
+        Ticket ticket = getById(updateRequest.get().ticketId());
+        if (ticket == null
+                || ticket.getEmail() == null
+                || !ticket.getEmail().trim().equalsIgnoreCase(emailData.getFrom().trim())
+                || !TicketStatus.OPEN.name().equals(ticket.getStatus())) {
+            return null;
+        }
+
+        TicketUpdate update = updateRequest.get();
+        if (update.title() != null) {
+            ticket.setTitle(update.title());
+        }
+        if (update.description() != null) {
+            ticket.setDescription(update.description());
+        }
+        if (update.location() != null) {
+            ticket.setLocation(update.location());
+        }
+        if (update.pay() != null) {
+            ticket.setPay(update.pay());
+        }
+
+        updateById(ticket);
+        return ticket;
+    }
+
     public List<Ticket> getTicketsByEmail(String email) {
         if (email == null || email.isBlank()) {
             return Collections.emptyList();
@@ -185,6 +250,69 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
         return value.isEmpty() ? Optional.empty() : Optional.of(value);
     }
 
+    /** Parses a partial update while rejecting blank fields and invalid ticket identifiers or pay. */
+    private Optional<TicketUpdate> parseTicketUpdate(String body) {
+        if (body == null || body.isBlank()) {
+            return Optional.empty();
+        }
+
+        ParsedField ticketIdField = optionalField(TICKET_ID_PATTERN, body);
+        if (!ticketIdField.present() || ticketIdField.value().isEmpty()) {
+            return Optional.empty();
+        }
+
+        int ticketId;
+        try {
+            ticketId = Integer.parseInt(ticketIdField.value());
+        } catch (NumberFormatException exception) {
+            return Optional.empty();
+        }
+        if (ticketId <= 0) {
+            return Optional.empty();
+        }
+
+        ParsedField title = optionalField(UPDATE_TITLE_PATTERN, body);
+        ParsedField description = optionalField(UPDATE_DESCRIPTION_PATTERN, body);
+        ParsedField location = optionalField(UPDATE_LOCATION_PATTERN, body);
+        ParsedField payText = optionalField(UPDATE_PAY_PATTERN, body);
+
+        if ((title.present() && title.value().isEmpty())
+                || (description.present() && description.value().isEmpty())
+                || (location.present() && location.value().isEmpty())
+                || (payText.present() && payText.value().isEmpty())) {
+            return Optional.empty();
+        }
+        if (!title.present() && !description.present() && !location.present() && !payText.present()) {
+            return Optional.empty();
+        }
+
+        Integer pay = null;
+        if (payText.present()) {
+            String normalizedPay = payText.value().replaceFirst("^\\$\\s*", "");
+            try {
+                pay = Integer.parseInt(normalizedPay);
+            } catch (NumberFormatException exception) {
+                return Optional.empty();
+            }
+        }
+
+        return Optional.of(new TicketUpdate(
+                ticketId,
+                title.present() ? title.value() : null,
+                description.present() ? description.value() : null,
+                location.present() ? location.value() : null,
+                pay
+        ));
+    }
+
+    private ParsedField optionalField(Pattern pattern, String body) {
+        Matcher matcher = pattern.matcher(body);
+        if (!matcher.find()) {
+            return new ParsedField(false, "");
+        }
+        return new ParsedField(true, matcher.group(1).trim());
+    }
+
     private User findOrCreateUser(String email) {
         if (email == null || email.isBlank()) {
             throw new IllegalArgumentException("Incoming email must include a sender address");
@@ -209,6 +337,13 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
 
     /** Parsed values that map directly to the ticket table columns. */
     private record JobPosting(String title, String description, String location, Integer pay) {
+    }
+
+    /** Parsed partial update values. Null fields are intentionally left unchanged. */
+    private record TicketUpdate(Integer ticketId, String title, String description, String location, Integer pay) {
+    }
+
+    private record ParsedField(boolean present, String value) {
     }
 
     public List<Ticket> getOpenTickets(){

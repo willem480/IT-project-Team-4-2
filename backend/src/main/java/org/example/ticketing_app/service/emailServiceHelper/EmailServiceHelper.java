@@ -535,4 +535,97 @@ public final class EmailServiceHelper {
 
         Transport.send(reply);
     }
+
+    /** Sends an English confirmation after an owner successfully updates an open ticket. */
+    public static void sendTicketUpdatedReply(
+            String recipient,
+            String originalSubject,
+            Ticket ticket
+    ) throws Exception {
+
+        Properties props = new Properties();
+
+        props.put("mail.smtp.host", smtpHost);
+        props.put("mail.smtp.port", String.valueOf(smtpPort));
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.ssl.enable", "true");
+
+        Session session = Session.getInstance(
+                props,
+                new Authenticator() {
+                    @Override
+                    protected PasswordAuthentication getPasswordAuthentication() {
+                        return new PasswordAuthentication(smtpUsername, smtpPassword);
+                    }
+                }
+        );
+
+        MimeMessage reply = new MimeMessage(session);
+        reply.setFrom(new InternetAddress(smtpUsername));
+        reply.setRecipient(Message.RecipientType.TO, new InternetAddress(recipient));
+        reply.setSubject("Re: " + originalSubject);
+
+        String createdAt = ticket.getDatePosted() == null
+                ? "Not available"
+                : ticket.getDatePosted().format(
+                        DateTimeFormatter.ofPattern("MMMM d, uuuu 'at' HH:mm", Locale.ENGLISH)
+                );
+
+        reply.setText(
+                "Your ticket has been updated successfully.\n\n" +
+                        "Ticket ID: " + ticket.getIdTicket() + "\n" +
+                        "Title: " + ticket.getTitle() + "\n" +
+                        "Description: " + ticket.getDescription() + "\n" +
+                        "Location: " + ticket.getLocation() + "\n" +
+                        "Pay: $" + ticket.getPay() + "\n" +
+                        "Status: " + ticket.getStatus() + "\n" +
+                        "Created at: " + createdAt
+        );
+
+        Transport.send(reply);
+    }
+
+    /** Sends a generic English failure reply without exposing another user's ticket details. */
+    public static void sendTicketUpdateFailureReply(
+            String recipient,
+            String originalSubject
+    ) throws Exception {
+
+        Properties props = new Properties();
+
+        props.put("mail.smtp.host", smtpHost);
+        props.put("mail.smtp.port", String.valueOf(smtpPort));
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.ssl.enable", "true");
+
+        Session session = Session.getInstance(
+                props,
+                new Authenticator() {
+                    @Override
+                    protected PasswordAuthentication getPasswordAuthentication() {
+                        return new PasswordAuthentication(smtpUsername, smtpPassword);
+                    }
+                }
+        );
+
+        MimeMessage reply = new MimeMessage(session);
+        reply.setFrom(new InternetAddress(smtpUsername));
+        reply.setRecipient(Message.RecipientType.TO, new InternetAddress(recipient));
+        reply.setSubject("Re: " + originalSubject);
+        reply.setText(
+                "We could not update this ticket.\n\n" +
+                        "Please make sure the Ticket ID is valid, you are using the email address " +
+                        "that created the ticket, and the ticket is still open.\n\n" +
+                        "Use the following format and provide at least one field to update:\n\n" +
+                        "Subject: Update Ticket\n\n" +
+                        "Ticket ID: [Ticket ID]\n" +
+                        "Title: [Optional new title]\n" +
+                        "Description:\n" +
+                        "[Optional new description]\n" +
+                        "Location: [Optional new location]\n" +
+                        "Pay: [Optional new amount]"
+        );
+
+        Transport.send(reply);
+    }
 }
