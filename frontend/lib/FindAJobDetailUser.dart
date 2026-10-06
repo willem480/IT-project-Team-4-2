@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ticketing_app/main.dart';
+import 'dart:convert';
+import 'package:ticketing_app/models/ticket_model.dart';
 
 
 
@@ -7,12 +9,14 @@ class FindAJobDetailUser extends StatefulWidget {
   final String title;
   final String company;
   final String price;
+  final String description;
 
   const FindAJobDetailUser({
     super.key,
     required this.title,
     required this.company,
-    required this.price});
+    required this.price,
+    required this.description});
 
   @override
   State<FindAJobDetailUser> createState() => _FindAJobDetailUserPage();
@@ -87,7 +91,7 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
                   ),
                   SizedBox(height: 16),
 
-                  is_Detail_Tab ? _buildDetailsSection() : _buildCommentsSection(), 
+                  is_Detail_Tab ? _buildDetailsSection(context) : _buildCommentsSection(), 
 
 
                   
@@ -125,13 +129,13 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
   }
 
   // The Details View (Description + Map)
-  Widget _buildDetailsSection() {
+  Widget _buildDetailsSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text('Description', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         const SizedBox(height: 8),
-        const Text('The HVAC unit in the North Wing is not cooling properly...', style: TextStyle(color: Colors.black54)),
+        Text(widget.description, style: TextStyle(color: Colors.black54)),
         const SizedBox(height: 20),
         const Text('Location', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 5)),
         const SizedBox(height: 8),

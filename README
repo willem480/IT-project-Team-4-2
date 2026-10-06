@@ -1,0 +1,666 @@
+# Ticketing Application
+
+A lightweight and flexible ticket management system designed to streamline maintenance request submission, assignment, communication, tracking, and reporting for organisations. The application provides a centralised platform for managing maintenance and support requests while supporting role-based access control, organisational structures, worker qualifications, reporting, notifications, and email integration.
+
+---
+
+# Table of Contents
+
+1. Project Overview
+2. Features
+3. Technology Stack
+4. System Architecture
+5. Project Structure
+6. Installation
+7. Configuration
+8. Running the Application
+9. Development Workflow
+10. Coding Standards
+11. Git Workflow
+12. Contribution Guidelines
+13. Code Review Process
+14. Testing Standards
+15. Definition of Done
+16. Security Practices
+17. Documentation Standards
+18. Quality Expectations
+19. Team Responsibilities
+20. License
+
+---
+
+# Project Overview
+
+The Ticketing Application provides organisations with a centralised system for managing maintenance and support requests. Users can submit and track tickets, workers can manage assigned tasks, and administrators can oversee organisational operations through reporting and management tools.
+
+The system supports:
+
+- User authentication and role management
+- Organisation, team, and site management
+- Ticket creation and tracking
+- Ticket assignment and workflow management
+- Skills and qualifications management
+- Communication history
+- File attachments
+- Email integration
+- Notifications
+- Reporting and analytics
+- Administrative management
+
+---
+
+# Features
+
+## User Management
+
+- User authentication
+- Profile management
+- Role-based access control
+- User status management
+
+## Organisation Management
+
+- Organisation creation and management
+- Team management
+- Site management
+- Worker allocation
+
+## Ticket Management
+
+- Create tickets
+- Update ticket status
+- Assign tickets
+- Close tickets
+- Track ticket progress
+- View ticket history
+
+## Communication
+
+- Ticket comments
+- Communication history
+- Email integration
+
+## Reporting
+
+- Team reports
+- Member reports
+- Organisation reports
+- Performance metrics
+- Workload analysis
+
+## Notification System
+
+- Assignment notifications
+- Ticket updates
+- Email notifications
+
+---
+
+# Technology Stack
+
+## Backend
+
+- Java
+- Spring Boot
+- MyBatis Plus
+- Maven
+
+## Database
+
+- MySQL
+
+## Frontend
+
+- React
+- TypeScript
+- Material UI
+
+## Development Tools
+
+- Git
+- GitHub
+- Jira
+- Postman
+
+---
+
+# System Architecture
+
+The application follows a layered architecture to separate concerns and improve maintainability.
+
+```text
+Frontend
+    │
+REST API
+    │
+Controllers
+    │
+Services
+    │
+Repositories / Mappers
+    │
+Database
+```
+
+## Architectural Principles
+
+- Separation of concerns
+- Layered architecture
+- RESTful design
+- Dependency injection
+- Reusable services
+- Modular components
+- Scalable design
+- Maintainable codebase
+
+---
+
+# Project Structure
+
+```text
+src
+├── controller
+├── service
+├── serviceImpl
+├── mapper
+├── entity
+
+## Directory Purpose
+
+| Directory | Purpose |
+|------------|----------|
+| controller | API endpoints |
+| service | Service interfaces |
+| serviceImpl | Business logic implementation |
+| mapper | Database access |
+| entity | Database entities |
+
+---
+
+# Installation
+
+## Prerequisites
+
+- Java 17+
+- Maven
+- MySQL 8+
+- Node.js
+- Git
+
+## Clone Repository
+
+```bash
+git clone <repository-url>
+cd ticketing-application
+```
+
+## Backend Setup
+
+as described: https://teams.cloud.microsoft/l/message/19:5MeygsUEk2GTcZJ1A4tiqBsSmmCdpl9WrblrflGAV3s1@thread.tacv2/1788912999604?tenantId=0e5bf3cf-1ff4-46b7-9176-52c538c22a4d&groupId=517ffb95-a917-4740-9f42-6bb55bd3dfe7&parentMessageId=1788912999604&teamName=T4-2&channelName=General&createdTime=1788912999604
+
+## Frontend Setup
+
+as described: https://teams.cloud.microsoft/l/message/19:5MeygsUEk2GTcZJ1A4tiqBsSmmCdpl9WrblrflGAV3s1@thread.tacv2/1787220850261?tenantId=0e5bf3cf-1ff4-46b7-9176-52c538c22a4d&groupId=517ffb95-a917-4740-9f42-6bb55bd3dfe7&parentMessageId=1787220850261&teamName=T4-2&channelName=General&createdTime=1787220850261
+
+---
+
+# Configuration
+
+## Database Configuration
+
+```properties
+spring.datasource.url=jdbc:mysql://localhost:3306/ticketing
+spring.datasource.username=root
+spring.datasource.password=password
+```
+
+## Email Configuration
+
+```properties
+spring.mail.host=smtp.example.com
+spring.mail.port=587
+spring.mail.username=user@example.com
+spring.mail.password=password
+```
+
+---
+
+# Running the Application
+
+## Start Backend
+
+```bash
+mvn spring-boot:run
+```
+
+## Start Frontend
+
+```bash
+npm start
+```
+
+## Default URLs
+
+```text
+Backend:
+http://localhost:8080
+
+Frontend:
+http://localhost:3000
+```
+
+---
+
+# Development Workflow
+
+The project follows an Agile Scrum methodology and uses Jira to manage tasks, progress, and sprint activities.
+
+## Workflow
+
+1. Create or assign a Jira work item.
+2. Review requirements and acceptance criteria.
+3. Move the Jira work item to **In Progress**.
+4. Pull the latest version of the repository.
+5. Implement the required functionality.
+6. Test functionality locally.
+7. Commit changes with descriptive commit messages.
+8. Push changes to the main branch.
+9. Update the Jira work item with implementation details.
+10. Move the work item to **Done** when all acceptance criteria have been met.
+
+---
+
+# Coding Standards
+
+## General Guidelines
+
+- Write clean and maintainable code.
+- Follow the Single Responsibility Principle.
+- Avoid duplicated logic.
+- Keep methods focused on one responsibility.
+- Prefer readability over complexity.
+- Use meaningful names for variables, methods, and classes.
+- Remove unused code and imports before committing.
+
+---
+
+## Naming Conventions
+
+### Classes
+
+```java
+UserService
+TicketController
+ReportGenerator
+NotificationService
+```
+
+### Methods
+
+```java
+createTicket()
+assignTicket()
+generateReport()
+sendNotification()
+```
+
+### Variables
+
+```java
+userId
+ticketStatus
+assignedWorker
+reportData
+```
+
+### Constants
+
+```java
+MAX_FILE_SIZE
+DEFAULT_PRIORITY
+EMAIL_TIMEOUT
+```
+
+---
+
+## Formatting Standards
+
+- Use consistent indentation.
+- Keep code properly formatted.
+- Group related methods logically.
+- Maintain clear spacing between sections.
+- Use IDE formatting tools when available.
+
+---
+
+# Commenting Standards
+
+Comments should explain:
+
+- Business rules
+- Complex logic
+- Architectural decisions
+- Non-obvious implementations
+
+Example:
+
+```java
+// calculate average completion time for completed tickets
+```
+
+Avoid redundant comments.
+
+Bad example:
+
+```java
+// increment counter
+counter++;
+```
+
+---
+
+# API Development Standards
+
+## REST Principles
+
+Use resource-oriented endpoints.
+
+Examples:
+
+```http
+GET    /ticket
+GET    /ticket/{id}
+POST   /ticket
+PUT    /ticket/{id}
+DELETE /ticket/{id}
+```
+
+## Response Standards
+
+All endpoints should:
+
+- Use appropriate HTTP status codes.
+- Provide meaningful error messages.
+- Validate incoming requests.
+- Return structured response objects.
+
+---
+
+# Database Standards
+
+- Use meaningful table names.
+- Maintain foreign key relationships.
+- Avoid duplicate data.
+- Use indexes where appropriate.
+- Validate data before persistence.
+- Follow consistent naming conventions.
+
+---
+
+# Git Workflow
+
+The project uses a single-branch development approach.
+
+## Branch Strategy
+
+All development is performed directly on:
+
+```text
+main
+```
+
+Team members are expected to:
+
+- Pull before starting work.
+- Push frequently.
+- Communicate planned changes.
+- Resolve merge conflicts promptly.
+- Test changes before pushing.
+
+---
+
+## Commit Message Standards
+
+Commit messages should clearly describe the implemented change.
+
+### Good Examples
+
+```text
+Implement profile page API
+
+Add team report generation
+
+Fix ticket assignment validation
+
+Improve email notification service
+```
+
+### Poor Examples
+
+```text
+Update
+
+Fix
+
+Work done
+
+Changes
+```
+
+### Recommended Format
+
+```text
+KAN-109 Implement profile page backend functionality
+```
+
+---
+
+# Contribution Guidelines
+
+## Before Development
+
+- Review the Jira work item.
+- Understand requirements and acceptance criteria.
+- Confirm any dependencies.
+- Pull the latest repository changes.
+
+## During Development
+
+- Follow project coding standards.
+- Commit regularly.
+- Keep commits focused on a single task.
+- Update documentation when required.
+- Test functionality before committing.
+
+## Before Pushing Changes
+
+Verify that:
+
+- The project builds successfully.
+- Functionality operates as expected.
+- Existing features remain unaffected.
+- No debugging code remains.
+- Documentation is updated if necessary.
+- Acceptance criteria have been satisfied.
+
+---
+
+# Code Review Process
+
+Since development is performed directly on the main branch, reviews are conducted through team collaboration rather than pull requests.
+
+## Review Activities
+
+- Jira work item discussions
+- Team meetings
+- Sprint reviews
+- Demonstrations
+- Code walkthroughs
+
+## Review Checklist
+
+### Functionality
+
+- Requirements implemented correctly
+- Acceptance criteria satisfied
+- No regressions introduced
+
+### Code Quality
+
+- Readable code
+- Consistent naming conventions
+- Logical structure
+- No unnecessary complexity
+
+### Testing
+
+- Functionality tested
+- Edge cases considered
+- Existing features remain operational
+
+### Security
+
+- Input validation present
+- Authorization rules enforced
+- Sensitive information protected
+
+---
+
+# Testing Standards
+
+## Unit Testing
+
+Verify individual components operate correctly.
+
+Areas include:
+
+- Service methods
+- Business logic
+- Utility functions
+
+---
+
+## Integration Testing
+
+Verify communication between:
+
+- Frontend
+- Backend
+- Database
+- Email services
+
+---
+
+## System Testing
+
+Verify complete user workflows.
+
+Examples:
+
+- Create ticket
+- Assign worker
+- Complete ticket
+- Generate reports
+- Manage organisations
+
+---
+
+## User Acceptance Testing
+
+Verify that:
+
+- Requirements are met
+- Workflows operate correctly
+- Users can complete intended tasks
+- Stakeholder expectations are satisfied
+
+---
+
+# Definition of Done
+
+A Jira work item is considered complete when:
+
+- Functionality has been implemented.
+- Acceptance criteria have been satisfied.
+- Code follows project coding standards.
+- Testing has been completed successfully.
+- Documentation has been updated where necessary.
+- No critical defects remain.
+- Changes have been committed and pushed to the main branch.
+- The Jira work item has been updated and marked as **Done**.
+
+---
+
+# Security Practices
+
+The project follows the following security principles:
+
+- Validate all user input.
+- Implement role-based authorization.
+- Protect sensitive information.
+- Store credentials securely.
+- Prevent unauthorized access.
+- Use secure communication protocols.
+- Log important security-related events.
+
+---
+
+# Documentation Standards
+
+Documentation should be updated whenever:
+
+- New functionality is added.
+- APIs are modified.
+- Database structures change.
+- Configuration settings change.
+- Deployment procedures change.
+
+Documentation should be:
+
+- Clear
+- Accurate
+- Concise
+- Up-to-date
+
+---
+
+# Quality Expectations
+
+The project aims to deliver software that is:
+
+- Reliable
+- Maintainable
+- Secure
+- Scalable
+- Testable
+- User-friendly
+
+Quality is the responsibility of every team member and should be maintained throughout planning, development, testing, review, and deployment activities.
+
+---
+
+# Team Responsibilities
+
+## Developers
+
+- Implement assigned functionality
+- Follow coding standards
+- Perform testing
+- Update documentation
+- Participate in reviews
+
+## Team Members
+
+- Review completed work
+- Attend sprint activities
+- Participate in demonstrations
+- Support continuous improvement
+- Help resolve project issues
+
+---
+
+# License
+
+This project was developed as part of a university Software Engineering project.
+
+The source code, documentation, and associated materials are intended for educational purposes unless otherwise specified by the project stakeholders.

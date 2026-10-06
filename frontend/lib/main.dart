@@ -42,9 +42,38 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   List<TicketModel> openTickets = [];
   String userName = 'Loading...';
+  //getting organization
   void fetchOpenTickets() async {
       
       final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/ticket/getOpenTickets');
+
+      try {
+        final response = await http.post(
+          url,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({}), 
+        );
+
+        if (response.statusCode == 200) {
+          
+          List<TicketModel> parsedTickets = ticketFromJson(response.body);
+          
+          
+          setState(() {
+            
+            openTickets = parsedTickets;
+
+          });
+          print("✅ 首页工单获取成功，共 ${openTickets.length} 条");
+        }
+      } catch (e) {
+        print("💥 首页工单获取失败: $e");
+      }
+    }
+
+void fetchAssignTickets() async {
+      
+      final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/ticketAssignment/GetAcceptedJobWithFilter');
 
       try {
         final response = await http.post(
@@ -109,7 +138,7 @@ class _MyHomePageState extends State<MyHomePage> {
         elevation: 0,
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
-        title: Text('Hello, $userName', style: TextStyle(color:Colors.black)),
+        title: Text('MYTI', style: TextStyle(color:Colors.black, fontWeight: FontWeight.bold)),
 
         actions:[
           Padding(
@@ -123,7 +152,7 @@ class _MyHomePageState extends State<MyHomePage> {
               child: CircleAvatar(
                 radius: 18.0,
                 backgroundColor: Colors.blue,
-                child: Text('Alan'),
+                child: Text('$userName'),
               ),
 
             )
@@ -145,7 +174,7 @@ class _MyHomePageState extends State<MyHomePage> {
               //fixed area, this is upper area excluding 
               Padding(
                 padding: EdgeInsets.all(16.0),
-                child: Text('Good morning, Alan', style: TextStyle(fontSize: 20)), 
+                child: Text('Hello, $userName', style: TextStyle(fontSize: 20)), 
               ),
 
               //Search area
@@ -237,7 +266,8 @@ class _MyHomePageState extends State<MyHomePage> {
                           context,
                           ticket.title ?? "No title",
                           ticket.organizationName ?? ticket.posterName ?? "Unknown Location",
-                          ticket.pay?.toString() ?? '0'
+                          ticket.pay?.toString() ?? '0',
+                          ticket.description ?? "No description",
                       );
                     }).toList(),
                   ),
@@ -288,11 +318,11 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Widget _buildJobCard(BuildContext context, String title, String companyName, String price){
+  Widget _buildJobCard(BuildContext context, String title, String companyName, String price, String description){
       return InkWell(
         onTap: (){
           print('tap job ticket in find job page');
-          Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser(title: title, company: companyName, price: price,)),);
+          Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser(title: title, company: companyName, price: price, description: description,)),);
         },
         borderRadius: BorderRadius.circular(12),
         child: Container(

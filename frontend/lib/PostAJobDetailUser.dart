@@ -7,12 +7,14 @@ class PostAJobDetailUser extends StatefulWidget {
   final String title;
   final String company;
   final String price;
+  final String description;
 
   const PostAJobDetailUser({
     super.key,
     required this.title,
     required this.company,
-    required this.price});
+    required this.price,
+    required this.description});
 
   @override
   State<PostAJobDetailUser> createState() => _PostAJobDetailUserPage();
@@ -81,7 +83,7 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
                   ),
                   SizedBox(height: 16),
 
-                  is_Detail_Tab ? _buildDetailsSection() : _buildCommentsSection(), 
+                  is_Detail_Tab ? _buildDetailsSection(context) : _buildCommentsSection(), 
 
 
                   
@@ -119,13 +121,13 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
   }
 
   // The Details View (Description + Map)
-  Widget _buildDetailsSection() {
+  Widget _buildDetailsSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text('Description', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         const SizedBox(height: 8),
-        const Text('The HVAC unit in the North Wing is not cooling properly...', style: TextStyle(color: Colors.black54)),
+        Text(widget.description, style: TextStyle(color: Colors.black54)),
         const SizedBox(height: 20),
         const Text('Location', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         const SizedBox(height: 8),

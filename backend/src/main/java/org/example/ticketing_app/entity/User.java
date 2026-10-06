@@ -14,7 +14,7 @@ import java.io.Serializable;
  * </p>
  *
  * @author Yucong
- * @since 2026-09-27
+ * @since 2026-10-05
  */
 @Getter
 @Setter
@@ -29,4 +29,6 @@ public class User implements Serializable {
     private String name;
 
     private String email;
+
+    private String description;
 }

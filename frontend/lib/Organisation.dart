@@ -3,10 +3,41 @@ import 'package:flutter/material.dart';
 import 'Profile.dart';
 import 'Teams.dart';
 
-class OrganisationPage extends StatelessWidget {
+class OrganisationPage extends StatefulWidget {
   const OrganisationPage({super.key, this.isManager = true});
 
   final bool isManager;
+
+  @override
+  State<OrganisationPage> createState() => _OrganisationPageState();
+}
+
+class _OrganisationPageState extends State<OrganisationPage> {
+  static const organisations = [
+    (
+      organizationId: 'org-1',
+      name: 'Org Sample 1',
+      link: 'org1.com',
+      members: 24,
+      avatarColor: Colors.pink,
+    ),
+    (
+      organizationId: 'org-2',
+      name: 'Org Sample 2',
+      link: 'org2.com',
+      members: 16,
+      avatarColor: Colors.teal,
+    ),
+    (
+      organizationId: 'org-3',
+      name: 'Org Sample 3',
+      link: 'org3.com',
+      members: 32,
+      avatarColor: Colors.red,
+    ),
+  ];
+
+  String _query = '';
 
   void _openTeams(
     BuildContext context,
@@ -19,7 +50,7 @@ class OrganisationPage extends StatelessWidget {
         builder: (context) => TeamsPage(
           organisationId: organisationId,
           organisationName: organisationName,
-          isManager: isManager,
+          isManager: widget.isManager,
         ),
       ),
     );
@@ -27,6 +58,10 @@ class OrganisationPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final visibleOrganisations = organisations
+        .where((organisation) => organisation.name.toLowerCase().contains(_query))
+        .toList();
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFFF9FAFB),
@@ -47,6 +82,9 @@ class OrganisationPage extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: TextField(
+                onChanged: (value) {
+                  setState(() => _query = value.trim().toLowerCase());
+                },
                 decoration: InputDecoration(
                   hintText: 'Search organizations...',
                   hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
@@ -71,12 +109,12 @@ class OrganisationPage extends StatelessWidget {
                 ),
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.all(16.0),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Flexible(
+                  const Flexible(
                     child: Text(
                       'Organizations',
                       style: TextStyle(
@@ -86,10 +124,10 @@ class OrganisationPage extends StatelessWidget {
                       ),
                     ),
                   ),
-                  SizedBox(width: 12),
+                  const SizedBox(width: 12),
                   Text(
-                    '3 results',
-                    style: TextStyle(
+                    '${visibleOrganisations.length} results',
+                    style: const TextStyle(
                       color: Color(0xFF6B7280),
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -99,44 +137,25 @@ class OrganisationPage extends StatelessWidget {
               ),
             ),
             Expanded(
-              child: ListView(
+              child: ListView.separated(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 keyboardDismissBehavior:
                     ScrollViewKeyboardDismissBehavior.onDrag,
-                children: [
-                  OrganizationCard(
-                    isManager: isManager,
-                    organizationId: 'org-1',
-                    name: 'Org Sample 1',
-                    link: 'org1.com',
-                    members: 24,
-                    avatarColor: Colors.pink,
+                itemCount: visibleOrganisations.length,
+                separatorBuilder: (context, index) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final organisation = visibleOrganisations[index];
+                  return OrganizationCard(
+                    isManager: widget.isManager,
+                    organizationId: organisation.organizationId,
+                    name: organisation.name,
+                    link: organisation.link,
+                    members: organisation.members,
+                    avatarColor: organisation.avatarColor,
                     onManage: () {},
                     onOpenTeams: (id, name) => _openTeams(context, id, name),
-                  ),
-                  const SizedBox(height: 12),
-                  OrganizationCard(
-                    isManager: isManager,
-                    organizationId: 'org-2',
-                    name: 'Org Sample 2',
-                    link: 'org2.com',
-                    members: 16,
-                    avatarColor: Colors.teal,
-                    onManage: () {},
-                    onOpenTeams: (id, name) => _openTeams(context, id, name),
-                  ),
-                  const SizedBox(height: 12),
-                  OrganizationCard(
-                    isManager: isManager,
-                    organizationId: 'org-3',
-                    name: 'Org Sample 3',
-                    link: 'org3.com',
-                    members: 32,
-                    avatarColor: Colors.red,
-                    onManage: () {},
-                    onOpenTeams: (id, name) => _openTeams(context, id, name),
-                  ),
-                ],
+                  );
+                },
               ),
             ),
           ],

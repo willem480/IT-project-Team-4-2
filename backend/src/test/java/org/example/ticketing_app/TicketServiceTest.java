@@ -409,7 +409,7 @@ public class TicketServiceTest {
                 );
         TeamReport teamReport = teamReportService.generateReport(3);
         OrganizationReport organizationReport = organizationReportService.generateReport(1);
-        System.out.println(organizationReport.getBody());
+        System.out.println(report.getBody());
     }
 
     @Test
