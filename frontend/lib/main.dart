@@ -42,6 +42,39 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   List<TicketModel> openTickets = [];
   String userName = 'Loading...';
+
+  //search function
+  void fetchTicketsByKeyword(String keyword) async{
+    if(keyword.trim().isEmpty){
+      fetchOpenTickets();
+      return;
+    }
+    final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/ticket/getOpenTicketsByKeyword');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({}), 
+      );
+
+      if (response.statusCode == 200) {
+        
+        List<TicketModel> parsedTickets = ticketFromJson(response.body);
+        
+        
+        setState(() {
+          
+          openTickets = parsedTickets;
+
+        });
+        print("✅ 首页工单获取成功，共 ${openTickets.length} 条");
+      }
+    } catch (e) {
+      print("💥 首页工单获取失败: $e");
+    }
+
+  }
   //getting organization
   void fetchOpenTickets() async {
       
@@ -180,7 +213,13 @@ void fetchAssignTickets() async {
               //Search area
               Padding(
                 padding: const EdgeInsets.all(16.0),
+
                 child: TextField(
+                  //submit function
+                  onSubmitted: (value){
+                    fetchTicketsByKeyword(value);
+                  },
+
                   decoration: InputDecoration(
                     //hint area
                     hintText: 'Search tickets, assignees, or locations...',
