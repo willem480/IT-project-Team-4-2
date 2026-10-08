@@ -31,6 +31,8 @@ class _ProfilePage extends State<Profile> {
   String userName = 'Loading...';
   String title = 'Loading...';
   String location = 'Loading...';
+  String description = "No description";
+  String user_Description = "No description";
   double pay = 0.0;
   double totalEarnings = 0.0;
   double thisMonthEarnings = 0.0;
@@ -59,6 +61,7 @@ class _ProfilePage extends State<Profile> {
           totalEarnings = myUser.totalEarnings.toDouble() ?? 0.0;
           thisMonthEarnings = myUser.totalEarningsThisMonth.toDouble() ?? 0.0;
           thisMonthTimes = myUser.numberOfEarningsThisMonth.toInt() ?? 0;
+          user_Description= myUser.description ?? "No description";
         });
       }
   }
@@ -147,11 +150,51 @@ class _ProfilePage extends State<Profile> {
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(50),
+              child: SizedBox(
+                width: double.infinity,
+              
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   //intro
+                  Container(
+                    height: 250,
+                    width: 500,
+                    padding: const EdgeInsets.all(16),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.grey), 
+                    ),
+
+                    child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          CircleAvatar(
+                            radius: 40,
+                            backgroundColor: Colors.blue,
+                            child: Text(
+                              userName.isNotEmpty? userName.substring(0,1).toUpperCase():'U',
+                              style: TextStyle(fontSize: 32, color:Colors.white, fontWeight:FontWeight.bold),),
+                          ),
+                          const SizedBox(width: 24),
+                          Expanded(
+                            child: Column(
+                              children: [
+                                Text("Description", style: TextStyle(color: Colors.grey, fontSize: 16, fontWeight: FontWeight.bold)),            
+                                const SizedBox(height: 20),
+                                Text("$user_Description", style: const TextStyle(fontSize: 15, height: 1.4), maxLines: 7, overflow: TextOverflow.ellipsis,),
+                              ]
+                            )
+                          )
+                          
+                        ],
+                    )
+                  ),
+                  const SizedBox(height:30),
+                  //job summary
                   Container(
                     height: 250,
                     width: 500,
@@ -174,10 +217,10 @@ class _ProfilePage extends State<Profile> {
                         ],
                     )
                   ),
-                  const SizedBox(height:20),
-
+                  const SizedBox(height: 30),
                   //button
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       _buildTabButton('Posted jobs', is_Detail_Tab, (){
                         setState(() => is_Detail_Tab = true);
@@ -186,22 +229,26 @@ class _ProfilePage extends State<Profile> {
                       const SizedBox(width: 12),
                       _buildTabButton('Completed jobs', !is_Detail_Tab, (){
                         setState(() => is_Detail_Tab = false);
-                      })
+                      }),
+
+                      SizedBox(width: 20),
+                      OutlinedButton(
+                        onPressed: (){}, 
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [Text('Time'), SizedBox(width: 8), Icon(Icons.arrow_downward)]
+                      ))
+                  
                     ],
                   ),
-                  SizedBox(height: 25),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: OutlinedButton(onPressed:() {}, 
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [Text('Time'), SizedBox(width: 8), Icon(Icons.arrow_downward)]))),
+                
 
                   is_Detail_Tab ? _buildPostedJobSection(context) : _buildCompletedJobs(), 
 
 
                 ],
               ),
+              )
 
 
           )),
@@ -262,7 +309,10 @@ class _ProfilePage extends State<Profile> {
           context, 
           ticket.title.toString() ?? 'No title', 
           ticket.organizationName ?? 'Unknown Location', 
-          ticket.pay?.toString() ?? '0');
+          ticket.pay?.toString() ?? '0',
+          ticket.description ?? "No description"
+          );
+          
       }).toList(),
     );
   }
@@ -284,7 +334,10 @@ class _ProfilePage extends State<Profile> {
           context, 
           ticket.title.toString() ?? 'No title', 
           ticket.organizationName ?? 'Unknown Location', 
-          ticket.pay?.toString() ?? '0');
+          ticket.pay?.toString() ?? '0',
+          ticket.description ?? "No description",
+          );
+          
       }).toList(),
     );
   }
@@ -309,11 +362,11 @@ class _ProfilePage extends State<Profile> {
     );
   }
 
-  Widget _buildTicket(BuildContext context, String title, String companyName, String price){
+  Widget _buildTicket(BuildContext context, String title, String companyName, String price, String description){
       return InkWell(
           onTap: (){
             print('check your posted jobs');
-            Navigator.push(context, MaterialPageRoute(builder: (context) => PostAJobDetailUser(title: title, company: companyName, price: price)),);
+            Navigator.push(context, MaterialPageRoute(builder: (context) => PostAJobDetailUser(title: title, company: companyName, price: price, description: description)),);
           },
           borderRadius: BorderRadius.circular(12),
           child: Container(

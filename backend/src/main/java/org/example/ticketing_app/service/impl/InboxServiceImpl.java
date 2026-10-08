@@ -118,6 +118,22 @@ public class InboxServiceImpl extends ServiceImpl<InboxMapper, Inbox> {
                         );
                     }
 
+                } else if (ticketService.isUpdateTicketEmail(emailData)) {
+
+                    Ticket updatedTicket = ticketService.updateTicketFromEmail(emailData);
+                    if (updatedTicket != null) {
+                        EmailServiceHelper.sendTicketUpdatedReply(
+                                emailData.getFrom(),
+                                emailData.getSubject(),
+                                updatedTicket
+                        );
+                    } else {
+                        EmailServiceHelper.sendTicketUpdateFailureReply(
+                                emailData.getFrom(),
+                                emailData.getSubject()
+                        );
+                    }
+
                 } else {
 
                     EmailServiceHelper.sendInvalidFormatReply(
