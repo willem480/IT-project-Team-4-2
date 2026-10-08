@@ -148,9 +148,12 @@ class _ProfilePage extends State<Profile> {
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(50),
+              child: SizedBox(
+                width: double.infinity,
+              
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   //intro
                   Container(
@@ -179,6 +182,7 @@ class _ProfilePage extends State<Profile> {
 
                   //button
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       _buildTabButton('Posted jobs', is_Detail_Tab, (){
                         setState(() => is_Detail_Tab = true);
@@ -187,22 +191,26 @@ class _ProfilePage extends State<Profile> {
                       const SizedBox(width: 12),
                       _buildTabButton('Completed jobs', !is_Detail_Tab, (){
                         setState(() => is_Detail_Tab = false);
-                      })
+                      }),
+
+                      SizedBox(width: 20),
+                      OutlinedButton(
+                        onPressed: (){}, 
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [Text('Time'), SizedBox(width: 8), Icon(Icons.arrow_downward)]
+                      ))
+                  
                     ],
                   ),
-                  SizedBox(height: 25),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: OutlinedButton(onPressed:() {}, 
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [Text('Time'), SizedBox(width: 8), Icon(Icons.arrow_downward)]))),
+                
 
                   is_Detail_Tab ? _buildPostedJobSection(context) : _buildCompletedJobs(), 
 
 
                 ],
               ),
+              )
 
 
           )),
