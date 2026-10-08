@@ -16,6 +16,7 @@ class UserProfile {
     final int totalEarningsThisMonth;
     final int numberOfEarningsThisMonth;
     final int percentageEarningsCompareToLastMonth;
+    final String description;
 
     UserProfile({
         required this.idUser,
@@ -25,6 +26,7 @@ class UserProfile {
         required this.totalEarningsThisMonth,
         required this.numberOfEarningsThisMonth,
         required this.percentageEarningsCompareToLastMonth,
+        required this.description,
     });
 
     factory UserProfile.fromJson(Map<String, dynamic> json) => UserProfile(
@@ -35,6 +37,7 @@ class UserProfile {
         totalEarningsThisMonth: json["totalEarningsThisMonth"],
         numberOfEarningsThisMonth: json["numberOfEarningsThisMonth"],
         percentageEarningsCompareToLastMonth: json["percentageEarningsCompareToLastMonth"],
+        description: json["description"],
     );
 
     Map<String, dynamic> toJson() => {
@@ -45,5 +48,6 @@ class UserProfile {
         "totalEarningsThisMonth": totalEarningsThisMonth,
         "numberOfEarningsThisMonth": numberOfEarningsThisMonth,
         "percentageEarningsCompareToLastMonth": percentageEarningsCompareToLastMonth,
+        "description": description,
     };
 }

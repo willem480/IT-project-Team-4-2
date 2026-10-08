@@ -182,11 +182,14 @@ void fetchAssignTickets() async {
                 Navigator.push(context, MaterialPageRoute(builder: (context) => Profile()),);
 
               },
-              child: CircleAvatar(
-                radius: 18.0,
-                backgroundColor: Colors.blue,
-                child: Text('$userName'),
-              ),
+              child: 
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: Colors.blue,
+                  child: Text(
+                    userName.isNotEmpty? userName.substring(0,1).toUpperCase():'U',
+                    style: TextStyle(fontSize: 12, color:Colors.white, fontWeight:FontWeight.bold),),
+                ),
 
             )
 

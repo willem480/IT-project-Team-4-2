@@ -32,6 +32,7 @@ class _ProfilePage extends State<Profile> {
   String title = 'Loading...';
   String location = 'Loading...';
   String description = "No description";
+  String user_Description = "No description";
   double pay = 0.0;
   double totalEarnings = 0.0;
   double thisMonthEarnings = 0.0;
@@ -60,6 +61,7 @@ class _ProfilePage extends State<Profile> {
           totalEarnings = myUser.totalEarnings.toDouble() ?? 0.0;
           thisMonthEarnings = myUser.totalEarningsThisMonth.toDouble() ?? 0.0;
           thisMonthTimes = myUser.numberOfEarningsThisMonth.toInt() ?? 0;
+          user_Description= myUser.description ?? "No description";
         });
       }
   }
@@ -160,6 +162,43 @@ class _ProfilePage extends State<Profile> {
                     height: 250,
                     width: 500,
                     padding: const EdgeInsets.all(16),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.grey), 
+                    ),
+
+                    child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          CircleAvatar(
+                            radius: 40,
+                            backgroundColor: Colors.blue,
+                            child: Text(
+                              userName.isNotEmpty? userName.substring(0,1).toUpperCase():'U',
+                              style: TextStyle(fontSize: 32, color:Colors.white, fontWeight:FontWeight.bold),),
+                          ),
+                          const SizedBox(width: 24),
+                          Expanded(
+                            child: Column(
+                              children: [
+                                Text("Description", style: TextStyle(color: Colors.grey, fontSize: 16, fontWeight: FontWeight.bold)),            
+                                const SizedBox(height: 20),
+                                Text("$user_Description", style: const TextStyle(fontSize: 15, height: 1.4), maxLines: 7, overflow: TextOverflow.ellipsis,),
+                              ]
+                            )
+                          )
+                          
+                        ],
+                    )
+                  ),
+                  const SizedBox(height:30),
+                  //job summary
+                  Container(
+                    height: 250,
+                    width: 500,
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
@@ -178,8 +217,7 @@ class _ProfilePage extends State<Profile> {
                         ],
                     )
                   ),
-                  const SizedBox(height:20),
-
+                  const SizedBox(height: 30),
                   //button
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
