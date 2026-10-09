@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import 'Profile.dart';
+import 'Members.dart';
 import 'Teams.dart';
 import 'models/organisation_model.dart';
 
@@ -64,6 +65,19 @@ class _OrganisationPageState extends State<OrganisationPage> {
           userId: widget.userId,
           organizationId: organisationId,
           organisationName: organisationName,
+        ),
+      ),
+    );
+  }
+
+  void _openMembers(BuildContext context, OrganisationModel organisation) {
+    Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (context) => MembersPage(
+          organisationId: organisation.organizationId,
+          userId: widget.userId,
+          isManager: organisation.canManage,
         ),
       ),
     );
@@ -170,8 +184,8 @@ class _OrganisationPageState extends State<OrganisationPage> {
                         _avatarColors[organisations.indexOf(organisation) %
                             _avatarColors.length],
                     onManage: () {},
-                    onOpenTeams: (id, name) =>
-                        _openTeams(context, id, name),
+                    onOpenMembers: () => _openMembers(context, organisation),
+                    onOpenTeams: (id, name) => _openTeams(context, id, name),
                   );
                 },
               ),
@@ -240,6 +254,7 @@ class OrganizationCard extends StatelessWidget {
     required this.avatarColor,
     required this.onManage,
     required this.onOpenTeams,
+    required this.onOpenMembers,
     required this.isManager,
   });
 
@@ -249,103 +264,111 @@ class OrganizationCard extends StatelessWidget {
   final int members;
   final Color avatarColor;
   final VoidCallback onManage;
+  final VoidCallback onOpenMembers;
   final void Function(int organisationId, String organisationName) onOpenTeams;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: avatarColor,
-                child: Text(
-                  name.isEmpty ? '' : name.substring(0, 1).toUpperCase(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onOpenMembers,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE5E7EB)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 24,
+                  backgroundColor: avatarColor,
+                  child: Text(
+                    name.isEmpty ? '' : name.substring(0, 1).toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        color: Color(0xFF111827),
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          color: Color(0xFF111827),
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      // Preserve the subtitle line's spacing without a mock link.
+                      const Text(
+                        '',
+                        style: TextStyle(
+                          color: Color(0xFF6B7280),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: isManager ? onManage : null,
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFF065F46),
+                    backgroundColor: const Color(0xFFD1FAE5),
+                    disabledForegroundColor: const Color(0xFF9CA3AF),
+                    disabledBackgroundColor: const Color(0xFFF3F4F6),
+                    shape: const StadiumBorder(),
+                  ),
+                  child: const Text(
+                    'Manage',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 28, color: Color(0xFFE5E7EB)),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '$members members',
+                    style: const TextStyle(
+                      color: Color(0xFF6B7280),
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                Material(
+                  type: MaterialType.transparency,
+                  child: InkResponse(
+                    onTap: () => onOpenTeams(organizationId, name),
+                    radius: 20,
+                    child: Tooltip(
+                      message: 'View teams in $name',
+                      child: const Icon(
+                        Icons.chevron_right,
+                        size: 20,
+                        color: Color(0xFF6B7280),
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    // Preserve the subtitle line's spacing without a mock link.
-                    const Text(
-                      '',
-                      style: TextStyle(color: Color(0xFF6B7280), fontSize: 14),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              TextButton(
-                onPressed: isManager ? onManage : null,
-                style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFF065F46),
-                  backgroundColor: const Color(0xFFD1FAE5),
-                  disabledForegroundColor: const Color(0xFF9CA3AF),
-                  disabledBackgroundColor: const Color(0xFFF3F4F6),
-                  shape: const StadiumBorder(),
-                ),
-                child: const Text(
-                  'Manage',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-          const Divider(height: 28, color: Color(0xFFE5E7EB)),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  '$members members',
-                  style: const TextStyle(
-                    color: Color(0xFF6B7280),
-                    fontSize: 14,
                   ),
                 ),
-              ),
-              Material(
-                type: MaterialType.transparency,
-                child: InkResponse(
-                  onTap: () => onOpenTeams(organizationId, name),
-                  radius: 20,
-                  child: Tooltip(
-                    message: 'View teams in $name',
-                    child: const Icon(
-                      Icons.chevron_right,
-                      size: 20,
-                      color: Color(0xFF6B7280),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
