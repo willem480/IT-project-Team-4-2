@@ -66,11 +66,15 @@ class _TeamsPageState extends State<TeamsPage> {
     }
   }
 
-  void _openMembers(BuildContext context, String teamId) {
+  void _openMembers(BuildContext context, int teamId) {
     Navigator.push(
       context,
       MaterialPageRoute<void>(
-        builder: (context) => MembersPage(teamId: teamId, isManager: canManage),
+        builder: (context) => MembersPage(
+          teamId: teamId,
+          userId: widget.userId,
+          isManager: canManage,
+        ),
       ),
     );
   }
@@ -181,7 +185,7 @@ class _TeamsPageState extends State<TeamsPage> {
                   final team = visibleTeams[index];
                   return _TeamCard(
                     isManager: canManage,
-                    teamId: team.teamId.toString(),
+                    teamId: team.teamId,
                     onOpenMembers: (id) => _openMembers(context, id),
                     name: team.name,
                     description: 'Loading...',
@@ -271,9 +275,9 @@ class _TeamCard extends StatelessWidget {
     required this.isManager,
   });
 
-  final String teamId;
+  final int teamId;
   final bool isManager;
-  final ValueChanged<String> onOpenMembers;
+  final ValueChanged<int> onOpenMembers;
   final String initials;
   final String name;
   final String description;
