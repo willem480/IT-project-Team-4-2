@@ -1,74 +1,82 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 import 'Profile.dart';
 import 'Members.dart';
+import 'models/Teams_model.dart';
 
 class TeamsPage extends StatefulWidget {
   const TeamsPage({
     super.key,
-    required this.organisationId,
+    required this.userId,
+    required this.organizationId,
     required this.organisationName,
-    required this.isManager,
   });
 
-  final String organisationId;
+  final int userId;
+  final int organizationId;
   final String organisationName;
-  // Inherited from the organisation that opened this page.
-  final bool isManager;
 
   @override
   State<TeamsPage> createState() => _TeamsPageState();
 }
 
 class _TeamsPageState extends State<TeamsPage> {
+  List<Team> teams = [];
+  bool canManage = false;
+  static const _avatarColors = [
+    Colors.pink,
+    Colors.teal,
+    Colors.red,
+    Colors.blue,
+  ];
+
   String _query = '';
+
+  @override
+  void initState() {
+    super.initState();
+    fetchTeams();
+  }
+
+  void fetchTeams() async {
+    final url = Uri.parse(
+      'http://127.0.0.1:4523/m1/8806835-8598944-default/organization/getOrganizationTeams?organizationId=${widget.organizationId}&viewerUserId=${widget.userId}',
+    );
+
+    try {
+      final response = await http.get(
+        url,
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final parsedResponse = teamsResponseFromJson(response.body);
+        if (!mounted) return;
+        setState(() {
+          teams = parsedResponse.teams;
+          canManage = parsedResponse.canManage;
+        });
+        debugPrint('Teams loaded: ${teams.length}');
+      } else {
+        debugPrint('Failed to load teams: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Failed to load teams: $e');
+    }
+  }
 
   void _openMembers(BuildContext context, String teamId) {
     Navigator.push(
       context,
       MaterialPageRoute<void>(
-        builder: (context) =>
-            MembersPage(teamId: teamId, isManager: widget.isManager),
+        builder: (context) => MembersPage(teamId: teamId, isManager: canManage),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final teams = [
-      (
-        teamId: '${widget.organisationId}-product-design',
-        name: 'Product Design',
-        description: 'Design & research',
-        members: 12,
-        initials: 'PD',
-        avatarColor: Colors.pink,
-      ),
-      (
-        teamId: '${widget.organisationId}-engineering',
-        name: 'Engineering',
-        description: 'Platform & development',
-        members: 34,
-        initials: 'EN',
-        avatarColor: Colors.teal,
-      ),
-      (
-        teamId: '${widget.organisationId}-marketing',
-        name: 'Marketing',
-        description: 'Brand & growth',
-        members: 8,
-        initials: 'MK',
-        avatarColor: Colors.red,
-      ),
-      (
-        teamId: '${widget.organisationId}-customer-success',
-        name: 'Customer Success',
-        description: 'Support & experience',
-        members: 10,
-        initials: 'CS',
-        avatarColor: Colors.blue,
-      ),
-    ];
     final visibleTeams = teams
         .where((team) => team.name.toLowerCase().contains(_query))
         .toList();
@@ -167,18 +175,28 @@ class _TeamsPageState extends State<TeamsPage> {
                 keyboardDismissBehavior:
                     ScrollViewKeyboardDismissBehavior.onDrag,
                 itemCount: visibleTeams.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 12),
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   final team = visibleTeams[index];
                   return _TeamCard(
-                    isManager: widget.isManager,
-                    teamId: team.teamId,
+                    isManager: canManage,
+                    teamId: team.teamId.toString(),
                     onOpenMembers: (id) => _openMembers(context, id),
                     name: team.name,
-                    description: team.description,
-                    members: team.members,
-                    initials: team.initials,
-                    avatarColor: team.avatarColor,
+                    description: 'Loading...',
+                    members: team.memberCount,
+                    initials: team.name
+                        .trim()
+                        .split(RegExp(r'\s+'))
+                        .where((word) => word.isNotEmpty)
+                        .take(2)
+                        .map((word) => word.characters.first)
+                        .join()
+                        .toUpperCase(),
+                    avatarColor:
+                        _avatarColors[teams.indexOf(team) %
+                            _avatarColors.length],
                     onManage: () {},
                   );
                 },
