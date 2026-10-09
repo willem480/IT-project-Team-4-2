@@ -14,6 +14,7 @@ class FindAJobDetailUser extends StatefulWidget {
   final String price;
   final String description;
   final int ticketId;
+  final String date;
   
 
   const FindAJobDetailUser({
@@ -23,6 +24,7 @@ class FindAJobDetailUser extends StatefulWidget {
     required this.price,
     required this.description,
     required this.ticketId,
+    required this.date,
     });
 
   @override
@@ -144,6 +146,7 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
                           Text(widget.title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 30)), 
                           const SizedBox(height: 12),
                           Text(widget.company,style: TextStyle(fontSize: 18),),
+                          Text("Posted on: ${widget.date}", style: TextStyle(fontSize: 16)),
                           const Spacer(), 
                           Text('\$ ${widget.price}', style: const TextStyle(fontWeight:FontWeight.bold, fontSize: 30)),
                         

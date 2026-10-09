@@ -46,7 +46,7 @@ class _MyHomePageState extends State<MyHomePage> {
   //search function
   void fetchTicketsByKeyword(String keyword) async{
     if(keyword.trim().isEmpty){
-      fetchOpenTickets();
+      fetchOpenTickets('none');
       return;
     }
     final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/ticket/getOpenTicketsByKeyword?keyword=$keyword');
@@ -76,9 +76,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
   }
   //getting organization
-  void fetchOpenTickets() async {
+  void fetchOpenTickets(String filterType) async {
       
-      final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/ticket/getOpenTickets');
+      final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/ticket/getOpenTickets?filter=$filterType');
 
       try {
         final response = await http.post(
@@ -154,7 +154,7 @@ void fetchAssignTickets() async {
     @override
     void initState(){
       super.initState();
-      fetchOpenTickets();
+      fetchOpenTickets('none');
       fetchUserData();
     }
 
@@ -262,6 +262,7 @@ void fetchAssignTickets() async {
                     PopupMenuButton<String>(
                       onSelected:  (String value){
                         print("User selected: $value");
+                        fetchOpenTickets(value);
                       },
                       itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
                         const PopupMenuItem<String>(
@@ -312,6 +313,7 @@ void fetchAssignTickets() async {
                           ticket.pay?.toString() ?? '0',
                           ticket.description ?? "No description",
                           ticket.idTicket ?? 0,
+                          ticket.datePosted?.toString() ?? "no date",
                       );
                     }).toList(),
                   ),
@@ -362,11 +364,11 @@ void fetchAssignTickets() async {
     );
   }
 
-  Widget _buildJobCard(BuildContext context, String title, String companyName, String price, String description, int ticketId){
+  Widget _buildJobCard(BuildContext context, String title, String companyName, String price, String description, int ticketId, String date){
       return InkWell(
         onTap: (){
           print('tap job ticket in find job page');
-          Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser(ticketId: ticketId, title: title, company: companyName, price: price, description: description,)),);
+          Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser(ticketId: ticketId, title: title, company: companyName, price: price, description: description, date: date)),);
         },
         borderRadius: BorderRadius.circular(12),
         child: Container(

@@ -33,6 +33,7 @@ class _ProfilePage extends State<Profile> {
   String userName = 'Loading...';
   String title = 'Loading...';
   String location = 'Loading...';
+  DateTime? date ;
   String description = "No description";
   String userDescription = "No description";
   double pay = 0.0;
@@ -103,16 +104,15 @@ class _ProfilePage extends State<Profile> {
     }
   }  
 
-  void fetchPostedTickets() async {
+  void fetchPostedTickets(String filterType) async {
 
-    final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/profilePage/getPostedTickets');
+    final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/profilePage/getPostedTickets?userId=1&filter=$filterType');
 
     try{
       //Post
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'userId': 1}),
       );
 
       if (response.statusCode == 200) {
@@ -127,15 +127,14 @@ class _ProfilePage extends State<Profile> {
 
   }
 
-  void fetchCompletedTickets() async {
+  void fetchCompletedTickets(String filterType) async {
 
-    final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/profilePage/getCompletedTickets');
+    final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/profilePage/getCompletedTickets?userId=1&filter=$filterType');
 
       //Post
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'userId': 1}),
       );
 
       if (response.statusCode == 200) {
@@ -152,8 +151,8 @@ class _ProfilePage extends State<Profile> {
   void initState() {
     super.initState();
     fetchFirstUserData();
-    fetchPostedTickets();
-    fetchCompletedTickets();
+    fetchPostedTickets('none');
+    fetchCompletedTickets('none');
 
   }
 
@@ -313,12 +312,39 @@ class _ProfilePage extends State<Profile> {
                       }),
 
                       SizedBox(width: 20),
-                      OutlinedButton(
-                        onPressed: (){}, 
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [Text('Time'), SizedBox(width: 8), Icon(Icons.arrow_downward)]
-                      ))
+// 替换你原来的 OutlinedButton
+                      PopupMenuButton<String>(
+                        onSelected: (String value) {
+                          print("Profile filter selected: $value");
+                          // 根据当前处于哪个 Tab（Posted 还是 Completed），去调用对应的带参数请求
+                          if (is_Detail_Tab) {
+                            fetchPostedTickets(value);
+                          } else {
+                            fetchCompletedTickets(value);
+                          }
+                        },
+                        itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                          const PopupMenuItem<String>(
+                            value: 'up',
+                            child: Text('Pay: Low to High'),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'down',
+                            child: Text('Pay: High to Low'),
+                          ),
+                        ],
+                        child: OutlinedButton(
+                          onPressed: null, 
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              Text('Filter'), 
+                              SizedBox(width: 8), 
+                              Icon(Icons.arrow_downward, size: 16)
+                            ],
+                          ),
+                        ),
+                      ),
                   
                     ],
                   ),
@@ -393,6 +419,8 @@ class _ProfilePage extends State<Profile> {
           ticket.pay?.toString() ?? '0',
           ticket.description ?? "No description",
           ticket.idTicket ?? 0,
+          ticket.datePosted?.toString() ?? "No date",
+
           );
           
       }).toList(),
@@ -419,6 +447,7 @@ class _ProfilePage extends State<Profile> {
           ticket.pay?.toString() ?? '0',
           ticket.description ?? "No description",
           ticket.idTicket ?? 0, 
+          ticket.datePosted?.toString() ?? 'No date',
           );
           
       }).toList(),
@@ -445,11 +474,11 @@ class _ProfilePage extends State<Profile> {
     );
   }
 
-  Widget _buildTicket(BuildContext context, String title, String companyName, String price, String description, int ticketId){
+  Widget _buildTicket(BuildContext context, String title, String companyName, String price, String description, int ticketId, String datePosted){
       return InkWell(
           onTap: (){
             print('check your posted jobs');
-            Navigator.push(context, MaterialPageRoute(builder: (context) => PostAJobDetailUser(ticketId: ticketId, title: title, company: companyName, price: price, description: description)),);
+            Navigator.push(context, MaterialPageRoute(builder: (context) => PostAJobDetailUser(ticketId: ticketId, title: title, company: companyName, price: price, description: description, date: datePosted)));
           },
           borderRadius: BorderRadius.circular(12),
           child: Container(
