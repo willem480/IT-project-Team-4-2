@@ -56,15 +56,14 @@ class _OrganisationPageState extends State<OrganisationPage> {
     BuildContext context,
     int organisationId,
     String organisationName,
-    bool isManager,
   ) {
     Navigator.push(
       context,
       MaterialPageRoute<void>(
         builder: (context) => TeamsPage(
-          organisationId: organisationId.toString(),
+          userId: widget.userId,
+          organizationId: organisationId,
           organisationName: organisationName,
-          isManager: isManager,
         ),
       ),
     );
@@ -172,7 +171,7 @@ class _OrganisationPageState extends State<OrganisationPage> {
                             _avatarColors.length],
                     onManage: () {},
                     onOpenTeams: (id, name) =>
-                        _openTeams(context, id, name, organisation.canManage),
+                        _openTeams(context, id, name),
                   );
                 },
               ),
