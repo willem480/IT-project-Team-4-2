@@ -379,7 +379,7 @@ class _ProfilePage extends State<Profile> {
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute<void>(
-                    builder: (context) => const OrganisationPage(),
+                    builder: (context) => OrganisationPage(userId: userId),
                   ),
                 );
               }, 
