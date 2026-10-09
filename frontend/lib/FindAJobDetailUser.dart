@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:ticketing_app/main.dart';
+import 'package:ticketing_app/models/ticket_comment.dart';
 import 'dart:convert';
 import 'package:ticketing_app/models/ticket_model.dart';
+import 'package:http/http.dart' as http;
+import 'package:ticketing_app/models/ticket_comment.dart';
 
 
 
@@ -10,13 +13,17 @@ class FindAJobDetailUser extends StatefulWidget {
   final String company;
   final String price;
   final String description;
+  final int ticketId;
+  
 
   const FindAJobDetailUser({
     super.key,
     required this.title,
     required this.company,
     required this.price,
-    required this.description});
+    required this.description,
+    required this.ticketId,
+    });
 
   @override
   State<FindAJobDetailUser> createState() => _FindAJobDetailUserPage();
@@ -25,6 +32,74 @@ class FindAJobDetailUser extends StatefulWidget {
 
 class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
   bool is_Detail_Tab = true;
+
+  List<ticketComment> commentList = [];
+  TextEditingController commentController = TextEditingController();
+
+//Getting comment
+  Future<void> fetchComment() async{
+    final url = Uri.parse("http://127.0.0.1:4523/m1/8806835-8598944-default/ticketComment/getTicketComments?ticketId=${widget.ticketId}");
+
+    try{
+      final response = await http.post(url);
+      if(response.statusCode == 200){
+        var decodedData= json.decode(response.body);
+        List<ticketComment> tempList = [];
+
+        if(decodedData is List){
+          tempList = decodedData.map((model) => ticketComment.fromJson(model)).toList();
+        }
+        else if (decodedData is Map<String, dynamic>){
+          tempList.add(ticketComment.fromJson(decodedData));
+        }
+        setState(() {
+          commentList = tempList;
+        });
+      }
+    }
+    catch(e){
+      print("fail to get a comment");
+    }
+  }
+
+  Future<void> postNewComment()async{
+    if(commentController.text.trim().isEmpty) return; //if it is empty then no send
+    final url = Uri.parse("http://127.0.0.1:4523/m1/8806835-8598944-default/ticketComment/postComment");
+    try{
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "ticketIdticket":widget.ticketId,
+          "userIduser": 1,
+          "content": commentController.text,
+        })
+      );
+
+      if (response.statusCode == 200){
+        print("success");
+        commentController.clear();
+        fetchComment();
+      }
+    }
+    catch(e){
+      print("fail to post a comment");
+    }
+  }
+
+  @override
+  void initState(){
+    super.initState();
+    fetchComment();
+  }
+
+  @override
+  void dispose(){
+    commentController.dispose();
+    super.dispose();
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -161,6 +236,7 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
         const Text('Comments', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         const SizedBox(height: 12),
         TextField(
+          controller: commentController,
           maxLines: 4,
           decoration: InputDecoration(
             hintText: 'Add a comment...',
@@ -176,6 +252,53 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
             ),
           ),
         ),
+
+        const SizedBox(height: 10),
+        Align(
+          alignment: Alignment.centerRight,
+          child: ElevatedButton(
+            onPressed: postNewComment,
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+            child: const Text("Post comment", style: TextStyle(color: Colors.white)),
+          )
+        ),
+        const SizedBox(height: 20),
+        commentList.isEmpty ? 
+        const Padding(
+          padding: EdgeInsets.all(20.0),
+          child: Text("No comment yet", style: TextStyle(color: Colors.grey)),
+           ) 
+          ////////////////////////////////////////////////////////////
+        : Column(
+              children: commentList.map((comment) {
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('User ID: ${comment.userIduser}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                          Text('${comment.date.year}-${comment.date.month}-${comment.date.day}', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(comment.content, style: const TextStyle(fontSize: 14)),
+                    ],
+                  ),
+                );
+              }).toList(),
+
+              
+            ),
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       ],
     );
   }

@@ -49,7 +49,7 @@ class _MyHomePageState extends State<MyHomePage> {
       fetchOpenTickets();
       return;
     }
-    final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/ticket/getOpenTicketsByKeyword');
+    final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/ticket/getOpenTicketsByKeyword?keyword=$keyword');
 
     try {
       final response = await http.post(
@@ -151,6 +151,7 @@ void fetchAssignTickets() async {
       }
 
     }
+    @override
     void initState(){
       super.initState();
       fetchOpenTickets();
@@ -310,6 +311,7 @@ void fetchAssignTickets() async {
                           ticket.organizationName ?? ticket.posterName ?? "Unknown Location",
                           ticket.pay?.toString() ?? '0',
                           ticket.description ?? "No description",
+                          ticket.idTicket ?? 0,
                       );
                     }).toList(),
                   ),
@@ -360,11 +362,11 @@ void fetchAssignTickets() async {
     );
   }
 
-  Widget _buildJobCard(BuildContext context, String title, String companyName, String price, String description){
+  Widget _buildJobCard(BuildContext context, String title, String companyName, String price, String description, int ticketId){
       return InkWell(
         onTap: (){
           print('tap job ticket in find job page');
-          Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser(title: title, company: companyName, price: price, description: description,)),);
+          Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser(ticketId: ticketId, title: title, company: companyName, price: price, description: description,)),);
         },
         borderRadius: BorderRadius.circular(12),
         child: Container(

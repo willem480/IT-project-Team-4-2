@@ -310,7 +310,8 @@ class _ProfilePage extends State<Profile> {
           ticket.title.toString() ?? 'No title', 
           ticket.organizationName ?? 'Unknown Location', 
           ticket.pay?.toString() ?? '0',
-          ticket.description ?? "No description"
+          ticket.description ?? "No description",
+          ticket.idTicket ?? 0,
           );
           
       }).toList(),
@@ -336,6 +337,7 @@ class _ProfilePage extends State<Profile> {
           ticket.organizationName ?? 'Unknown Location', 
           ticket.pay?.toString() ?? '0',
           ticket.description ?? "No description",
+          ticket.idTicket ?? 0, 
           );
           
       }).toList(),
@@ -362,11 +364,11 @@ class _ProfilePage extends State<Profile> {
     );
   }
 
-  Widget _buildTicket(BuildContext context, String title, String companyName, String price, String description){
+  Widget _buildTicket(BuildContext context, String title, String companyName, String price, String description, int ticketId){
       return InkWell(
           onTap: (){
             print('check your posted jobs');
-            Navigator.push(context, MaterialPageRoute(builder: (context) => PostAJobDetailUser(title: title, company: companyName, price: price, description: description)),);
+            Navigator.push(context, MaterialPageRoute(builder: (context) => PostAJobDetailUser(ticketId: ticketId, title: title, company: companyName, price: price, description: description)),);
           },
           borderRadius: BorderRadius.circular(12),
           child: Container(
@@ -396,7 +398,6 @@ class _ProfilePage extends State<Profile> {
                 title,
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
               ),
-              SizedBox(height: 70),
                 // alignment: Alignment.topLeft,
               Text(
                 companyName,
