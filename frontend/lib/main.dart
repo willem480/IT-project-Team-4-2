@@ -133,7 +133,7 @@ void fetchAssignTickets() async {
     }
 
     void fetchUserData() async{
-      final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/profilePage/getUser');
+      final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/profilePage/getUser?userId=1');
 
       //Post
       final response = await http.post(

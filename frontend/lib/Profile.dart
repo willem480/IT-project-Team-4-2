@@ -28,12 +28,13 @@ class Profile extends StatefulWidget {
 
 
 class _ProfilePage extends State<Profile> {
-
+  int userId = 1;
+  String userEmail = 'Loading...';
   String userName = 'Loading...';
   String title = 'Loading...';
   String location = 'Loading...';
   String description = "No description";
-  String user_Description = "No description";
+  String userDescription = "No description";
   double pay = 0.0;
   double totalEarnings = 0.0;
   double thisMonthEarnings = 0.0;
@@ -45,7 +46,7 @@ class _ProfilePage extends State<Profile> {
 
   void fetchFirstUserData() async {
 
-    final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/profilePage/getUser');
+    final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/profilePage/getUser?userId=1');
 
       //Post
       final response = await http.post(
@@ -58,14 +59,49 @@ class _ProfilePage extends State<Profile> {
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
         UserProfile myUser = UserProfile.fromJson(jsonData);
         setState(() {
+          userId = myUser.idUser ?? 1;
           userName = myUser.name ?? 'User';
+          userEmail = myUser.email ?? 'unknown@email.com';
           totalEarnings = myUser.totalEarnings.toDouble() ?? 0.0;
           thisMonthEarnings = myUser.totalEarningsThisMonth.toDouble() ?? 0.0;
           thisMonthTimes = myUser.numberOfEarningsThisMonth.toInt() ?? 0;
-          user_Description= myUser.description ?? "No description";
+          userDescription= myUser.description ?? "No description";
         });
       }
   }
+
+  Future<void> updateProfileDescription(String newDescription) async{
+      final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/user/updateUser');
+
+    try{
+      //Post
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'id': userId,
+          'name': userName,
+          'email': userEmail,
+          'description': newDescription
+          }),
+      );
+
+      if(response.statusCode == 200){
+        print("profile is success loaded");
+
+        setState(() {
+          userDescription = newDescription;
+        });
+        
+      }
+      else{
+        print("fail update description ");
+      }
+
+    }catch(e){
+      print("network request error");
+    }
+  }  
 
   void fetchPostedTickets() async {
 
@@ -119,6 +155,41 @@ class _ProfilePage extends State<Profile> {
     fetchPostedTickets();
     fetchCompletedTickets();
 
+  }
+
+  void _showEditDescriptionDialog() {
+    TextEditingController _editController = TextEditingController(text: userDescription);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Edit Description"),
+          content: TextField(
+            controller: _editController,
+            maxLines: 4,
+            decoration: const InputDecoration(
+              hintText: "Write something about yourself...",
+              border: OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                String newText = _editController.text;
+                Navigator.pop(context);
+                updateProfileDescription(newText); // 调用网络请求去修改
+              },
+              child: const Text("Save"),
+            ),
+          ],
+        );
+      },
+    );
   }
 
 
@@ -184,13 +255,22 @@ class _ProfilePage extends State<Profile> {
                           Expanded(
                             child: Column(
                               children: [
-                                Text("Description", style: TextStyle(color: Colors.grey, fontSize: 16, fontWeight: FontWeight.bold)),            
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text("Description", style: TextStyle(color: Colors.grey, fontSize: 16, fontWeight: FontWeight.bold)),
+                                    IconButton(onPressed: (){_showEditDescriptionDialog();}, icon: Icon(Icons.edit),)            
+                                  ],
+                                ),
+                                
                                 const SizedBox(height: 20),
-                                Text("$user_Description", style: const TextStyle(fontSize: 15, height: 1.4), maxLines: 7, overflow: TextOverflow.ellipsis,),
+                                Text("$userDescription", style: const TextStyle(fontSize: 15, height: 1.4), maxLines: 7, overflow: TextOverflow.ellipsis,),
                               ]
-                            )
-                          )
+                            ),
+                          ),
+                            
                           
+    
                         ],
                     )
                   ),
