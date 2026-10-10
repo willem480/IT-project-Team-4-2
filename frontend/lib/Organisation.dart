@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
+import 'Admin.dart';
 import 'Profile.dart';
 import 'Members.dart';
 import 'Teams.dart';
@@ -78,6 +79,18 @@ class _OrganisationPageState extends State<OrganisationPage> {
           organisationId: organisation.organizationId,
           userId: widget.userId,
           isManager: organisation.canManage,
+        ),
+      ),
+    );
+  }
+
+  void _openAdmin(BuildContext context, OrganisationModel organisation) {
+    Navigator.push<void>(
+      context,
+      MaterialPageRoute<void>(
+        builder: (context) => AdminPage(
+          userId: widget.userId,
+          organisationId: organisation.organizationId,
         ),
       ),
     );
@@ -183,7 +196,7 @@ class _OrganisationPageState extends State<OrganisationPage> {
                     avatarColor:
                         _avatarColors[organisations.indexOf(organisation) %
                             _avatarColors.length],
-                    onManage: () {},
+                    onManage: () => _openAdmin(context, organisation),
                     onOpenMembers: () => _openMembers(context, organisation),
                     onOpenTeams: (id, name) => _openTeams(context, id, name),
                   );
