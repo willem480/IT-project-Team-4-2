@@ -49,8 +49,8 @@ public class TicketassignmentController {
     }
 
     @PostMapping("delegateJobIndividual")
-    public void delegateJobIndividual(@RequestParam int ticketId, @RequestParam int assigneeId) {
-        ticketAssignmentService.delegateJobIndividual(ticketId, assigneeId);
+    public void delegateJobIndividual(@RequestParam int ticketId, @RequestParam int assigneeId, @RequestParam(required = false) int teamId) {
+        ticketAssignmentService.delegateJobIndividual(ticketId, assigneeId, teamId);
     }
 
     @PostMapping("delegateJobTeam")

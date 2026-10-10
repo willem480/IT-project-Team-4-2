@@ -226,6 +226,7 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
             ticketAssignmentReturn.setPosterName(poster.getName());
             ticketAssignmentReturn.setAssigneeID(assignee.getIdUser());
             ticketAssignmentReturn.setAssigneeName(assignee.getName());
+            ticketAssignmentReturn.setTicketID(ticket.getIdTicket());
             ticketAssignmentReturn.setTitle(ticket.getTitle());
             ticketAssignmentReturn.setDescription(ticket.getDescription());
             ticketAssignmentReturn.setDatePosted(ticket.getDatePosted());
@@ -240,13 +241,13 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
     }
 
     @Transactional
-    public void delegateJobIndividual(Integer ticketID, Integer assigneeID) {
+    public void delegateJobIndividual(Integer ticketID, Integer assigneeID,  int teamId) {
         TicketAssignment ticketAssignment = lambdaQuery().eq(TicketAssignment::getTicketId, ticketID).eq(TicketAssignment::getAssigneeId, assigneeID).one();
         if (ticketAssignment == null) {
             ticketAssignment = new TicketAssignment();
             ticketAssignment.setTicketId(ticketID);
             ticketAssignment.setAssigneeId(assigneeID);
-            ticketAssignment.setRelatedTeamId(null);
+            ticketAssignment.setRelatedTeamId(teamId);
             ticketAssignment.setDateAssigned(LocalDateTime.now());
             Ticket ticket = ticketMapper.selectById(ticketID);
             ticket.setStatus(TicketStatus.IN_PROGRESS.name());

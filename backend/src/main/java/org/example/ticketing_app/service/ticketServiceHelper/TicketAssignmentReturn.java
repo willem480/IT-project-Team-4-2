@@ -25,7 +25,7 @@ public class TicketAssignmentReturn {
     private String organizationName;
     private Integer teamID;
     private String teamName;
-
+    private Integer ticketID;
     private String title;
 
     private String description;
