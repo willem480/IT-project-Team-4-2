@@ -1,56 +1,96 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
+import 'Admin.dart';
 import 'Profile.dart';
+import 'Members.dart';
 import 'Teams.dart';
+import 'models/organisation_model.dart';
 
 class OrganisationPage extends StatefulWidget {
-  const OrganisationPage({super.key, this.isManager = true});
+  const OrganisationPage({super.key, required this.userId});
 
-  final bool isManager;
+  final int userId;
 
   @override
   State<OrganisationPage> createState() => _OrganisationPageState();
 }
 
 class _OrganisationPageState extends State<OrganisationPage> {
-  static const organisations = [
-    (
-      organizationId: 'org-1',
-      name: 'Org Sample 1',
-      link: 'org1.com',
-      members: 24,
-      avatarColor: Colors.pink,
-    ),
-    (
-      organizationId: 'org-2',
-      name: 'Org Sample 2',
-      link: 'org2.com',
-      members: 16,
-      avatarColor: Colors.teal,
-    ),
-    (
-      organizationId: 'org-3',
-      name: 'Org Sample 3',
-      link: 'org3.com',
-      members: 32,
-      avatarColor: Colors.red,
-    ),
-  ];
+  List<OrganisationModel> organisations = [];
+  static const _avatarColors = [Colors.pink, Colors.teal, Colors.red];
 
   String _query = '';
 
+  @override
+  void initState() {
+    super.initState();
+    fetchOrganisations();
+  }
+
+  void fetchOrganisations() async {
+    final url = Uri.parse(
+      'http://127.0.0.1:4523/m1/8806835-8598944-default/organization/getOrganizations?viewerUserId=${widget.userId}',
+    );
+
+    try {
+      final response = await http.get(
+        url,
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final parsedOrganisations = organisationFromJson(response.body);
+        if (!mounted) return;
+        setState(() {
+          organisations = parsedOrganisations;
+        });
+        debugPrint('Organisations loaded: ${organisations.length}');
+      } else {
+        debugPrint('Failed to load organisations: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Failed to load organisations: $e');
+    }
+  }
+
   void _openTeams(
     BuildContext context,
-    String organisationId,
+    int organisationId,
     String organisationName,
   ) {
     Navigator.push(
       context,
       MaterialPageRoute<void>(
         builder: (context) => TeamsPage(
-          organisationId: organisationId,
+          userId: widget.userId,
+          organizationId: organisationId,
           organisationName: organisationName,
-          isManager: widget.isManager,
+        ),
+      ),
+    );
+  }
+
+  void _openMembers(BuildContext context, OrganisationModel organisation) {
+    Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (context) => MembersPage(
+          organisationId: organisation.organizationId,
+          userId: widget.userId,
+          isManager: organisation.canManage,
+        ),
+      ),
+    );
+  }
+
+  void _openAdmin(BuildContext context, OrganisationModel organisation) {
+    Navigator.push<void>(
+      context,
+      MaterialPageRoute<void>(
+        builder: (context) => AdminPage(
+          userId: widget.userId,
+          organisationId: organisation.organizationId,
         ),
       ),
     );
@@ -59,7 +99,9 @@ class _OrganisationPageState extends State<OrganisationPage> {
   @override
   Widget build(BuildContext context) {
     final visibleOrganisations = organisations
-        .where((organisation) => organisation.name.toLowerCase().contains(_query))
+        .where(
+          (organisation) => organisation.name.toLowerCase().contains(_query),
+        )
         .toList();
 
     return Scaffold(
@@ -142,17 +184,20 @@ class _OrganisationPageState extends State<OrganisationPage> {
                 keyboardDismissBehavior:
                     ScrollViewKeyboardDismissBehavior.onDrag,
                 itemCount: visibleOrganisations.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 12),
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   final organisation = visibleOrganisations[index];
                   return OrganizationCard(
-                    isManager: widget.isManager,
+                    isManager: organisation.canManage,
                     organizationId: organisation.organizationId,
                     name: organisation.name,
-                    link: organisation.link,
-                    members: organisation.members,
-                    avatarColor: organisation.avatarColor,
-                    onManage: () {},
+                    members: organisation.memberCount,
+                    avatarColor:
+                        _avatarColors[organisations.indexOf(organisation) %
+                            _avatarColors.length],
+                    onManage: () => _openAdmin(context, organisation),
+                    onOpenMembers: () => _openMembers(context, organisation),
                     onOpenTeams: (id, name) => _openTeams(context, id, name),
                   );
                 },
@@ -218,121 +263,125 @@ class OrganizationCard extends StatelessWidget {
     super.key,
     required this.organizationId,
     required this.name,
-    required this.link,
     required this.members,
     required this.avatarColor,
     required this.onManage,
     required this.onOpenTeams,
+    required this.onOpenMembers,
     required this.isManager,
   });
 
-  final String organizationId;
+  final int organizationId;
   final bool isManager;
   final String name;
-  final String link;
   final int members;
   final Color avatarColor;
   final VoidCallback onManage;
-  final void Function(String organisationId, String organisationName)
-  onOpenTeams;
+  final VoidCallback onOpenMembers;
+  final void Function(int organisationId, String organisationName) onOpenTeams;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: avatarColor,
-                child: Text(
-                  name.isEmpty ? '' : name.substring(0, 1).toUpperCase(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onOpenMembers,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE5E7EB)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 24,
+                  backgroundColor: avatarColor,
+                  child: Text(
+                    name.isEmpty ? '' : name.substring(0, 1).toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        color: Color(0xFF111827),
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          color: Color(0xFF111827),
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      link,
-                      style: const TextStyle(
-                        color: Color(0xFF6B7280),
-                        fontSize: 14,
+                      const SizedBox(height: 4),
+                      // Preserve the subtitle line's spacing without a mock link.
+                      const Text(
+                        '',
+                        style: TextStyle(
+                          color: Color(0xFF6B7280),
+                          fontSize: 14,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              TextButton(
-                onPressed: isManager ? onManage : null,
-                style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFF065F46),
-                  backgroundColor: const Color(0xFFD1FAE5),
-                  disabledForegroundColor: const Color(0xFF9CA3AF),
-                  disabledBackgroundColor: const Color(0xFFF3F4F6),
-                  shape: const StadiumBorder(),
-                ),
-                child: const Text(
-                  'Manage',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-          const Divider(height: 28, color: Color(0xFFE5E7EB)),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  '$members members',
-                  style: const TextStyle(
-                    color: Color(0xFF6B7280),
-                    fontSize: 14,
+                    ],
                   ),
                 ),
-              ),
-              Material(
-                type: MaterialType.transparency,
-                child: InkResponse(
-                  onTap: () => onOpenTeams(organizationId, name),
-                  radius: 20,
-                  child: Tooltip(
-                    message: 'View teams in $name',
-                    child: const Icon(
-                      Icons.chevron_right,
-                      size: 20,
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: isManager ? onManage : null,
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFF065F46),
+                    backgroundColor: const Color(0xFFD1FAE5),
+                    disabledForegroundColor: const Color(0xFF9CA3AF),
+                    disabledBackgroundColor: const Color(0xFFF3F4F6),
+                    shape: const StadiumBorder(),
+                  ),
+                  child: const Text(
+                    'Manage',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 28, color: Color(0xFFE5E7EB)),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '$members members',
+                    style: const TextStyle(
                       color: Color(0xFF6B7280),
+                      fontSize: 14,
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
+                Material(
+                  type: MaterialType.transparency,
+                  child: InkResponse(
+                    onTap: () => onOpenTeams(organizationId, name),
+                    radius: 20,
+                    child: Tooltip(
+                      message: 'View teams in $name',
+                      child: const Icon(
+                        Icons.chevron_right,
+                        size: 20,
+                        color: Color(0xFF6B7280),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

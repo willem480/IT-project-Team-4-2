@@ -60,6 +60,7 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
                                     case OPEN -> 0;
                                     case IN_PROGRESS -> 1;
                                     case CLOSED -> 2;
+                                    case CANCELLED -> 3;
                                 }))
                         .toList();
             }
@@ -70,6 +71,7 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
                                     case CLOSED -> 0;
                                     case IN_PROGRESS -> 1;
                                     case OPEN -> 2;
+                                    case CANCELLED -> 3;
                                 }))
                         .toList();
             }

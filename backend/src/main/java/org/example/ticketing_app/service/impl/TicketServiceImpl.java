@@ -42,6 +42,10 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
 
     private static final String UPDATE_TICKET_SUBJECT_MARKER = "update ticket";
 
+    private static final String CANCEL_TICKET_SUBJECT_MARKER = "cancel ticket";
+
+    private static final String DELETE_TICKET_SUBJECT_MARKER = "delete ticket";
+
     /** Each expression reads one required field from the agreed email body template. */
     private static final Pattern TITLE_PATTERN = Pattern.compile(
             "(?im)^\\s*Title\\s*:\\s*(.+?)\\s*$"
@@ -155,6 +159,17 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
                 && emailData.getSubject().toLowerCase(Locale.ROOT).contains(UPDATE_TICKET_SUBJECT_MARKER);
     }
 
+    /** Identifies emails that request cancellation of an existing ticket. */
+    public boolean isCancelTicketEmail(EmailData emailData) {
+        if (emailData == null || emailData.getSubject() == null) {
+            return false;
+        }
+
+        String subject = emailData.getSubject().toLowerCase(Locale.ROOT);
+        return subject.contains(CANCEL_TICKET_SUBJECT_MARKER)
+                || subject.contains(DELETE_TICKET_SUBJECT_MARKER);
+    }
+
     /**
      * Updates only the fields supplied by a valid Update Ticket email.
      * The sender must own the ticket and the ticket must still be open.
@@ -192,6 +207,34 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
             ticket.setPay(update.pay());
         }
 
+        updateById(ticket);
+        return ticket;
+    }
+
+    /**
+     * Cancels an open ticket without deleting its assignments, comments, or attachments.
+     * Only the email address that created the ticket may request the cancellation.
+     */
+    @Transactional
+    public Ticket cancelTicketFromEmail(EmailData emailData) {
+        if (!isCancelTicketEmail(emailData) || emailData.getFrom() == null || emailData.getFrom().isBlank()) {
+            return null;
+        }
+
+        Optional<Integer> ticketId = parseTicketId(emailData.getBody());
+        if (ticketId.isEmpty()) {
+            return null;
+        }
+
+        Ticket ticket = getById(ticketId.get());
+        if (ticket == null
+                || ticket.getEmail() == null
+                || !ticket.getEmail().trim().equalsIgnoreCase(emailData.getFrom().trim())
+                || !TicketStatus.OPEN.name().equals(ticket.getStatus())) {
+            return null;
+        }
+
+        ticket.setStatus(TicketStatus.CANCELLED.name());
         updateById(ticket);
         return ticket;
     }
@@ -256,18 +299,8 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
             return Optional.empty();
         }
 
-        ParsedField ticketIdField = optionalField(TICKET_ID_PATTERN, body);
-        if (!ticketIdField.present() || ticketIdField.value().isEmpty()) {
-            return Optional.empty();
-        }
-
-        int ticketId;
-        try {
-            ticketId = Integer.parseInt(ticketIdField.value());
-        } catch (NumberFormatException exception) {
-            return Optional.empty();
-        }
-        if (ticketId <= 0) {
+        Optional<Integer> ticketId = parseTicketId(body);
+        if (ticketId.isEmpty()) {
             return Optional.empty();
         }
 
@@ -297,12 +330,31 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
         }
 
         return Optional.of(new TicketUpdate(
-                ticketId,
+                ticketId.get(),
                 title.present() ? title.value() : null,
                 description.present() ? description.value() : null,
                 location.present() ? location.value() : null,
                 pay
         ));
+    }
+
+    /** Reads a positive Ticket ID from an update or cancellation email. */
+    private Optional<Integer> parseTicketId(String body) {
+        if (body == null || body.isBlank()) {
+            return Optional.empty();
+        }
+
+        ParsedField ticketIdField = optionalField(TICKET_ID_PATTERN, body);
+        if (!ticketIdField.present() || ticketIdField.value().isEmpty()) {
+            return Optional.empty();
+        }
+
+        try {
+            int ticketId = Integer.parseInt(ticketIdField.value());
+            return ticketId > 0 ? Optional.of(ticketId) : Optional.empty();
+        } catch (NumberFormatException exception) {
+            return Optional.empty();
+        }
     }
 
     private ParsedField optionalField(Pattern pattern, String body) {

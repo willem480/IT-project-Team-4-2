@@ -1,58 +1,166 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';
 
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
+import 'Admin.dart';
 import 'Profile.dart';
+import 'models/organisation_members_model.dart';
+import 'models/team_members_model.dart';
 
 class MembersPage extends StatefulWidget {
-  const MembersPage({super.key, required this.teamId, required this.isManager});
+  const MembersPage({
+    super.key,
+    this.organisationId,
+    this.teamId,
+    required this.userId,
+    required this.isManager,
+  }) : assert(
+         (organisationId == null) != (teamId == null),
+         'Provide exactly one of organisationId or teamId.',
+       );
 
-  final String teamId;
-  // Passed through TeamsPage from the owning organisation.
+  final int? organisationId;
+  final int? teamId;
+  final int userId;
+  // Retained for existing callers; the members API determines permission.
   final bool isManager;
+
+  bool get isOrganisationView => organisationId != null;
 
   @override
   State<MembersPage> createState() => _MembersPageState();
 }
 
 class _MembersPageState extends State<MembersPage> {
-  // Each organisation's mock teams have distinct IDs, matching TeamsPage.
-  static const _mockRosters = {
-    'product-design': [
-      'Sarah Chen',
-      'James Davis',
-      'Ava Singh',
-      'Emily Wong',
-      'Ben Walker',
-      'Clara Kim',
-      'Daniel Park',
-    ],
-    'engineering': ['James Davis', 'Ava Singh', 'Daniel Park'],
-    'marketing': ['Emily Wong', 'Ben Walker', 'Clara Kim'],
-    'customer-success': ['Sarah Chen', 'Clara Kim'],
-  };
+  List<({int? teamMemberId, String name, String email, String teamName})>
+  members = [];
+  bool canManage = false;
+  bool _isLoading = true;
+  String? _errorMessage;
+  // Used for Team Member Admin navigation, not to determine the page source.
+  int? _organizationId;
 
-  static final _membersByTeam = {
-    for (final organisationId in ['org-1', 'org-2', 'org-3'])
-      for (final roster in _mockRosters.entries)
-        '$organisationId-${roster.key}': roster.value,
-  };
-
-  static const _avatarColors = {
-    'Sarah Chen': Color(0xFFEC4899),
-    'James Davis': Color(0xFF10B981),
-    'Ava Singh': Color(0xFF8B5CF6),
-    'Emily Wong': Color(0xFFF59E0B),
-    'Ben Walker': Color(0xFFEF4444),
-    'Clara Kim': Color(0xFF3B82F6),
-    'Daniel Park': Color(0xFF10B981),
-  };
+  static const _avatarColors = [
+    Color(0xFFEC4899),
+    Color(0xFF10B981),
+    Color(0xFF8B5CF6),
+    Color(0xFFF59E0B),
+    Color(0xFFEF4444),
+    Color(0xFF3B82F6),
+    Color(0xFF10B981),
+  ];
 
   String _query = '';
 
   @override
+  void initState() {
+    super.initState();
+    fetchMembers();
+  }
+
+  void fetchMembers() async {
+    final url = Uri.parse(
+      widget.isOrganisationView
+          ? 'http://127.0.0.1:4523/m1/8806835-8598944-default/organization/getOrganizationMembers?organizationId=${widget.organisationId}&viewerUserId=${widget.userId}'
+          : 'http://127.0.0.1:4523/m1/8806835-8598944-default/team/getTeamMembers?teamId=${widget.teamId}&viewerUserId=${widget.userId}',
+    );
+
+    try {
+      final response = await http.get(
+        url,
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final parsedResponse = json.decode(response.body);
+        if (parsedResponse is! Map<String, dynamic>) {
+          throw const FormatException('Invalid members response.');
+        }
+        final teamResponse = widget.isOrganisationView
+            ? null
+            : TeamMembersResponse.fromJson(parsedResponse);
+        final organisationResponse = widget.isOrganisationView
+            ? OrganisationMembersResponse.fromJson(parsedResponse)
+            : null;
+        final parsedMembers = teamResponse != null
+            ? teamResponse.members
+                  .map(
+                    (member) => (
+                      teamMemberId: member.teamMemberId,
+                      name: member.userName,
+                      email: member.email,
+                      teamName: '',
+                    ),
+                  )
+                  .toList()
+            : organisationResponse!.members
+                  .map(
+                    (member) => (
+                      teamMemberId: member.teamMemberId,
+                      name: member.userName,
+                      email: member.email,
+                      teamName: member.teamName,
+                    ),
+                  )
+                  .toList();
+        if (!mounted) return;
+        setState(() {
+          members = parsedMembers;
+          canManage =
+              teamResponse?.canManage ?? organisationResponse!.canManage;
+          if (teamResponse != null) {
+            _organizationId = teamResponse.organizationId;
+          }
+          _isLoading = false;
+          _errorMessage = null;
+        });
+        debugPrint('Members loaded: ${members.length}');
+      } else {
+        debugPrint('Failed to load members: ${response.statusCode}');
+        if (!mounted) return;
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Failed to load members.';
+        });
+      }
+    } catch (e) {
+      debugPrint('Failed to load members: $e');
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Failed to load members.';
+      });
+    }
+  }
+
+  void _openAdmin(int teamMemberId) {
+    final organisationId = widget.isOrganisationView
+        ? widget.organisationId
+        : _organizationId;
+    if (organisationId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to determine the organisation.')),
+      );
+      return;
+    }
+
+    Navigator.push<void>(
+      context,
+      MaterialPageRoute<void>(
+        builder: (context) => AdminPage(
+          userId: widget.userId,
+          organisationId: organisationId,
+          teamMemberId: teamMemberId,
+        ),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final members = _membersByTeam[widget.teamId] ?? const <String>[];
     final visibleMembers = members
-        .where((name) => name.toLowerCase().contains(_query))
+        .where((member) => member.name.toLowerCase().contains(_query))
         .toList();
 
     return Scaffold(
@@ -129,10 +237,12 @@ class _MembersPageState extends State<MembersPage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Flexible(
+                  Flexible(
                     child: Text(
-                      'Team Members',
-                      style: TextStyle(
+                      widget.isOrganisationView
+                          ? 'Organisation Members'
+                          : 'Team Members',
+                      style: const TextStyle(
                         color: Color(0xFF111827),
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
@@ -152,12 +262,18 @@ class _MembersPageState extends State<MembersPage> {
               ),
             ),
             Expanded(
-              child: visibleMembers.isEmpty
+              child:
+                  _isLoading || _errorMessage != null || visibleMembers.isEmpty
                   ? Center(
                       child: Text(
-                        members.isEmpty
-                            ? 'No members in this team yet.'
-                            : 'No members match your search.',
+                        _isLoading
+                            ? 'Loading members...'
+                            : _errorMessage ??
+                                  (members.isEmpty
+                                      ? (widget.isOrganisationView
+                                            ? 'No members in this organisation yet.'
+                                            : 'No members in this team yet.')
+                                      : 'No members match your search.'),
                         style: const TextStyle(color: Color(0xFF6B7280)),
                       ),
                     )
@@ -169,11 +285,19 @@ class _MembersPageState extends State<MembersPage> {
                       separatorBuilder: (context, index) =>
                           const SizedBox(height: 12),
                       itemBuilder: (context, index) => MemberCard(
-                        isManager: widget.isManager,
-                        name: visibleMembers[index],
+                        isManager: canManage,
+                        teamMemberId: visibleMembers[index].teamMemberId,
+                        onManage: _openAdmin,
+                        name: visibleMembers[index].name,
+                        email: visibleMembers[index].email,
+                        teamName: widget.isOrganisationView
+                            ? visibleMembers[index].teamName
+                            : null,
                         avatarColor:
-                            _avatarColors[visibleMembers[index]] ??
-                            const Color(0xFF10B981),
+                            _avatarColors[members.indexOf(
+                                  visibleMembers[index],
+                                ) %
+                                _avatarColors.length],
                       ),
                     ),
             ),
@@ -190,11 +314,12 @@ class _MembersPageState extends State<MembersPage> {
             Flexible(
               child: TextButton.icon(
                 onPressed: () {
-                  // Pop this page and its owning TeamsPage back to Organisation.
+                  // Team entry has an extra TeamsPage above Organisation.
+                  final routesToPop = widget.isOrganisationView ? 1 : 2;
                   var poppedRoutes = 0;
                   Navigator.popUntil(
                     context,
-                    (route) => route.isFirst || poppedRoutes++ == 2,
+                    (route) => route.isFirst || poppedRoutes++ == routesToPop,
                   );
                 },
                 icon: const Icon(
@@ -247,12 +372,20 @@ class _MembersPageState extends State<MembersPage> {
 class MemberCard extends StatelessWidget {
   const MemberCard({
     super.key,
+    required this.teamMemberId,
+    required this.onManage,
     required this.name,
+    required this.email,
+    this.teamName,
     required this.avatarColor,
     required this.isManager,
   });
 
+  final int? teamMemberId;
+  final ValueChanged<int> onManage;
   final String name;
+  final String email;
+  final String? teamName;
   final Color avatarColor;
   final bool isManager;
 
@@ -291,18 +424,43 @@ class MemberCard extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              name,
-              style: const TextStyle(
-                color: Color(0xFF111827),
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: const TextStyle(
+                    color: Color(0xFF111827),
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (teamName != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    teamName!,
+                    style: const TextStyle(
+                      color: Color(0xFF6B7280),
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 4),
+                Text(
+                  email,
+                  style: const TextStyle(
+                    color: Color(0xFF6B7280),
+                    fontSize: 14,
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(width: 8),
           TextButton(
-            onPressed: isManager ? () {} : null,
+            onPressed: isManager && teamMemberId != null
+                ? () => onManage(teamMemberId!)
+                : null,
             style: TextButton.styleFrom(
               foregroundColor: const Color(0xFF065F46),
               backgroundColor: const Color(0xFFD1FAE5),

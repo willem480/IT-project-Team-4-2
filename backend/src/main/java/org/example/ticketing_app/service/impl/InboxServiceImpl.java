@@ -134,6 +134,22 @@ public class InboxServiceImpl extends ServiceImpl<InboxMapper, Inbox> {
                         );
                     }
 
+                } else if (ticketService.isCancelTicketEmail(emailData)) {
+
+                    Ticket cancelledTicket = ticketService.cancelTicketFromEmail(emailData);
+                    if (cancelledTicket != null) {
+                        EmailServiceHelper.sendTicketCancelledReply(
+                                emailData.getFrom(),
+                                emailData.getSubject(),
+                                cancelledTicket
+                        );
+                    } else {
+                        EmailServiceHelper.sendTicketCancellationFailureReply(
+                                emailData.getFrom(),
+                                emailData.getSubject()
+                        );
+                    }
+
                 } else {
 
                     EmailServiceHelper.sendInvalidFormatReply(
