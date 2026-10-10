@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
+import 'Admin.dart';
 import 'Profile.dart';
 import 'Members.dart';
 import 'models/Teams_model.dart';
@@ -75,6 +76,15 @@ class _TeamsPageState extends State<TeamsPage> {
           userId: widget.userId,
           isManager: canManage,
         ),
+      ),
+    );
+  }
+
+  void _openAdmin(BuildContext context, int teamId) {
+    Navigator.push<void>(
+      context,
+      MaterialPageRoute<void>(
+        builder: (context) => AdminPage(userId: widget.userId, teamId: teamId),
       ),
     );
   }
@@ -201,7 +211,7 @@ class _TeamsPageState extends State<TeamsPage> {
                     avatarColor:
                         _avatarColors[teams.indexOf(team) %
                             _avatarColors.length],
-                    onManage: () {},
+                    onManage: () => _openAdmin(context, team.teamId),
                   );
                 },
               ),
