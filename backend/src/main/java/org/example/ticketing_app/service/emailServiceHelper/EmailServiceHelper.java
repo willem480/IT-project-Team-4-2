@@ -628,4 +628,81 @@ public final class EmailServiceHelper {
 
         Transport.send(reply);
     }
+
+    /** Sends an English confirmation after an owner cancels an open ticket. */
+    public static void sendTicketCancelledReply(
+            String recipient,
+            String originalSubject,
+            Ticket ticket
+    ) throws Exception {
+
+        Properties props = new Properties();
+
+        props.put("mail.smtp.host", smtpHost);
+        props.put("mail.smtp.port", String.valueOf(smtpPort));
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.ssl.enable", "true");
+
+        Session session = Session.getInstance(
+                props,
+                new Authenticator() {
+                    @Override
+                    protected PasswordAuthentication getPasswordAuthentication() {
+                        return new PasswordAuthentication(smtpUsername, smtpPassword);
+                    }
+                }
+        );
+
+        MimeMessage reply = new MimeMessage(session);
+        reply.setFrom(new InternetAddress(smtpUsername));
+        reply.setRecipient(Message.RecipientType.TO, new InternetAddress(recipient));
+        reply.setSubject("Re: " + originalSubject);
+        reply.setText(
+                "Your ticket has been cancelled successfully.\n\n" +
+                        "Ticket ID: " + ticket.getIdTicket() + "\n" +
+                        "Title: " + ticket.getTitle() + "\n" +
+                        "Status: " + ticket.getStatus()
+        );
+
+        Transport.send(reply);
+    }
+
+    /** Sends a generic English failure reply without exposing another user's ticket details. */
+    public static void sendTicketCancellationFailureReply(
+            String recipient,
+            String originalSubject
+    ) throws Exception {
+
+        Properties props = new Properties();
+
+        props.put("mail.smtp.host", smtpHost);
+        props.put("mail.smtp.port", String.valueOf(smtpPort));
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.ssl.enable", "true");
+
+        Session session = Session.getInstance(
+                props,
+                new Authenticator() {
+                    @Override
+                    protected PasswordAuthentication getPasswordAuthentication() {
+                        return new PasswordAuthentication(smtpUsername, smtpPassword);
+                    }
+                }
+        );
+
+        MimeMessage reply = new MimeMessage(session);
+        reply.setFrom(new InternetAddress(smtpUsername));
+        reply.setRecipient(Message.RecipientType.TO, new InternetAddress(recipient));
+        reply.setSubject("Re: " + originalSubject);
+        reply.setText(
+                "We could not cancel this ticket.\n\n" +
+                        "Please make sure the Ticket ID is valid, you are using the email address " +
+                        "that created the ticket, and the ticket is still open.\n\n" +
+                        "Use the following format:\n\n" +
+                        "Subject: Cancel Ticket\n\n" +
+                        "Ticket ID: [Ticket ID]"
+        );
+
+        Transport.send(reply);
+    }
 }
