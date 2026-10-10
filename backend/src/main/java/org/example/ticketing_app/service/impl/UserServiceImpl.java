@@ -1,6 +1,7 @@
 package org.example.ticketing_app.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.example.ticketing_app.entity.User;
 import org.example.ticketing_app.mapper.TicketAssignmentMapper;
 import org.example.ticketing_app.mapper.UserMapper;
@@ -121,5 +122,22 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> {
                 percentageChange);
 
         return userReturn;
+    }
+
+    public void UpdateUser(int userId, String newEmail, String newName, String newDescription) {
+        User user = getById(userId);
+        if (user != null) {
+            if (!StringUtils.isBlank(newEmail)) {
+                user.setEmail(newEmail);
+            }
+            else if (!StringUtils.isBlank(newName)) {
+                user.setName(newName);
+            }
+
+            else if (!StringUtils.isBlank(newDescription)) {
+                user.setDescription(newDescription);
+            }
+            saveOrUpdate(user);
+        }
     }
 }
