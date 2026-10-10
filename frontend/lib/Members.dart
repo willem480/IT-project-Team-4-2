@@ -3,7 +3,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
+import 'Admin.dart';
 import 'Profile.dart';
+import 'models/organisation_members_model.dart';
+import 'models/team_members_model.dart';
 
 class MembersPage extends StatefulWidget {
   const MembersPage({
@@ -30,10 +33,13 @@ class MembersPage extends StatefulWidget {
 }
 
 class _MembersPageState extends State<MembersPage> {
-  List<({String name, String email, String teamName})> members = [];
+  List<({int? teamMemberId, String name, String email, String teamName})>
+  members = [];
   bool canManage = false;
   bool _isLoading = true;
   String? _errorMessage;
+  // Used for Team Member Admin navigation, not to determine the page source.
+  int? _organizationId;
 
   static const _avatarColors = [
     Color(0xFFEC4899),
@@ -71,25 +77,41 @@ class _MembersPageState extends State<MembersPage> {
         if (parsedResponse is! Map<String, dynamic>) {
           throw const FormatException('Invalid members response.');
         }
-        final rawMembers = parsedResponse['members'] ?? [];
-        if (rawMembers is! List) {
-          throw const FormatException('Invalid members list.');
-        }
-        String readText(dynamic value) => value is String ? value : '';
-        final parsedMembers = rawMembers
-            .whereType<Map<String, dynamic>>()
-            .map(
-              (member) => (
-                name: readText(member['userName']),
-                email: readText(member['email']),
-                teamName: readText(member['teamName']),
-              ),
-            )
-            .toList();
+        final teamResponse = widget.isOrganisationView
+            ? null
+            : TeamMembersResponse.fromJson(parsedResponse);
+        final organisationResponse = widget.isOrganisationView
+            ? OrganisationMembersResponse.fromJson(parsedResponse)
+            : null;
+        final parsedMembers = teamResponse != null
+            ? teamResponse.members
+                  .map(
+                    (member) => (
+                      teamMemberId: member.teamMemberId,
+                      name: member.userName,
+                      email: member.email,
+                      teamName: '',
+                    ),
+                  )
+                  .toList()
+            : organisationResponse!.members
+                  .map(
+                    (member) => (
+                      teamMemberId: member.teamMemberId,
+                      name: member.userName,
+                      email: member.email,
+                      teamName: member.teamName,
+                    ),
+                  )
+                  .toList();
         if (!mounted) return;
         setState(() {
           members = parsedMembers;
-          canManage = parsedResponse['canManage'] == true;
+          canManage =
+              teamResponse?.canManage ?? organisationResponse!.canManage;
+          if (teamResponse != null) {
+            _organizationId = teamResponse.organizationId;
+          }
           _isLoading = false;
           _errorMessage = null;
         });
@@ -110,6 +132,29 @@ class _MembersPageState extends State<MembersPage> {
         _errorMessage = 'Failed to load members.';
       });
     }
+  }
+
+  void _openAdmin(int teamMemberId) {
+    final organisationId = widget.isOrganisationView
+        ? widget.organisationId
+        : _organizationId;
+    if (organisationId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to determine the organisation.')),
+      );
+      return;
+    }
+
+    Navigator.push<void>(
+      context,
+      MaterialPageRoute<void>(
+        builder: (context) => AdminPage(
+          userId: widget.userId,
+          organisationId: organisationId,
+          teamMemberId: teamMemberId,
+        ),
+      ),
+    );
   }
 
   @override
@@ -241,6 +286,8 @@ class _MembersPageState extends State<MembersPage> {
                           const SizedBox(height: 12),
                       itemBuilder: (context, index) => MemberCard(
                         isManager: canManage,
+                        teamMemberId: visibleMembers[index].teamMemberId,
+                        onManage: _openAdmin,
                         name: visibleMembers[index].name,
                         email: visibleMembers[index].email,
                         teamName: widget.isOrganisationView
@@ -325,6 +372,8 @@ class _MembersPageState extends State<MembersPage> {
 class MemberCard extends StatelessWidget {
   const MemberCard({
     super.key,
+    required this.teamMemberId,
+    required this.onManage,
     required this.name,
     required this.email,
     this.teamName,
@@ -332,6 +381,8 @@ class MemberCard extends StatelessWidget {
     required this.isManager,
   });
 
+  final int? teamMemberId;
+  final ValueChanged<int> onManage;
   final String name;
   final String email;
   final String? teamName;
@@ -407,7 +458,9 @@ class MemberCard extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           TextButton(
-            onPressed: isManager ? () {} : null,
+            onPressed: isManager && teamMemberId != null
+                ? () => onManage(teamMemberId!)
+                : null,
             style: TextButton.styleFrom(
               foregroundColor: const Color(0xFF065F46),
               backgroundColor: const Color(0xFFD1FAE5),
