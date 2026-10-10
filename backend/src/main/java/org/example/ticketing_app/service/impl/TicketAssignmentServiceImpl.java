@@ -228,7 +228,7 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
             ticketAssignmentReturn.setPosterName(poster.getName());
             ticketAssignmentReturn.setAssigneeID(assignee.getIdUser());
             ticketAssignmentReturn.setAssigneeName(assignee.getName());
-            ticketAssignmentReturn.setTicketID(ticket.getIdTicket());
+            ticketAssignmentReturn.setIdTicket(ticket.getIdTicket());
             ticketAssignmentReturn.setTitle(ticket.getTitle());
             ticketAssignmentReturn.setDescription(ticket.getDescription());
             ticketAssignmentReturn.setDatePosted(ticket.getDatePosted());

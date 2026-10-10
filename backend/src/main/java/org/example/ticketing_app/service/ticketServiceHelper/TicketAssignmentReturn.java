@@ -1,10 +1,8 @@
 package org.example.ticketing_app.service.ticketServiceHelper;
 
-import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import org.example.ticketing_app.entity.Team;
 
 import java.time.LocalDateTime;
 
@@ -25,7 +23,7 @@ public class TicketAssignmentReturn {
     private String organizationName;
     private Integer teamID;
     private String teamName;
-    private Integer ticketID;
+    private Integer idTicket;
     private String title;
 
     private String description;
