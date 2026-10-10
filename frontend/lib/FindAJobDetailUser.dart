@@ -195,12 +195,36 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
         padding: EdgeInsets.only(bottom: 20),
         child: SizedBox(
           width: 200,
-          height: 80,
+          height: 56,
           child: FloatingActionButton(
-          onPressed: () {Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const MyHomePage(title: 'Find a job')), (Route<dynamic> route) => false);},
-          backgroundColor: Colors.blue,
+          onPressed: () async{
+            final url = Uri.parse("http://127.0.0.1:4523/m1/8806835-8598944-default/ticketAssignment/delegateJobIndividual");
+            
+            try{
+              final response = await http.post(
+                url,
+                headers:{"Content-Type": "application/json"},
+                body: jsonEncode({
+                  "ticketId": widget.ticketId,
+                  "assigneeId": 1, 
+                  "teamId": null
+                }));
+                if (response.statusCode == 200){
+                  print("job has been accepted successfully");
+                  Navigator.pushAndRemoveUntil(
+                    context, MaterialPageRoute(builder: (context) => const MyHomePage(title: 'Find a job')), 
+                    (Route<dynamic> route) => false);
+                }
+                else{print("fail accept");}
+
+            }
+            catch(e){
+              print("network request error");
+            }
+          },
+          backgroundColor: Colors.lightGreen,
           shape:  RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
-          child: Text('OK', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),),
+          child: Text('Accept', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),),
           )
         ),
       ),
@@ -219,18 +243,8 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
         const SizedBox(height: 8),
         Text(widget.description, style: TextStyle(color: Colors.black54)),
         const SizedBox(height: 20),
-        const Text('Location', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 5)),
-        const SizedBox(height: 8),
         // Placeholder for Map Integration
-        Container(
-          height: 150,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: Colors.grey.shade300,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Center(child: Icon(Icons.location_on, color: Colors.red, size: 40)),
-        ),
+
       ],
     );
   }
