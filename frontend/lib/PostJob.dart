@@ -17,29 +17,59 @@ class _PostJobPageState extends State<PostJob> {
   String? description = "No Description";
   String userName= "Loading";
 
-  void fetchPostData() async{
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController addressController = TextEditingController();
+  final TextEditingController payController = TextEditingController();
+  final TextEditingController assigndateController = TextEditingController();
+  final TextEditingController descriptionController = TextEditingController();
+
+  @override
+  void dispose(){
+    nameController.dispose();
+    emailController.dispose();
+    addressController.dispose();
+    payController.dispose();
+    assigndateController.dispose();
+    descriptionController.dispose();
+    super.dispose();
+  }
+  Future<void> submitTicketData() async {
     final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/ticket/createTicket');
 
-    //Post
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-    );
-    if (response.statusCode == 200) {
-    
-      final Map<String, dynamic> jsonData = jsonDecode(response.body);
-      TicketModel description = TicketModel.fromJson(jsonData);
-      setState(() {
-      });
+   
+    Map<String, dynamic> requestData = {
+      "title": nameController.text, 
+      "email": emailController.text,
+      "location": addressController.text, 
+      "pay": int.tryParse(payController.text) ?? 0, 
+      "company": selectedCompany ?? "Unknown",
+      "description": descriptionController.text,
+      "dateCompleted": assigndateController.text,
+    };
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+       
+        body: jsonEncode(requestData), 
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        print("✅ 工单创建成功！");
+   
+        Navigator.pushReplacement(
+          context, 
+          MaterialPageRoute(builder: (context) => const SuccessPage()),
+        );
+      } else {
+        print("❌ 提交失败，状态码: ${response.statusCode}");
+      }
+    } catch (e) {
+      print("💥 请求发生错误: $e");
     }
   }
-
-      void initState(){
-        super.initState();
-        fetchPostData();
-    }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -80,6 +110,7 @@ class _PostJobPageState extends State<PostJob> {
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.black),
             ),
             TextField(
+              controller: nameController,
               decoration: InputDecoration(
                 hintText: 'Name',
                 hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
@@ -103,6 +134,7 @@ class _PostJobPageState extends State<PostJob> {
             ),
             
             TextField(
+              controller: emailController,
               decoration: InputDecoration(
                 hintText: 'Write your email',
                 hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
@@ -128,6 +160,7 @@ class _PostJobPageState extends State<PostJob> {
           
 
             TextField(
+              controller: addressController,
               decoration: InputDecoration(
                 hintText: 'Write your address including postcode',
                 hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
@@ -154,6 +187,7 @@ class _PostJobPageState extends State<PostJob> {
             
   
             TextField(
+              controller: payController,
               decoration: InputDecoration(
                 hintText: 'Fill your expect money',
                 hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
@@ -226,6 +260,7 @@ class _PostJobPageState extends State<PostJob> {
             ),
             
             TextField(
+              controller: assigndateController,
               decoration: InputDecoration(
                 hintText: 'Enter your final date in dd/mm/yy',
                 hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
@@ -248,7 +283,7 @@ class _PostJobPageState extends State<PostJob> {
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.black),
             ),
             TextField(
- 
+              controller: descriptionController,
               decoration: InputDecoration(
                 isDense: true,
                 hintText: 'Write your description to the ticket',
@@ -281,7 +316,7 @@ class _PostJobPageState extends State<PostJob> {
           height: 70,
         
           child: FloatingActionButton(
-            onPressed: () {Navigator.push(context, MaterialPageRoute(builder: (context) => SuccessPage()),);},
+            onPressed: () {submitTicketData();},
             backgroundColor: Colors.blue,
             shape:  RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
             tooltip: 'Submit',

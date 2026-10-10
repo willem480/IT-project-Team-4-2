@@ -12,6 +12,7 @@ import 'dart:convert';
 
 
 
+
 class Profile extends StatefulWidget {
 
 
@@ -27,11 +28,14 @@ class Profile extends StatefulWidget {
 
 
 class _ProfilePage extends State<Profile> {
-
+  int userId = 1;
+  String userEmail = 'Loading...';
   String userName = 'Loading...';
   String title = 'Loading...';
   String location = 'Loading...';
+  DateTime? date ;
   String description = "No description";
+  String userDescription = "No description";
   double pay = 0.0;
   double totalEarnings = 0.0;
   double thisMonthEarnings = 0.0;
@@ -43,7 +47,7 @@ class _ProfilePage extends State<Profile> {
 
   void fetchFirstUserData() async {
 
-    final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/profilePage/getUser');
+    final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/profilePage/getUser?userId=1');
 
       //Post
       final response = await http.post(
@@ -56,24 +60,59 @@ class _ProfilePage extends State<Profile> {
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
         UserProfile myUser = UserProfile.fromJson(jsonData);
         setState(() {
+          userId = myUser.idUser ?? 1;
           userName = myUser.name ?? 'User';
+          userEmail = myUser.email ?? 'unknown@email.com';
           totalEarnings = myUser.totalEarnings.toDouble() ?? 0.0;
           thisMonthEarnings = myUser.totalEarningsThisMonth.toDouble() ?? 0.0;
           thisMonthTimes = myUser.numberOfEarningsThisMonth.toInt() ?? 0;
+          userDescription= myUser.description ?? "No description";
         });
       }
   }
 
-  void fetchPostedTickets() async {
-
-    final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/profilePage/getPostedTickets');
+  Future<void> updateProfileDescription(String newDescription) async{
+      final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/user/updateUser');
 
     try{
       //Post
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'userId': 1}),
+        body: jsonEncode({
+          'id': userId,
+          'name': userName,
+          'email': userEmail,
+          'description': newDescription
+          }),
+      );
+
+      if(response.statusCode == 200){
+        print("profile is success loaded");
+
+        setState(() {
+          userDescription = newDescription;
+        });
+        
+      }
+      else{
+        print("fail update description ");
+      }
+
+    }catch(e){
+      print("network request error");
+    }
+  }  
+
+  void fetchPostedTickets(String filterType) async {
+
+    final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/profilePage/getPostedTickets?userId=1&filter=$filterType');
+
+    try{
+      //Post
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
       );
 
       if (response.statusCode == 200) {
@@ -88,15 +127,14 @@ class _ProfilePage extends State<Profile> {
 
   }
 
-  void fetchCompletedTickets() async {
+  void fetchCompletedTickets(String filterType) async {
 
-    final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/profilePage/getCompletedTickets');
+    final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/profilePage/getCompletedTickets?userId=1&filter=$filterType');
 
       //Post
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'userId': 1}),
       );
 
       if (response.statusCode == 200) {
@@ -113,9 +151,44 @@ class _ProfilePage extends State<Profile> {
   void initState() {
     super.initState();
     fetchFirstUserData();
-    fetchPostedTickets();
-    fetchCompletedTickets();
+    fetchPostedTickets('none');
+    fetchCompletedTickets('none');
 
+  }
+
+  void _showEditDescriptionDialog() {
+    TextEditingController _editController = TextEditingController(text: userDescription);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Edit Description"),
+          content: TextField(
+            controller: _editController,
+            maxLines: 4,
+            decoration: const InputDecoration(
+              hintText: "Write something about yourself...",
+              border: OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                String newText = _editController.text;
+                Navigator.pop(context);
+                updateProfileDescription(newText); // 调用网络请求去修改
+              },
+              child: const Text("Save"),
+            ),
+          ],
+        );
+      },
+    );
   }
 
 
@@ -148,11 +221,60 @@ class _ProfilePage extends State<Profile> {
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(50),
+              child: SizedBox(
+                width: double.infinity,
+              
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   //intro
+                  Container(
+                    height: 250,
+                    width: 500,
+                    padding: const EdgeInsets.all(16),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.grey), 
+                    ),
+
+                    child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          CircleAvatar(
+                            radius: 40,
+                            backgroundColor: Colors.blue,
+                            child: Text(
+                              userName.isNotEmpty? userName.substring(0,1).toUpperCase():'U',
+                              style: TextStyle(fontSize: 32, color:Colors.white, fontWeight:FontWeight.bold),),
+                          ),
+                          const SizedBox(width: 24),
+                          Expanded(
+                            child: Column(
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text("Description", style: TextStyle(color: Colors.grey, fontSize: 16, fontWeight: FontWeight.bold)),
+                                    IconButton(onPressed: (){_showEditDescriptionDialog();}, icon: Icon(Icons.edit),)            
+                                  ],
+                                ),
+                                
+                                const SizedBox(height: 20),
+                                Text("$userDescription", style: const TextStyle(fontSize: 15, height: 1.4), maxLines: 7, overflow: TextOverflow.ellipsis,),
+                              ]
+                            ),
+                          ),
+                            
+                          
+    
+                        ],
+                    )
+                  ),
+                  const SizedBox(height:30),
+                  //job summary
                   Container(
                     height: 250,
                     width: 500,
@@ -175,10 +297,10 @@ class _ProfilePage extends State<Profile> {
                         ],
                     )
                   ),
-                  const SizedBox(height:20),
-
+                  const SizedBox(height: 30),
                   //button
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       _buildTabButton('Posted jobs', is_Detail_Tab, (){
                         setState(() => is_Detail_Tab = true);
@@ -187,22 +309,53 @@ class _ProfilePage extends State<Profile> {
                       const SizedBox(width: 12),
                       _buildTabButton('Completed jobs', !is_Detail_Tab, (){
                         setState(() => is_Detail_Tab = false);
-                      })
+                      }),
+
+                      SizedBox(width: 20),
+// 替换你原来的 OutlinedButton
+                      PopupMenuButton<String>(
+                        onSelected: (String value) {
+                          print("Profile filter selected: $value");
+                          // 根据当前处于哪个 Tab（Posted 还是 Completed），去调用对应的带参数请求
+                          if (is_Detail_Tab) {
+                            fetchPostedTickets(value);
+                          } else {
+                            fetchCompletedTickets(value);
+                          }
+                        },
+                        itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                          const PopupMenuItem<String>(
+                            value: 'up',
+                            child: Text('Pay: Low to High'),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'down',
+                            child: Text('Pay: High to Low'),
+                          ),
+                        ],
+                        child: OutlinedButton(
+                          onPressed: null, 
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              Text('Filter'), 
+                              SizedBox(width: 8), 
+                              Icon(Icons.arrow_downward, size: 16)
+                            ],
+                          ),
+                        ),
+                      ),
+                  
                     ],
                   ),
-                  SizedBox(height: 25),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: OutlinedButton(onPressed:() {}, 
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [Text('Time'), SizedBox(width: 8), Icon(Icons.arrow_downward)]))),
+                
 
                   is_Detail_Tab ? _buildPostedJobSection(context) : _buildCompletedJobs(), 
 
 
                 ],
               ),
+              )
 
 
           )),
@@ -226,7 +379,7 @@ class _ProfilePage extends State<Profile> {
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute<void>(
-                    builder: (context) => const OrganisationPage(),
+                    builder: (context) => OrganisationPage(userId: userId),
                   ),
                 );
               }, 
@@ -264,7 +417,10 @@ class _ProfilePage extends State<Profile> {
           ticket.title.toString() ?? 'No title', 
           ticket.organizationName ?? 'Unknown Location', 
           ticket.pay?.toString() ?? '0',
-          ticket.description ?? "No description"
+          ticket.description ?? "No description",
+          ticket.idTicket ?? 0,
+          ticket.datePosted?.toString() ?? "No date",
+
           );
           
       }).toList(),
@@ -290,6 +446,8 @@ class _ProfilePage extends State<Profile> {
           ticket.organizationName ?? 'Unknown Location', 
           ticket.pay?.toString() ?? '0',
           ticket.description ?? "No description",
+          ticket.idTicket ?? 0, 
+          ticket.datePosted?.toString() ?? 'No date',
           );
           
       }).toList(),
@@ -316,11 +474,11 @@ class _ProfilePage extends State<Profile> {
     );
   }
 
-  Widget _buildTicket(BuildContext context, String title, String companyName, String price, String description){
+  Widget _buildTicket(BuildContext context, String title, String companyName, String price, String description, int ticketId, String datePosted){
       return InkWell(
           onTap: (){
             print('check your posted jobs');
-            Navigator.push(context, MaterialPageRoute(builder: (context) => PostAJobDetailUser(title: title, company: companyName, price: price, description: description)),);
+            Navigator.push(context, MaterialPageRoute(builder: (context) => PostAJobDetailUser(ticketId: ticketId, title: title, company: companyName, price: price, description: description, date: datePosted)));
           },
           borderRadius: BorderRadius.circular(12),
           child: Container(
@@ -350,7 +508,6 @@ class _ProfilePage extends State<Profile> {
                 title,
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
               ),
-              SizedBox(height: 70),
                 // alignment: Alignment.topLeft,
               Text(
                 companyName,

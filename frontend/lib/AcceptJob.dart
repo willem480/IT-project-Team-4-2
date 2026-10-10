@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'Organisation.dart';
+
 import 'PostJob.dart';
 
 const _ink = Color(0xFF111827);
@@ -9,173 +9,201 @@ const _border = Color(0xFFE5E7EB);
 // Keep the existing entry point so callers do not need routing changes.
 // ignore: camel_case_types
 class Acceptjob extends AcceptJobPage {
-  const Acceptjob({super.key});
+  const Acceptjob({super.key, super.jobs});
 }
 
 class AcceptJobPage extends StatefulWidget {
-  const AcceptJobPage({super.key});
+  const AcceptJobPage({super.key, this.jobs});
+
+  /// Omit for development samples; pass an empty list to display no jobs.
+  final List<Job>? jobs;
 
   @override
   State<AcceptJobPage> createState() => _AcceptJobPageState();
 }
 
 class _AcceptJobPageState extends State<AcceptJobPage> {
+  String _query = '';
   String? _time;
+
+  bool _matchesTime(Job job, DateTime now) {
+    final remaining = job.dueAt.difference(now);
+    // Time options are rolling 24-hour ranges; overdue jobs remain in All times.
+    return switch (_time) {
+      'Less than 1 day' =>
+        !remaining.isNegative && remaining < const Duration(days: 1),
+      '1 day' =>
+        remaining >= const Duration(days: 1) &&
+            remaining < const Duration(days: 2),
+      '2 days' =>
+        remaining >= const Duration(days: 2) &&
+            remaining < const Duration(days: 3),
+      '3+ days' => remaining >= const Duration(days: 3),
+      _ => true,
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
-    final openCount = _jobs.where((job) => job.status == JobStatus.open).length;
-    final inProgressCount =
-        _jobs.where((job) => job.status == JobStatus.inProgress).length;
-    final closedCount = _jobs.where((job) => job.status == JobStatus.closed).length;
+    final jobs = widget.jobs ?? sampleJobs;
+    final now = DateTime.now();
+    final visibleJobs = jobs
+        .where(
+          (job) =>
+              job.jobName.toLowerCase().contains(_query) ||
+              job.position.toLowerCase().contains(_query) ||
+              job.organization.toLowerCase().contains(_query),
+        )
+        .where((job) => _matchesTime(job, now))
+        .toList();
+    // Summaries describe all assigned jobs, independent of search and filters.
+    final openCount = jobs.where((job) => job.status == JobStatus.open).length;
+    final inProgressCount = jobs
+        .where((job) => job.status == JobStatus.inProgress)
+        .length;
+    final closedCount = jobs
+        .where((job) => job.status == JobStatus.closed)
+        .length;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 640),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Align(
-                    alignment: Alignment.center,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Good morning,',
-                          style: TextStyle(color: _muted, fontSize: 14),
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          'Alan',
-                          style: TextStyle(
-                            color: _ink,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
+          child: LayoutBuilder(
+            builder: (context, constraints) => Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Preserve the header's natural height, but allow it to scroll
+                // in short windows or when the keyboard reduces available space.
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: constraints.maxHeight * 0.75,
                   ),
-                  /*Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const OrganisationPage(),
-                          ),
-                        );
-                      },
-                      child: const Text('测试'),
-                    ),
-                  ),*/
-                  const SizedBox(height: 20),
-                  const _SearchField(),
-                  const SizedBox(height: 16),
-                  IntrinsicHeight(
-                    child: Row(
+                  child: SingleChildScrollView(
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Expanded(
-                          child: _StatusSummaryCard(
-                            label: JobStatus.open.displayText,
-                            count: '$openCount',
+                        const Align(
+                          alignment: Alignment.center,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Good morning,',
+                                style: TextStyle(color: _muted, fontSize: 14),
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                'Alan',
+                                style: TextStyle(
+                                  color: _ink,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        SizedBox(width: 12),
-                        Expanded(
-                          child: _StatusSummaryCard(
-                            label: JobStatus.inProgress.displayText,
-                            count: '$inProgressCount',
+                        const SizedBox(height: 20),
+                        _SearchField(
+                          onChanged: (value) => setState(
+                            () => _query = value.trim().toLowerCase(),
                           ),
                         ),
-                        SizedBox(width: 12),
-                        Expanded(
-                          child: _StatusSummaryCard(
-                            label: JobStatus.closed.displayText,
-                            count: '$closedCount',
+                        const SizedBox(height: 16),
+                        IntrinsicHeight(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(
+                                child: _StatusSummaryCard(
+                                  label: JobStatus.open.displayText,
+                                  count: '$openCount',
+                                ),
+                              ),
+                              SizedBox(width: 12),
+                              Expanded(
+                                child: _StatusSummaryCard(
+                                  label: JobStatus.inProgress.displayText,
+                                  count: '$inProgressCount',
+                                ),
+                              ),
+                              SizedBox(width: 12),
+                              Expanded(
+                                child: _StatusSummaryCard(
+                                  label: JobStatus.closed.displayText,
+                                  count: '$closedCount',
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _FilterButton(
-                        label: 'Time',
-                        value: _time,
-                        options: const [
-                          'Less than 1 day',
-                          '1 day',
-                          '2 days',
-                          '3+ days',
-                        ],
-                        onSelected: (value) => setState(() => _time = value),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          'Assigned to you',
-                          style: TextStyle(
-                            color: _ink,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 12),
-                      Text(
-                        '${_jobs.length} results',
-                        style: TextStyle(
-                          color: _muted,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
-                  Expanded(
-                    child: ListView(
-                      padding: EdgeInsets.zero,
-                      keyboardDismissBehavior:
-                          ScrollViewKeyboardDismissBehavior.onDrag,
-                      children: [
-                        for (final job in _jobs)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: JobCard(job: job),
-                          ),
-                        // Empty UI placeholders, separate from the real jobs.
-                        for (var i = 0; i < 2; i++)
-                          Container(
-                            height: 140,
-                            margin: const EdgeInsets.only(bottom: 12),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: _border),
+                        const SizedBox(height: 16),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            _FilterButton(
+                              label: 'Time',
+                              value: _time,
+                              options: const [
+                                'All times',
+                                'Less than 1 day',
+                                '1 day',
+                                '2 days',
+                                '3+ days',
+                              ],
+                              onSelected: (value) => setState(
+                                () =>
+                                    _time = value == 'All times' ? null : value,
+                              ),
                             ),
-                          ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                'Assigned to you',
+                                style: TextStyle(
+                                  color: _ink,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 12),
+                            Text(
+                              '${visibleJobs.length} results',
+                              style: TextStyle(
+                                color: _muted,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 18),
                       ],
                     ),
                   ),
-                ],
-              ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    padding: EdgeInsets.zero,
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    itemCount: visibleJobs.length,
+                    itemBuilder: (context, index) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: JobCard(job: visibleJobs[index]),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -200,23 +228,27 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            TextButton.icon(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              icon: const Icon(Icons.search),
-              label: const Text(
-                'Find a Job',
-                style: TextStyle(fontWeight: FontWeight.bold),
+            Flexible(
+              child: TextButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                icon: const Icon(Icons.search),
+                label: const Text(
+                  'Find a Job',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
             ),
             const SizedBox(width: 60),
-            TextButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.check_circle_outlined),
-              label: const Text(
-                'Accept a Job',
-                style: TextStyle(fontWeight: FontWeight.bold),
+            Flexible(
+              child: TextButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.check_circle_outlined),
+                label: const Text(
+                  'Accept a Job',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
             ),
           ],
@@ -226,11 +258,7 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
   }
 }
 
-enum JobStatus {
-  open,
-  inProgress,
-  closed,
-}
+enum JobStatus { open, inProgress, closed }
 
 extension on JobStatus {
   String get displayText => switch (this) {
@@ -252,44 +280,76 @@ class Job {
     required this.position,
     required this.organization,
     required this.status,
-    required this.dueDate,
-    required this.dueTime,
+    required this.dueAt,
   });
 
   final String jobName;
   final String position;
   final String organization;
   final JobStatus status;
-  final String dueDate;
-  final String dueTime;
+  final DateTime dueAt;
+
+  String get dueDate {
+    final localDue = dueAt.toLocal();
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final dueDay = DateTime(localDue.year, localDue.month, localDue.day);
+    if (dueDay == today) return 'today';
+    if (dueDay == DateTime(now.year, now.month, now.day + 1)) {
+      return 'tomorrow';
+    }
+    return const [
+      'Mon',
+      'Tue',
+      'Wed',
+      'Thu',
+      'Fri',
+      'Sat',
+      'Sun',
+    ][localDue.weekday - 1];
+  }
+
+  String get dueTime {
+    final localDue = dueAt.toLocal();
+    final hour = localDue.hour % 12 == 0 ? 12 : localDue.hour % 12;
+    final minute = localDue.minute.toString().padLeft(2, '0');
+    return '$hour:$minute ${localDue.hour < 12 ? 'AM' : 'PM'}';
+  }
 }
 
-const _jobs = [
-  Job(
-    jobName: 'Emergency light fitting',
-    position: 'Building C',
-    organization: 'The University of Melbourne',
-    status: JobStatus.inProgress,
-    dueDate: 'today',
-    dueTime: '2:00 PM',
-  ),
-  Job(
-    jobName: 'Network printer offline',
-    position: 'Floor 2',
-    organization: 'Provision IT',
-    status: JobStatus.open,
-    dueDate: 'tomorrow',
-    dueTime: '10:00 AM',
-  ),
-  Job(
-    jobName: 'Door access request',
-    position: 'Warehouse B',
-    organization: 'Microsoft',
-    status: JobStatus.open,
-    dueDate: 'Fri',
-    dueTime: '4:00 PM',
-  ),
-];
+// Development data only. Callers can replace it with AcceptJobPage(jobs: jobsFromApi).
+final List<Job> sampleJobs = _createSampleJobs();
+
+List<Job> _createSampleJobs() {
+  final now = DateTime.now();
+  final daysUntilFriday = (DateTime.friday - now.weekday + 7) % 7;
+  final friday = DateTime(now.year, now.month, now.day + daysUntilFriday, 16);
+  return List<Job>.unmodifiable([
+    Job(
+      jobName: 'Emergency light fitting',
+      position: 'Building C',
+      organization: 'The University of Melbourne',
+      status: JobStatus.inProgress,
+      dueAt: DateTime(now.year, now.month, now.day, 14),
+    ),
+    Job(
+      jobName: 'Network printer offline',
+      position: 'Floor 2',
+      organization: 'Provision IT',
+      status: JobStatus.open,
+      dueAt: DateTime(now.year, now.month, now.day + 1, 10),
+    ),
+    Job(
+      jobName: 'Door access request',
+      position: 'Warehouse B',
+      organization: 'Microsoft',
+      status: JobStatus.open,
+      dueAt: friday.isAfter(now)
+          ? friday
+          : DateTime(now.year, now.month, now.day + 7, 16),
+    ),
+  ]);
+}
 
 class JobCard extends StatelessWidget {
   const JobCard({super.key, required this.job});
@@ -403,11 +463,14 @@ class JobCard extends StatelessWidget {
 }
 
 class _SearchField extends StatelessWidget {
-  const _SearchField();
+  const _SearchField({required this.onChanged});
+
+  final ValueChanged<String> onChanged;
 
   @override
   Widget build(BuildContext context) {
     return TextField(
+      onChanged: onChanged,
       style: const TextStyle(color: _ink, fontSize: 14),
       decoration: InputDecoration(
         hintText: 'Search tickets, assignees, or locations...',
