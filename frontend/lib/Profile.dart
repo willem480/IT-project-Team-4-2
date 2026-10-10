@@ -326,11 +326,11 @@ class _ProfilePage extends State<Profile> {
                         itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
                           const PopupMenuItem<String>(
                             value: 'up',
-                            child: Text('Pay: Low to High'),
+                            child: Text('Date: earliest to lastest'),
                           ),
                           const PopupMenuItem<String>(
                             value: 'down',
-                            child: Text('Pay: High to Low'),
+                            child: Text('Date: lastest to earliest'),
                           ),
                         ],
                         child: OutlinedButton(
