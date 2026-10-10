@@ -1,4 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:ticketing_app/models/ticket_model.dart';
 
 import 'PostJob.dart';
 
@@ -9,60 +13,120 @@ const _border = Color(0xFFE5E7EB);
 // Keep the existing entry point so callers do not need routing changes.
 // ignore: camel_case_types
 class Acceptjob extends AcceptJobPage {
-  const Acceptjob({super.key, super.jobs});
+  const Acceptjob({super.key, super.userId});
 }
 
 class AcceptJobPage extends StatefulWidget {
-  const AcceptJobPage({super.key, this.jobs});
+  const AcceptJobPage({super.key, this.userId = 1});
 
-  /// Omit for development samples; pass an empty list to display no jobs.
-  final List<Job>? jobs;
+  // Match the current user used by main.dart/Profile.dart until callers pass
+  // the actor ID, as they already do for OrganisationPage and TeamsPage.
+  final int userId;
 
   @override
   State<AcceptJobPage> createState() => _AcceptJobPageState();
 }
 
 class _AcceptJobPageState extends State<AcceptJobPage> {
-  String _query = '';
-  String? _time;
+  List<TicketModel> _tickets = [];
+  bool _isLoading = true;
+  String? _error;
 
-  bool _matchesTime(Job job, DateTime now) {
-    final remaining = job.dueAt.difference(now);
-    // Time options are rolling 24-hour ranges; overdue jobs remain in All times.
-    return switch (_time) {
-      'Less than 1 day' =>
-        !remaining.isNegative && remaining < const Duration(days: 1),
-      '1 day' =>
-        remaining >= const Duration(days: 1) &&
-            remaining < const Duration(days: 2),
-      '2 days' =>
-        remaining >= const Duration(days: 2) &&
-            remaining < const Duration(days: 3),
-      '3+ days' => remaining >= const Duration(days: 3),
-      _ => true,
-    };
+  @override
+  void initState() {
+    super.initState();
+    _fetchAcceptedJobs();
+  }
+
+  @override
+  void didUpdateWidget(covariant AcceptJobPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.userId != widget.userId) {
+      _fetchAcceptedJobs();
+    }
+  }
+
+  Future<void> _fetchAcceptedJobs() async {
+    final userId = widget.userId;
+    setState(() {
+      _isLoading = true;
+      _error = null;
+      _tickets = [];
+    });
+    final url = Uri.parse(
+      'http://127.0.0.1:4523/m1/8806835-8598944-default/ticketAssignment/getAcceptedJobsWithFilter',
+    ).replace(queryParameters: {'assigneeID': '$userId'});
+    http.Response? response;
+
+    try {
+      response = await http
+          .post(url, headers: {'Content-Type': 'application/json'})
+          .timeout(const Duration(seconds: 30));
+      if (response.statusCode != 200) {
+        throw Exception('Accepted jobs request failed');
+      }
+      final decoded = jsonDecode(response.body);
+      if (decoded is! List) {
+        throw const FormatException('Expected an array of tickets');
+      }
+      final tickets = decoded
+          .map<TicketModel>(
+            (item) => TicketModel.fromJson(Map<String, dynamic>.from(item as Map)),
+          )
+          .toList();
+      if (!mounted || widget.userId != userId) return;
+      setState(() {
+        _tickets = tickets;
+        _isLoading = false;
+      });
+    } catch (error, stackTrace) {
+      debugPrint('Failed to load accepted jobs for user $userId: $error');
+      if (response != null) {
+        debugPrint('HTTP status: ${response.statusCode}');
+        debugPrint('Response body: ${response.body}');
+      }
+      debugPrintStack(stackTrace: stackTrace);
+      if (!mounted || widget.userId != userId) return;
+      setState(() {
+        _error = 'Unable to load accepted jobs. Please try again later.';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Widget _buildJobsArea() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_error != null) {
+      return Center(
+        child: Text(_error!, style: const TextStyle(color: _muted)),
+      );
+    }
+    if (_tickets.isEmpty) {
+      return const Center(child: Text('No accepted jobs'));
+    }
+    return ListView.builder(
+      padding: EdgeInsets.zero,
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      itemCount: _tickets.length,
+      itemBuilder: (context, index) => Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: JobCard(job: _tickets[index]),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final jobs = widget.jobs ?? sampleJobs;
-    final now = DateTime.now();
-    final visibleJobs = jobs
-        .where(
-          (job) =>
-              job.jobName.toLowerCase().contains(_query) ||
-              job.position.toLowerCase().contains(_query) ||
-              job.organization.toLowerCase().contains(_query),
-        )
-        .where((job) => _matchesTime(job, now))
-        .toList();
-    // Summaries describe all assigned jobs, independent of search and filters.
-    final openCount = jobs.where((job) => job.status == JobStatus.open).length;
-    final inProgressCount = jobs
-        .where((job) => job.status == JobStatus.inProgress)
+    final openCount = _tickets
+        .where((ticket) => _normalizeStatus(ticket.status) == 'OPEN')
         .length;
-    final closedCount = jobs
-        .where((job) => job.status == JobStatus.closed)
+    final inProgressCount = _tickets
+        .where((ticket) => _normalizeStatus(ticket.status) == 'INPROGRESS')
+        .length;
+    final closedCount = _tickets
+        .where((ticket) => _normalizeStatus(ticket.status) == 'CLOSED')
         .length;
 
     return Scaffold(
@@ -106,11 +170,7 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
                           ),
                         ),
                         const SizedBox(height: 20),
-                        _SearchField(
-                          onChanged: (value) => setState(
-                            () => _query = value.trim().toLowerCase(),
-                          ),
-                        ),
+                        const _SearchField(),
                         const SizedBox(height: 16),
                         IntrinsicHeight(
                           child: Row(
@@ -118,21 +178,21 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
                             children: [
                               Expanded(
                                 child: _StatusSummaryCard(
-                                  label: JobStatus.open.displayText,
+                                  label: 'Open',
                                   count: '$openCount',
                                 ),
                               ),
                               SizedBox(width: 12),
                               Expanded(
                                 child: _StatusSummaryCard(
-                                  label: JobStatus.inProgress.displayText,
+                                  label: 'In Progress',
                                   count: '$inProgressCount',
                                 ),
                               ),
                               SizedBox(width: 12),
                               Expanded(
                                 child: _StatusSummaryCard(
-                                  label: JobStatus.closed.displayText,
+                                  label: 'Closed',
                                   count: '$closedCount',
                                 ),
                               ),
@@ -143,23 +203,7 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
-                          children: [
-                            _FilterButton(
-                              label: 'Time',
-                              value: _time,
-                              options: const [
-                                'All times',
-                                'Less than 1 day',
-                                '1 day',
-                                '2 days',
-                                '3+ days',
-                              ],
-                              onSelected: (value) => setState(
-                                () =>
-                                    _time = value == 'All times' ? null : value,
-                              ),
-                            ),
-                          ],
+                          children: [const _FilterButton(label: 'Time')],
                         ),
                         const SizedBox(height: 20),
                         Row(
@@ -177,7 +221,7 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
                             ),
                             SizedBox(width: 12),
                             Text(
-                              '${visibleJobs.length} results',
+                              '${_tickets.length} results',
                               style: TextStyle(
                                 color: _muted,
                                 fontSize: 14,
@@ -191,18 +235,7 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
                     ),
                   ),
                 ),
-                Expanded(
-                  child: ListView.builder(
-                    padding: EdgeInsets.zero,
-                    keyboardDismissBehavior:
-                        ScrollViewKeyboardDismissBehavior.onDrag,
-                    itemCount: visibleJobs.length,
-                    itemBuilder: (context, index) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: JobCard(job: visibleJobs[index]),
-                    ),
-                  ),
-                ),
+                Expanded(child: _buildJobsArea()),
               ],
             ),
           ),
@@ -258,103 +291,20 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
   }
 }
 
-enum JobStatus { open, inProgress, closed }
+// Normalize only for comparisons and colors; display the backend value verbatim.
+String _normalizeStatus(String? status) =>
+    (status ?? '').toUpperCase().replaceAll(RegExp(r'[\s_-]+'), '');
 
-extension on JobStatus {
-  String get displayText => switch (this) {
-    JobStatus.open => 'Open',
-    JobStatus.inProgress => 'In Progress',
-    JobStatus.closed => 'Closed',
-  };
-
-  Color get color => switch (this) {
-    JobStatus.open => const Color(0xFF10B981),
-    JobStatus.inProgress => const Color(0xFFF59E0B),
-    JobStatus.closed => Colors.grey,
-  };
-}
-
-class Job {
-  const Job({
-    required this.jobName,
-    required this.position,
-    required this.organization,
-    required this.status,
-    required this.dueAt,
-  });
-
-  final String jobName;
-  final String position;
-  final String organization;
-  final JobStatus status;
-  final DateTime dueAt;
-
-  String get dueDate {
-    final localDue = dueAt.toLocal();
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final dueDay = DateTime(localDue.year, localDue.month, localDue.day);
-    if (dueDay == today) return 'today';
-    if (dueDay == DateTime(now.year, now.month, now.day + 1)) {
-      return 'tomorrow';
-    }
-    return const [
-      'Mon',
-      'Tue',
-      'Wed',
-      'Thu',
-      'Fri',
-      'Sat',
-      'Sun',
-    ][localDue.weekday - 1];
-  }
-
-  String get dueTime {
-    final localDue = dueAt.toLocal();
-    final hour = localDue.hour % 12 == 0 ? 12 : localDue.hour % 12;
-    final minute = localDue.minute.toString().padLeft(2, '0');
-    return '$hour:$minute ${localDue.hour < 12 ? 'AM' : 'PM'}';
-  }
-}
-
-// Development data only. Callers can replace it with AcceptJobPage(jobs: jobsFromApi).
-final List<Job> sampleJobs = _createSampleJobs();
-
-List<Job> _createSampleJobs() {
-  final now = DateTime.now();
-  final daysUntilFriday = (DateTime.friday - now.weekday + 7) % 7;
-  final friday = DateTime(now.year, now.month, now.day + daysUntilFriday, 16);
-  return List<Job>.unmodifiable([
-    Job(
-      jobName: 'Emergency light fitting',
-      position: 'Building C',
-      organization: 'The University of Melbourne',
-      status: JobStatus.inProgress,
-      dueAt: DateTime(now.year, now.month, now.day, 14),
-    ),
-    Job(
-      jobName: 'Network printer offline',
-      position: 'Floor 2',
-      organization: 'Provision IT',
-      status: JobStatus.open,
-      dueAt: DateTime(now.year, now.month, now.day + 1, 10),
-    ),
-    Job(
-      jobName: 'Door access request',
-      position: 'Warehouse B',
-      organization: 'Microsoft',
-      status: JobStatus.open,
-      dueAt: friday.isAfter(now)
-          ? friday
-          : DateTime(now.year, now.month, now.day + 7, 16),
-    ),
-  ]);
-}
+Color _statusColor(String? status) => switch (_normalizeStatus(status)) {
+  'OPEN' => const Color(0xFF10B981),
+  'INPROGRESS' => const Color(0xFFF59E0B),
+  _ => Colors.grey,
+};
 
 class JobCard extends StatelessWidget {
   const JobCard({super.key, required this.job});
 
-  final Job job;
+  final TicketModel job;
 
   @override
   Widget build(BuildContext context) {
@@ -373,7 +323,7 @@ class JobCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  '${job.jobName} - ${job.position}',
+                  '${job.title ?? ''} - ${job.location ?? ''}',
                   style: const TextStyle(
                     color: _ink,
                     fontSize: 20,
@@ -393,13 +343,13 @@ class JobCard extends StatelessWidget {
                       height: 6,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: job.status.color,
+                        color: _statusColor(job.status),
                       ),
                     ),
                     const SizedBox(width: 6),
                     Flexible(
                       child: Text(
-                        job.status.displayText,
+                        job.status ?? '',
                         style: const TextStyle(
                           color: _muted,
                           fontSize: 14,
@@ -429,7 +379,7 @@ class JobCard extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  job.organization,
+                  job.organizationName ?? '',
                   style: const TextStyle(
                     color: Color(0xFF374151),
                     fontSize: 14,
@@ -439,23 +389,13 @@ class JobCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              const Icon(
-                Icons.calendar_today_outlined,
-                size: 18,
-                color: Color(0xFF9CA3AF),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Due ${job.dueDate} · ${job.dueTime}',
-                  style: const TextStyle(color: _muted, fontSize: 14),
-                ),
-              ),
-            ],
-          ),
+          if (job.idTicket != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              'Ticket #${job.idTicket}',
+              style: const TextStyle(color: _muted, fontSize: 14),
+            ),
+          ],
         ],
       ),
     );
@@ -463,14 +403,11 @@ class JobCard extends StatelessWidget {
 }
 
 class _SearchField extends StatelessWidget {
-  const _SearchField({required this.onChanged});
-
-  final ValueChanged<String> onChanged;
+  const _SearchField();
 
   @override
   Widget build(BuildContext context) {
     return TextField(
-      onChanged: onChanged,
       style: const TextStyle(color: _ink, fontSize: 14),
       decoration: InputDecoration(
         hintText: 'Search tickets, assignees, or locations...',
@@ -530,62 +467,36 @@ class _StatusSummaryCard extends StatelessWidget {
 }
 
 class _FilterButton extends StatelessWidget {
-  const _FilterButton({
-    required this.label,
-    required this.value,
-    required this.options,
-    required this.onSelected,
-  });
+  const _FilterButton({required this.label});
 
   final String label;
-  final String? value;
-  final List<String> options;
-  final ValueChanged<String> onSelected;
 
   @override
   Widget build(BuildContext context) {
-    return PopupMenuButton<String>(
-      tooltip: 'Filter by $label',
-      initialValue: value,
-      onSelected: onSelected,
-      color: Colors.white,
-      position: PopupMenuPosition.under,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      itemBuilder: (_) => [
-        for (final option in options)
-          CheckedPopupMenuItem(
-            value: option,
-            checked: option == value,
-            child: Text(option),
-          ),
-      ],
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 48),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(
-            color: value == null ? _border : const Color(0xFF93C5FD),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: Text(
-                value == null ? label : '$label: $value',
-                style: const TextStyle(
-                  color: _ink,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
+    return Container(
+      constraints: const BoxConstraints(minHeight: 48),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: _border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: _ink,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(width: 6),
-            const Icon(Icons.keyboard_arrow_down, size: 18, color: _muted),
-          ],
-        ),
+          ),
+          const SizedBox(width: 6),
+          const Icon(Icons.keyboard_arrow_down, size: 18, color: _muted),
+        ],
       ),
     );
   }
