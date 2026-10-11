@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:ticketing_app/models/ticket_model.dart';
 
+import 'AcceptedJobDetail.dart';
 import 'PostJob.dart';
 
 const _ink = Color(0xFF111827);
@@ -94,6 +95,15 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
     }
   }
 
+  Future<void> _openAcceptedJob(TicketModel ticket) async {
+    final changed = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (context) => AcceptedJobDetail(ticket: ticket)),
+    );
+    if (!mounted || changed != true) return;
+    await _fetchAcceptedJobs();
+  }
+
   Widget _buildJobsArea() {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -112,7 +122,11 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
       itemCount: _tickets.length,
       itemBuilder: (context, index) => Padding(
         padding: const EdgeInsets.only(bottom: 12),
-        child: JobCard(job: _tickets[index]),
+        child: InkWell(
+          onTap: () => _openAcceptedJob(_tickets[index]),
+          borderRadius: BorderRadius.circular(16),
+          child: JobCard(job: _tickets[index]),
+        ),
       ),
     );
   }
