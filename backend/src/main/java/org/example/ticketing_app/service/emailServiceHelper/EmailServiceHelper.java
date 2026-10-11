@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.example.ticketing_app.entity.Ticket;
 
+import org.example.ticketing_app.entity.User;
+
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
@@ -426,7 +428,7 @@ public final class EmailServiceHelper {
 
     public static void sendStatusSummaryReply(
             String recipient,
-            List<Ticket> tickets
+            EmailSummary summary
     ) throws Exception {
 
         Properties props = new Properties();
@@ -460,21 +462,113 @@ public final class EmailServiceHelper {
                 new InternetAddress(recipient)
         );
 
-        reply.setSubject("Ticket Status Summary");
+        reply.setSubject("Account Summary");
 
         StringBuilder body = new StringBuilder();
 
-        body.append("Thank you for contacting us.\n\n");
+        body.append("Account Summary\n");
+        body.append("===============\n\n");
 
-        if (tickets == null || tickets.isEmpty()) {
+        User user = summary.getUser();
 
-            body.append(
-                    "We could not find any tickets associated with this email address."
-            );
+        if (user != null) {
+
+            body.append("User Information\n");
+            body.append("----------------\n");
+
+            body.append("Name: ")
+                    .append(user.getName())
+                    .append("\n");
+
+            body.append("Email: ")
+                    .append(user.getEmail())
+                    .append("\n");
+
+            body.append("User ID: ")
+                    .append(user.getIdUser())
+                    .append("\n\n");
+        }
+
+
+// Posted tickets
+
+        List<Ticket> tickets = summary.getPostedTickets();
+
+        int open = 0;
+        int inProgress = 0;
+        int closed = 0;
+        int cancelled = 0;
+
+        for (Ticket ticket : tickets) {
+
+            if ("OPEN".equals(ticket.getStatus())) {
+                open++;
+            } else if ("IN_PROGRESS".equals(ticket.getStatus())) {
+                inProgress++;
+            } else if ("CLOSED".equals(ticket.getStatus())) {
+                closed++;
+            } else if ("CANCELLED".equals(ticket.getStatus())) {
+                cancelled++;
+            }
+        }
+
+
+        body.append("Posted Ticket Statistics\n");
+        body.append("------------------------\n");
+
+        body.append("Total posted: ")
+                .append(tickets.size())
+                .append("\n");
+
+        body.append("Open: ")
+                .append(open)
+                .append("\n");
+
+        body.append("In Progress: ")
+                .append(inProgress)
+                .append("\n");
+
+        body.append("Closed: ")
+                .append(closed)
+                .append("\n");
+
+        body.append("Cancelled: ")
+                .append(cancelled)
+                .append("\n\n");
+
+
+// Assigned jobs
+
+        body.append("Assigned Job Statistics\n");
+        body.append("-----------------------\n");
+
+        body.append("Total assigned jobs: ")
+                .append(summary.getTotalAssignedJobs())
+                .append("\n");
+
+        body.append("Completed jobs: ")
+                .append(summary.getCompletedJobs())
+                .append("\n");
+
+        body.append("Jobs in progress: ")
+                .append(summary.getInProgressJobs())
+                .append("\n");
+
+        body.append("Revenue earned: $")
+                .append(summary.getTotalEarnings())
+                .append("\n\n");
+
+
+// Ticket details
+
+        body.append("Posted Tickets\n");
+        body.append("--------------\n");
+
+        if (tickets.isEmpty()) {
+
+            body.append("None\n");
 
         } else {
-
-            body.append("Here is a summary of your tickets:\n\n");
 
             for (Ticket ticket : tickets) {
 

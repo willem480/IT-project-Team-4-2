@@ -13,6 +13,16 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import org.example.ticketing_app.entity.User;
+import org.example.ticketing_app.entity.TicketAssignment;
+import org.example.ticketing_app.mapper.TicketAssignmentMapper;
+import org.example.ticketing_app.mapper.TicketMapper;
+import org.example.ticketing_app.service.ticketServiceHelper.TicketStatus;
+import org.example.ticketing_app.service.emailServiceHelper.EmailSummary;
+
+import java.util.List;
+
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
@@ -30,6 +40,9 @@ import java.time.LocalDateTime;
 public class InboxServiceImpl extends ServiceImpl<InboxMapper, Inbox> {
 
     private final TicketServiceImpl ticketService;
+    private final UserServiceImpl userService;
+    private final TicketAssignmentMapper ticketAssignmentMapper;
+    private final TicketMapper ticketMapper;
 
     @Scheduled(fixedRate = 3000)
     @Transactional(rollbackFor = Exception.class)
@@ -98,13 +111,11 @@ public class InboxServiceImpl extends ServiceImpl<InboxMapper, Inbox> {
             if (isNewEmail) {
 
 
-                if (ticketService.isStatusRequest(emailData)) {
+                if (ticketService.isSummaryRequest(emailData)) {
 
-                    EmailServiceHelper.sendStatusSummaryReply(
-                            replyRecipient,
-                            ticketService.getTicketsByEmail(replyRecipient)
+                    EmailServiceHelper.sendStatusSummaryReply (
+                        replyRecipient, buildEmailSummary(replyRecipient)
                     );
-
                 } else if (ticketService.isValidPostJobEmail(emailData)) {
 
                     Ticket createdTicket = ticketService.createTicketFromEmail(
@@ -171,5 +182,76 @@ public class InboxServiceImpl extends ServiceImpl<InboxMapper, Inbox> {
         inboxFolder.close(false);
         store.close();
         System.out.println("Inbox sync complete.");
+    }
+
+    private EmailSummary buildEmailSummary(String email) {
+
+        EmailSummary summary = new EmailSummary();
+
+        // Find user by email
+        User user = userService.lambdaQuery()
+                .eq(User::getEmail, email)
+                .one();
+
+        summary.setUser(user);
+
+        // Tickets posted by this email
+        List<Ticket> postedTickets =
+                ticketService.getTicketsByEmail(email);
+
+        summary.setPostedTickets(postedTickets);
+
+        // If this email does not belong to a registered user,
+        // there cannot be user assignment statistics.
+        if (user == null) {
+            return summary;
+        }
+
+        List<TicketAssignment> assignments =
+                ticketAssignmentMapper.selectList(
+                        new LambdaQueryWrapper<TicketAssignment>()
+                                .eq(
+                                        TicketAssignment::getAssigneeId,
+                                        user.getIdUser()
+                                )
+                );
+
+        int completed = 0;
+        int inProgress = 0;
+        int earnings = 0;
+
+        for (TicketAssignment assignment : assignments) {
+
+            Ticket ticket =
+                    ticketMapper.selectById(
+                            assignment.getTicketId()
+                    );
+
+            if (ticket == null) {
+                continue;
+            }
+
+            if (TicketStatus.CLOSED.name()
+                    .equals(ticket.getStatus())) {
+
+                completed++;
+
+                if (ticket.getPay() != null) {
+                    earnings += ticket.getPay();
+                }
+
+            } else if (TicketStatus.IN_PROGRESS.name()
+                    .equals(ticket.getStatus())) {
+
+                inProgress++;
+            }
+        }
+
+        summary.setTotalAssignedJobs(assignments.size());
+        summary.setCompletedJobs(completed);
+        summary.setInProgressJobs(inProgress);
+        summary.setTotalEarnings(earnings);
+
+        return summary;
     }
 }

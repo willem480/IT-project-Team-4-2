@@ -38,7 +38,7 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
     /** Only emails with this phrase in the subject are treated as job postings. */
     private static final String POST_JOB_SUBJECT_MARKER = "post job";
 
-    private static final String STATUS_SUBJECT_MARKER = "status";
+    private static final String SUMMARY_SUBJECT_MARKER = "summary";
 
     private static final String UPDATE_TICKET_SUBJECT_MARKER = "update ticket";
 
@@ -146,10 +146,10 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
         return parseJobPosting(emailData.getBody()).isPresent();
     }
 
-    public boolean isStatusRequest(EmailData emailData) {
+    public boolean isSummaryRequest(EmailData emailData) {
         return emailData != null
                 && emailData.getSubject() != null
-                && emailData.getSubject().trim().equalsIgnoreCase(STATUS_SUBJECT_MARKER);
+                && emailData.getSubject().trim().equalsIgnoreCase(SUMMARY_SUBJECT_MARKER);
     }
 
     /** Identifies emails that request a change to an existing ticket. */
