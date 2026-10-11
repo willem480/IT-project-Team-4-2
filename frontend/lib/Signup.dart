@@ -1,4 +1,8 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:ticketing_app/SignIn.dart';
 
 
@@ -53,8 +57,103 @@ class SignUpPage extends StatefulWidget {
 
 class _SignUpPageState extends State<SignUpPage> {
 
+  final nameController = TextEditingController();
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+  final confirmPasswordController = TextEditingController();
+  bool _isSigningUp = false;
+
   bool isObsecure = true;
   bool isConfirmObsecure = true;
+
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _signUp() async {
+    if (_isSigningUp) return;
+
+    final name = nameController.text.trim();
+    final email = emailController.text.trim();
+    final password = passwordController.text;
+    final confirmPassword = confirmPasswordController.text;
+
+    if (name.isEmpty) {
+      _showError('Please enter your name.');
+      return;
+    }
+    if (email.isEmpty) {
+      _showError('Please enter your email.');
+      return;
+    }
+    if (password.isEmpty) {
+      _showError('Please enter your password.');
+      return;
+    }
+    if (confirmPassword.isEmpty) {
+      _showError('Please confirm your password.');
+      return;
+    }
+    if (password != confirmPassword) {
+      _showError('Passwords do not match.');
+      return;
+    }
+
+    setState(() => _isSigningUp = true);
+    try {
+      final response = await http.post(
+        Uri.parse(
+          'http://127.0.0.1:4523/m1/8806835-8598944-default/user/signup',
+        ),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'name': name, 'email': email, 'password': password}),
+      ).timeout(const Duration(seconds: 30));
+
+      if (!mounted) return;
+      if (response.statusCode == 201) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const SignIn()),
+        );
+      } else {
+        var message = 'Signup failed (HTTP ${response.statusCode}). Please try again.';
+        try {
+          final body = jsonDecode(response.body);
+          if (body is Map<String, dynamic>) {
+            final error = body['message'] ?? body['error'];
+            if (error is String && error.trim().isNotEmpty) {
+              message = error;
+            }
+          }
+        } on FormatException {
+          // Keep the fallback message for empty or non-JSON responses.
+        }
+        _showError(message);
+      }
+    } on TimeoutException {
+      _showError('Signup request timed out. Please try again.');
+    } catch (_) {
+      _showError('Unable to sign up. Please check your connection and try again.');
+    } finally {
+      if (mounted) {
+        setState(() => _isSigningUp = false);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+    confirmPasswordController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
 
@@ -96,6 +195,7 @@ class _SignUpPageState extends State<SignUpPage> {
               const Text('Name', style:TextStyle(fontSize: 12)),
               const SizedBox(height: 8),
               TextField(
+                controller: nameController,
                 decoration: InputDecoration(
                   hintText: 'Your name',
                   hintStyle: TextStyle(color: Colors.grey, fontSize: 12),
@@ -115,6 +215,7 @@ class _SignUpPageState extends State<SignUpPage> {
               const Text('Email address', style:TextStyle(fontSize: 12)),
               const SizedBox(height: 8),
               TextField(
+                controller: emailController,
                 decoration: InputDecoration(
                   hintText: 'ABC@gmail.com',
                   hintStyle: TextStyle(color: Colors.grey, fontSize: 12),
@@ -133,6 +234,7 @@ class _SignUpPageState extends State<SignUpPage> {
               Text('Password', style: TextStyle(fontSize: 12)),
               SizedBox(height: 8),
               TextField(
+                controller: passwordController,
                 obscureText: isObsecure,
                 decoration: InputDecoration(
                   hintText: '******',
@@ -161,6 +263,7 @@ class _SignUpPageState extends State<SignUpPage> {
               Text('Confirm your password', style: TextStyle(fontSize: 12)),
               SizedBox(height: 8),
               TextField(
+                controller: confirmPasswordController,
                 obscureText: isConfirmObsecure,
                 decoration: InputDecoration(
                   hintText: '******',
@@ -209,7 +312,7 @@ class _SignUpPageState extends State<SignUpPage> {
           width: 200,
           height: 50,
           child: FloatingActionButton(
-            onPressed: (){Navigator.push(context, MaterialPageRoute(builder: (context) => SignIn()),);},
+            onPressed: _isSigningUp ? null : _signUp,
             backgroundColor: Colors.green,
             tooltip: 'Sign up',
             child: const Text('Sign up & back to sign in', style: TextStyle(color: Colors.white))),
