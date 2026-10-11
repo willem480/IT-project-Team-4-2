@@ -51,6 +51,9 @@ public class InboxServiceImpl extends ServiceImpl<InboxMapper, Inbox> {
             EmailData emailData =
                     EmailServiceHelper.parseEmail(message);
 
+            String replyRecipient =
+                    EmailServiceHelper.getSingleSender(message);
+
             Inbox inbox =
                     getById(emailData.getMessageId());
 
@@ -98,8 +101,8 @@ public class InboxServiceImpl extends ServiceImpl<InboxMapper, Inbox> {
                 if (ticketService.isStatusRequest(emailData)) {
 
                     EmailServiceHelper.sendStatusSummaryReply(
-                            emailData.getFrom(),
-                            ticketService.getTicketsByEmail(emailData.getFrom())
+                            replyRecipient,
+                            ticketService.getTicketsByEmail(replyRecipient)
                     );
 
                 } else if (ticketService.isValidPostJobEmail(emailData)) {
@@ -112,7 +115,7 @@ public class InboxServiceImpl extends ServiceImpl<InboxMapper, Inbox> {
                     // Only a successfully created ticket receives a confirmation email.
                     if (createdTicket != null) {
                         EmailServiceHelper.sendTicketCreatedReply(
-                                emailData.getFrom(),
+                                replyRecipient,
                                 emailData.getSubject(),
                                 createdTicket
                         );
@@ -153,7 +156,7 @@ public class InboxServiceImpl extends ServiceImpl<InboxMapper, Inbox> {
                 } else {
 
                     EmailServiceHelper.sendInvalidFormatReply(
-                            emailData.getFrom(),
+                            replyRecipient,
                             emailData.getSubject()
                     );
                 }

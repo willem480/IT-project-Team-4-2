@@ -220,6 +220,21 @@ public final class EmailServiceHelper {
         return result;
     }
 
+    public static String getSingleSender(Message message) throws MessagingException {
+
+        Address[] addresses = message.getFrom();
+
+        if (addresses == null || addresses.length == 0) {
+            return null;
+        }
+
+        if (addresses[0] instanceof InternetAddress internetAddress) {
+            return internetAddress.getAddress();
+        }
+
+        return addresses[0].toString();
+    }
+
     public static String extractBody(
             Part part
     ) throws Exception {
@@ -385,9 +400,9 @@ public final class EmailServiceHelper {
                 new InternetAddress(smtpUsername)
         );
 
-        reply.setRecipients(
+        reply.setRecipient(
                 Message.RecipientType.TO,
-                InternetAddress.parse(recipient)
+                new InternetAddress(recipient)
         );
 
         reply.setSubject(
@@ -440,9 +455,9 @@ public final class EmailServiceHelper {
                 new InternetAddress(smtpUsername)
         );
 
-        reply.setRecipients(
+        reply.setRecipient(
                 Message.RecipientType.TO,
-                InternetAddress.parse(recipient)
+                new InternetAddress(recipient)
         );
 
         reply.setSubject("Ticket Status Summary");
