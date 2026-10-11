@@ -24,6 +24,7 @@ dependencies {
     implementation 'org.apache.commons:commons-lang3:3.18.0'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.security:spring-security-crypto'
 
     implementation 'com.baomidou:mybatis-plus-generator:3.5.14'
     implementation 'org.freemarker:freemarker:2.3.35'

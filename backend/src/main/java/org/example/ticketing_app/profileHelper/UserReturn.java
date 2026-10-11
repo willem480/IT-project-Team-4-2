@@ -2,6 +2,7 @@ package org.example.ticketing_app.profileHelper;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
@@ -13,6 +14,7 @@ public class UserReturn {
     private Integer idUser;
 
     private String name;
+    @Schema(nullable = true)
     private String description;
     private String email;
     private float totalEarnings;

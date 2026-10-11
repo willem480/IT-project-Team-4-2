@@ -8,6 +8,13 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.example.ticketing_app.profileHelper.UserReturn;
+import org.example.ticketing_app.service.userServiceHelper.SignInRequest;
+import org.example.ticketing_app.service.userServiceHelper.SignUpRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
+
 /**
  * <p>
  *  前端控制器
@@ -26,4 +33,16 @@ public class UserController {
     public void UpdateUser(@RequestParam int id, @RequestParam(required = false) String name, @RequestParam(required = false) String email, @RequestParam(required = false) String description) {
         userService.UpdateUser(id, email, name, description);
     }
+
+    @PostMapping("/signup")
+    @ResponseStatus(HttpStatus.CREATED)
+    public UserReturn signUp(@RequestBody SignUpRequest request) {
+        return userService.signUp(request);
+    }
+
+    @PostMapping("/signin")
+    public UserReturn signIn(@RequestBody SignInRequest request) {
+        return userService.signIn(request);
+    }
+
 }

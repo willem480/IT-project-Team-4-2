@@ -12,6 +12,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import org.example.ticketing_app.service.userServiceHelper.SignInRequest;
+import org.example.ticketing_app.service.userServiceHelper.SignUpRequest;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+
 import java.time.YearMonth;
 import java.util.List;
 
@@ -28,6 +33,9 @@ import java.util.List;
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> {
     private final TicketAssignmentServiceImpl ticketAssignmentService;
     private final TicketAssignmentMapper ticketAssignmentMapper;
+    private final BCryptPasswordEncoder passwordEncoder =
+            new BCryptPasswordEncoder();
+
     public UserReturn getUserById(int id) {
 
         User user = getById(id);
@@ -139,5 +147,83 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> {
             }
             saveOrUpdate(user);
         }
+    }
+
+    public UserReturn signUp(SignUpRequest request) {
+
+        if (request == null
+                || StringUtils.isBlank(request.getName())
+                || StringUtils.isBlank(request.getEmail())
+                || StringUtils.isBlank(request.getPassword())) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Name, email and password are required");
+        }
+
+        User existingUser = getOne(
+                new LambdaQueryWrapper<User>()
+                        .eq(User::getEmail, request.getEmail())
+        );
+
+        if (existingUser != null) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Email is already registered");
+        }
+
+        User user = new User();
+
+        user.setName(request.getName());
+        user.setEmail(request.getEmail());
+        user.setPasswordHash(
+                passwordEncoder.encode(request.getPassword())
+        );
+
+        save(user);
+
+        return createBasicUserReturn(user);
+    }
+
+    public UserReturn signIn(SignInRequest request) {
+
+        if (request == null
+                || StringUtils.isBlank(request.getEmail())
+                || StringUtils.isBlank(request.getPassword())) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Email and password are required");
+        }
+
+        User user = getOne(
+                new LambdaQueryWrapper<User>()
+                        .eq(User::getEmail, request.getEmail())
+        );
+
+        if (user == null
+                || user.getPasswordHash() == null
+                || !passwordEncoder.matches(
+                request.getPassword(),
+                user.getPasswordHash())) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Invalid email or password");
+        }
+
+        return createBasicUserReturn(user);
+    }
+
+    private UserReturn createBasicUserReturn(User user) {
+
+        UserReturn userReturn = new UserReturn();
+
+        userReturn.setIdUser(user.getIdUser());
+        userReturn.setName(user.getName());
+        userReturn.setEmail(user.getEmail());
+        userReturn.setDescription(user.getDescription());
+
+        return userReturn;
     }
 }
