@@ -109,7 +109,7 @@ class _SignUpPageState extends State<SignUpPage> {
           'http://127.0.0.1:4523/m1/8806835-8598944-default/user/signup',
         ),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'name': name, 'email': email, 'password': password}),
+        body: jsonEncode({'name': name, 'email': email}),
       ).timeout(const Duration(seconds: 30));
 
       if (!mounted) return;
