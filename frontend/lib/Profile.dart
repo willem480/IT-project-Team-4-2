@@ -43,6 +43,7 @@ class _ProfilePage extends State<Profile> {
   UserProfile? userProfile;
   List<TicketModel> postedTickets = [];
   List<TicketModel> completedTickets = [];
+  bool isAscending = true;
 
 
   void fetchFirstUserData() async {
@@ -312,39 +313,62 @@ class _ProfilePage extends State<Profile> {
                       }),
 
                       SizedBox(width: 20),
-// 替换你原来的 OutlinedButton
-                      PopupMenuButton<String>(
-                        onSelected: (String value) {
-                          print("Profile filter selected: $value");
-                          // 根据当前处于哪个 Tab（Posted 还是 Completed），去调用对应的带参数请求
-                          if (is_Detail_Tab) {
-                            fetchPostedTickets(value);
-                          } else {
-                            fetchCompletedTickets(value);
-                          }
-                        },
-                        itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                          const PopupMenuItem<String>(
-                            value: 'up',
-                            child: Text('Date: earliest to lastest'),
-                          ),
-                          const PopupMenuItem<String>(
-                            value: 'down',
-                            child: Text('Date: lastest to earliest'),
-                          ),
-                        ],
-                        child: OutlinedButton(
-                          onPressed: null, 
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              Text('Filter'), 
-                              SizedBox(width: 8), 
-                              Icon(Icons.arrow_downward, size: 16)
-                            ],
-                          ),
-                        ),
+
+Padding(
+                padding:  EdgeInsets.all(16.0),
+                child: Row(// from left to right
+                  children: [
+                    OutlinedButton.icon(
+                      
+                      onPressed:(){
+                        setState(() {
+                          isAscending = !isAscending;
+                        }); 
+
+                        String filterValue = isAscending ? 'up' : 'down';
+                        print("User toggled filter: $filterValue");
+                        if(is_Detail_Tab){
+                          fetchPostedTickets(filterValue);
+                        }
+                        else{
+                          fetchCompletedTickets(filterValue);
+                        }
+                        
+                      },
+
+                      icon: Icon(
+                        isAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                        size:  16,
+                        color: Colors.black87,
                       ),
+
+                      label: Text(
+                        isAscending ? "Date: new to last" : "Date : last to new",
+                        style: const TextStyle(
+                          color : Colors.black87,
+                          fontWeight: FontWeight.w500,
+                        )
+                      ),
+
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        backgroundColor:  Colors.white,
+                        side: BorderSide(color: Colors.grey),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        )
+
+
+                      )
+
+                    
+                      //visual button
+                      
+                    ),
+                    
+                  ]
+                )
+              ),
                   
                     ],
                   ),

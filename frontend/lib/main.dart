@@ -42,6 +42,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   List<TicketModel> openTickets = [];
   String userName = 'Loading...';
+  bool isAscending = true;
 
   //search function
   void fetchTicketsByKeyword(String keyword) async{
@@ -259,34 +260,44 @@ void fetchAssignTickets() async {
                 padding:  EdgeInsets.all(16.0),
                 child: Row(// from left to right
                   children: [
-                    PopupMenuButton<String>(
-                      onSelected:  (String value){
-                        print("User selected: $value");
-                        fetchOpenTickets(value);
-                      },
-                      itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                        const PopupMenuItem<String>(
-                          value: 'up',
-                          child: Row(
-                            children: [
-                              Icon(Icons.arrow_upward, size: 16),
-                              SizedBox(width: 8),
-                              Text('Pay: Low to High'),
-                            ]
-                          )
-                        ),
-                        const PopupMenuItem<String>(
-                          value: 'down',
-                          child: Row(
-                            children: [
-                              Icon(Icons.arrow_downward, size: 16),
-                              SizedBox(width: 8),
-                              Text('Pay: High to Low'),
-                            ]
-                          )
-                        )
-                      ],
+                    OutlinedButton.icon(
+                      
+                      onPressed:(){
+                        setState(() {
+                          isAscending = !isAscending;
+                        }); 
 
+                        String filterValue = isAscending ? 'up' : 'down';
+                        print("User toggled filter: $filterValue");
+                        fetchOpenTickets(filterValue);
+                      },
+
+                      icon: Icon(
+                        isAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                        size:  16,
+                        color: Colors.black87,
+                      ),
+
+                      label: Text(
+                        isAscending ? "Pay: Low to High" : "Pay : High to Low",
+                        style: const TextStyle(
+                          color : Colors.black87,
+                          fontWeight: FontWeight.w500,
+                        )
+                      ),
+
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        backgroundColor:  Colors.white,
+                        side: BorderSide(color: Colors.grey),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        )
+
+
+                      )
+
+                    
                       //visual button
                       
                     ),
