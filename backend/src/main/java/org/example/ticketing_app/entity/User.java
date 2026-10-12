@@ -8,7 +8,6 @@ import lombok.ToString;
 
 import java.io.Serializable;
 
-import com.baomidou.mybatisplus.annotation.TableField;
 
 /**
  * <p>
@@ -34,6 +33,4 @@ public class User implements Serializable {
 
     private String description;
 
-    @TableField("password_hash")
-    private String passwordHash;
 }

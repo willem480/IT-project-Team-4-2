@@ -53,31 +53,26 @@ public class TicketServiceTest {
         user1.setIdUser(1001);
         user1.setName("John Smith");
         user1.setEmail("john@example.com");
-        user1.setPasswordHash("test_password_hash");
 
         User user2 = new User();
         user2.setIdUser(1002);
         user2.setName("Alice Lee");
         user2.setEmail("alice@example.com");
-        user2.setPasswordHash("test_password_hash");
 
         User user3 = new User();
         user3.setIdUser(1003);
         user3.setName("Bob Wilson");
         user3.setEmail("bob@example.com");
-        user3.setPasswordHash("test_password_hash");
 
         User user4 = new User();
         user4.setIdUser(2001);
         user4.setName("David Chen");
         user4.setEmail("david@example.com");
-        user4.setPasswordHash("test_password_hash");
 
         User user5 = new User();
         user5.setIdUser(2003);
         user5.setName("Emma Brown");
         user5.setEmail("emma@example.com");
-        user5.setPasswordHash("test_password_hash");
 
         userMapper.insertOrUpdate(user1);
         userMapper.insertOrUpdate(user2);

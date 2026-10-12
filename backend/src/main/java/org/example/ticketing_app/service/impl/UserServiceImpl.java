@@ -15,7 +15,6 @@ import org.springframework.web.server.ResponseStatusException;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.example.ticketing_app.service.userServiceHelper.SignInRequest;
 import org.example.ticketing_app.service.userServiceHelper.SignUpRequest;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.time.YearMonth;
 import java.util.List;
@@ -33,8 +32,6 @@ import java.util.List;
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> {
     private final TicketAssignmentServiceImpl ticketAssignmentService;
     private final TicketAssignmentMapper ticketAssignmentMapper;
-    private final BCryptPasswordEncoder passwordEncoder =
-            new BCryptPasswordEncoder();
 
     public UserReturn getUserById(int id) {
 
@@ -149,16 +146,27 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> {
         }
     }
 
+    private UserReturn createBasicUserReturn(User user) {
+
+        UserReturn userReturn = new UserReturn();
+
+        userReturn.setIdUser(user.getIdUser());
+        userReturn.setName(user.getName());
+        userReturn.setEmail(user.getEmail());
+        userReturn.setDescription(user.getDescription());
+
+        return userReturn;
+    }
+
     public UserReturn signUp(SignUpRequest request) {
 
         if (request == null
                 || StringUtils.isBlank(request.getName())
-                || StringUtils.isBlank(request.getEmail())
-                || StringUtils.isBlank(request.getPassword())) {
+                || StringUtils.isBlank(request.getEmail())) {
 
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Name, email and password are required");
+                    "Name and email are required");
         }
 
         User existingUser = getOne(
@@ -176,24 +184,22 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> {
 
         user.setName(request.getName());
         user.setEmail(request.getEmail());
-        user.setPasswordHash(
-                passwordEncoder.encode(request.getPassword())
-        );
 
         save(user);
+
 
         return createBasicUserReturn(user);
     }
 
+
     public UserReturn signIn(SignInRequest request) {
 
         if (request == null
-                || StringUtils.isBlank(request.getEmail())
-                || StringUtils.isBlank(request.getPassword())) {
+                || StringUtils.isBlank(request.getEmail())) {
 
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Email and password are required");
+                    "Email is required");
         }
 
         User user = getOne(
@@ -201,29 +207,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> {
                         .eq(User::getEmail, request.getEmail())
         );
 
-        if (user == null
-                || user.getPasswordHash() == null
-                || !passwordEncoder.matches(
-                request.getPassword(),
-                user.getPasswordHash())) {
-
+        if (user == null) {
             throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED,
-                    "Invalid email or password");
+                    HttpStatus.NOT_FOUND,
+                    "User not found");
         }
 
+        save(user);
+
         return createBasicUserReturn(user);
-    }
-
-    private UserReturn createBasicUserReturn(User user) {
-
-        UserReturn userReturn = new UserReturn();
-
-        userReturn.setIdUser(user.getIdUser());
-        userReturn.setName(user.getName());
-        userReturn.setEmail(user.getEmail());
-        userReturn.setDescription(user.getDescription());
-
-        return userReturn;
     }
 }
