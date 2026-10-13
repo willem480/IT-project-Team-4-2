@@ -213,8 +213,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> {
                     "User not found");
         }
 
-        save(user);
-
         return createBasicUserReturn(user);
     }
 }

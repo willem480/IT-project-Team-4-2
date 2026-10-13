@@ -21,4 +21,18 @@ public class UserReturn {
     private float totalEarningsThisMonth;
     private int numberOfEarningsThisMonth;
     private float percentageEarningsCompareToLastMonth;
+
+    @Override
+    public String toString() {
+        return "UserReturn{" +
+                "idUser=" + idUser +
+                ", name='" + name + '\'' +
+                ", description='" + description + '\'' +
+                ", email='" + email + '\'' +
+                ", totalEarnings=" + totalEarnings +
+                ", totalEarningsThisMonth=" + totalEarningsThisMonth +
+                ", numberOfEarningsThisMonth=" + numberOfEarningsThisMonth +
+                ", percentageEarningsCompareToLastMonth=" + percentageEarningsCompareToLastMonth +
+                '}';
+    }
 }
