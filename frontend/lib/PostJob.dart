@@ -215,7 +215,7 @@ class _PostJobPageState extends State<PostJob> {
 
             DropdownButtonFormField<String>(
               
-              value: selectedCompany, 
+              initialValue: selectedCompany, 
               icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
               
               decoration: InputDecoration(

@@ -158,7 +158,7 @@ class _ProfilePage extends State<Profile> {
   }
 
   void _showEditDescriptionDialog() {
-    TextEditingController _editController = TextEditingController(text: userDescription);
+    TextEditingController editController = TextEditingController(text: userDescription);
 
     showDialog(
       context: context,
@@ -166,7 +166,7 @@ class _ProfilePage extends State<Profile> {
         return AlertDialog(
           title: const Text("Edit Description"),
           content: TextField(
-            controller: _editController,
+            controller: editController,
             maxLines: 4,
             decoration: const InputDecoration(
               hintText: "Write something about yourself...",
@@ -180,7 +180,7 @@ class _ProfilePage extends State<Profile> {
             ),
             ElevatedButton(
               onPressed: () {
-                String newText = _editController.text;
+                String newText = editController.text;
                 Navigator.pop(context);
                 updateProfileDescription(newText); // 调用网络请求去修改
               },
@@ -264,7 +264,7 @@ class _ProfilePage extends State<Profile> {
                                 ),
                                 
                                 const SizedBox(height: 20),
-                                Text("$userDescription", style: const TextStyle(fontSize: 15, height: 1.4), maxLines: 7, overflow: TextOverflow.ellipsis,),
+                                Text(userDescription, style: const TextStyle(fontSize: 15, height: 1.4), maxLines: 7, overflow: TextOverflow.ellipsis,),
                               ]
                             ),
                           ),
@@ -517,7 +517,7 @@ Padding(
               border: Border.all(color: Colors.grey),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
+                  color: Colors.grey.withValues(alpha: 0.1),
                   
                   blurRadius: 2,
                   offset: const Offset(0, 1),

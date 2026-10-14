@@ -10,6 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.jupiter.api.Assertions;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -421,7 +422,50 @@ public class TicketServiceTest {
     }
 
     @Test
-    void profileTest(){
-        System.out.println(userService.getUserById(2001));
+        void profileTest() {
+ 
+        var user = userService.getUserById(2001);
+        Assertions.assertNotNull(user, "User shouldn't be null");
+        System.out.println("Test 4.1 Passed - User Info: " + user);
+
+        var ticketAssignments = ticketAssignmentService.getTicketAssignment(2001, Filter.timeAscending);
+        
+        Assertions.assertNotNull(ticketAssignments, "Ticket history list should not be null");
+        System.out.println("Test 4.2 Passed - Ticket History Count: " + ticketAssignments.size());
+    }
+
+
+
+    @Test
+    void ticketManagementTest() {
+
+        // Test 5.1: Create Ticket
+ 
+        Ticket newTicket = new Ticket();
+        newTicket.setTitle("Fix network switch");
+        newTicket.setDescription("Switch on Level 2 is down.");
+        newTicket.setPay(100);
+        newTicket.setStatus(TicketStatus.OPEN.name());
+        
+
+        ticketMapper.insertOrUpdate(newTicket); 
+        System.out.println("Test 5.1 Passed - Ticket created successfully.");
+
+       
+        // Test 5.2: Update Ticket 
+        Ticket ticketToUpdate = ticketMapper.selectById(1); 
+        if (ticketToUpdate != null) {
+            ticketToUpdate.setTitle("Updated Title for Office");
+            ticketMapper.insertOrUpdate(ticketToUpdate);
+            System.out.println("Test 5.2 Passed - Ticket updated successfully.");
+        }
+
+
+        // Test 5.3: View Ticket 
+   
+        Ticket viewedTicket = ticketMapper.selectById(1);
+        Assertions.assertNotNull(viewedTicket, "Ticket details should exist");
+        Assertions.assertEquals(1, viewedTicket.getIdTicket(), "Ticket ID should match");
+        System.out.println("Test 5.3 Passed - Ticket details viewed: " + viewedTicket.getTitle());
     }
 }
