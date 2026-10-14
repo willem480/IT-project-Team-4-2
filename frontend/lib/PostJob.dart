@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ticketing_app/SuccessPage.dart';
 import 'package:http/http.dart' as http;
-import 'package:ticketing_app/models/ticket_model.dart';
-import 'package:ticketing_app/models/user_profile.dart';
 import 'dart:convert';
 class PostJob extends StatefulWidget {
   const PostJob({super.key});
