@@ -421,49 +421,45 @@ public class TicketServiceTest {
         System.out.println(report.getBody());
     }
 
-    @Test
-        void profileTest() {
- 
+@Test
+    void profileTest() {
         var user = userService.getUserById(2001);
         Assertions.assertNotNull(user, "User shouldn't be null");
-        System.out.println("Test 4.1 Passed - User Info: " + user);
+        System.out.println("Test 4.1 Passed");
 
-        var ticketAssignments = ticketAssignmentService.getTicketAssignment(2001, Filter.timeAscending);
-        
-        Assertions.assertNotNull(ticketAssignments, "Ticket history list should not be null");
-        System.out.println("Test 4.2 Passed - Ticket History Count: " + ticketAssignments.size());
+        var posted = ticketService.getPostedTickets(2001, null);
+        Assertions.assertNotNull(posted, "Ticket history list should not be null");
+        System.out.println("Test 4.2 Passed - Ticket History Count: " + posted.size());
     }
 
 
 
     @Test
     void ticketManagementTest() {
-
         // Test 5.1: Create Ticket
- 
         Ticket newTicket = new Ticket();
+        newTicket.setPosterId(1001);
+        newTicket.setDatePosted(LocalDateTime.now());
+        newTicket.setLocation("Level 2 Server Room");
+        newTicket.setEmail("john@example.com");
         newTicket.setTitle("Fix network switch");
         newTicket.setDescription("Switch on Level 2 is down.");
         newTicket.setPay(100);
         newTicket.setStatus(TicketStatus.OPEN.name());
-        
 
-        ticketMapper.insertOrUpdate(newTicket); 
-        System.out.println("Test 5.1 Passed - Ticket created successfully.");
+        ticketService.saveOrUpdate(newTicket);
+        System.out.println("Test 5.1 Passed - Ticket created.");
 
-       
-        // Test 5.2: Update Ticket 
-        Ticket ticketToUpdate = ticketMapper.selectById(1); 
+        // Test 5.2: Update Ticket
+        Ticket ticketToUpdate = ticketService.getById(1);
         if (ticketToUpdate != null) {
             ticketToUpdate.setTitle("Updated Title for Office");
-            ticketMapper.insertOrUpdate(ticketToUpdate);
-            System.out.println("Test 5.2 Passed - Ticket updated successfully.");
+            ticketService.saveOrUpdate(ticketToUpdate);
+            System.out.println("Test 5.2 Passed - Ticket updated.");
         }
 
-
         // Test 5.3: View Ticket 
-   
-        Ticket viewedTicket = ticketMapper.selectById(1);
+        Ticket viewedTicket = ticketService.getById(1);
         Assertions.assertNotNull(viewedTicket, "Ticket details should exist");
         Assertions.assertEquals(1, viewedTicket.getIdTicket(), "Ticket ID should match");
         System.out.println("Test 5.3 Passed - Ticket details viewed: " + viewedTicket.getTitle());

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:ticketing_app/FindAJobDetailUser.dart';
 import 'package:ticketing_app/main.dart';
 import 'package:ticketing_app/PostAJobDetailUser.dart';
 import 'package:ticketing_app/models/ticket_model.dart';
