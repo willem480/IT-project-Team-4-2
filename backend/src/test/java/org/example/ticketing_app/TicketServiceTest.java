@@ -1,15 +1,23 @@
 package org.example.ticketing_app;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.example.ticketing_app.entity.*;
 import org.example.ticketing_app.mapper.*;
 import org.example.ticketing_app.service.impl.*;
+import org.example.ticketing_app.service.organizationServiceHelper.AddTeamRequest;
+import org.example.ticketing_app.service.teamServiceHelper.AddTeamMemberRequest;
 import org.example.ticketing_app.service.ticketServiceHelper.Filter;
 import org.example.ticketing_app.service.ticketServiceHelper.TicketAssignmentReturn;
 import org.example.ticketing_app.service.ticketServiceHelper.TicketStatus;
+import org.example.ticketing_app.service.userServiceHelper.SignInRequest;
+import org.example.ticketing_app.service.userServiceHelper.SignUpRequest;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.util.Assert;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -42,6 +50,10 @@ public class TicketServiceTest {
     private ManagerMapper managerMapper;
     @Autowired
     private UserServiceImpl userService;
+    @Autowired
+    private TeamServiceImpl teamService;
+    @Autowired
+    private OrganizationServiceImpl organizationService;
     @BeforeEach
     void setUp() {
 
@@ -422,6 +434,12 @@ public class TicketServiceTest {
 
     @Test
     void profileTest(){
-        System.out.println(userService.getUserById(2001));
+        int actorUserId = 1001;  // John Smith
+        int organizationId = 1;  // Engineering
+        User testUser = userMapper.selectOne(new LambdaQueryWrapper<User>().eq(User::getName, "TestUser"));
+        teamService.addTeamMember(AddTeamMemberRequest.builder().actorUserId(2001).teamId(5).userId(testUser.getIdUser()).build());
+        Assertions.assertTrue(teamMemberMapper.exists(new LambdaQueryWrapper<TeamMember>().eq(TeamMember::getTeamId, 5).eq(TeamMember::getUserId, testUser.getIdUser())));
     }
+
+
 }
