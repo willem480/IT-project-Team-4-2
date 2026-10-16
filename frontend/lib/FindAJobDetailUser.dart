@@ -3,6 +3,7 @@ import 'package:ticketing_app/main.dart';
 import 'package:ticketing_app/models/ticket_comment.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'TeamSelection.dart';
 
 
 
@@ -189,41 +190,53 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
         ],
       ),
       
-      floatingActionButton: Padding( 
-        padding: EdgeInsets.only(bottom: 20),
-        child: SizedBox(
-          width: 200,
-          height: 56,
-          child: FloatingActionButton(
-          onPressed: () async{
-            final url = Uri.parse("http://127.0.0.1:4523/m1/8806835-8598944-default/ticketAssignment/delegateJobIndividual");
-            
-            try{
-              final response = await http.post(
-                url,
-                headers:{"Content-Type": "application/json"},
-                body: jsonEncode({
-                  "ticketId": widget.ticketId,
-                  "assigneeId": 1, 
-                  "teamId": null
-                }));
-                if (response.statusCode == 200){
-                  print("job has been accepted successfully");
-                  Navigator.pushAndRemoveUntil(
-                    context, MaterialPageRoute(builder: (context) => const MyHomePage(title: 'Find a job')), 
-                    (Route<dynamic> route) => false);
-                }
-                else{print("fail accept");}
 
-            }
-            catch(e){
-              print("network request error");
-            }
-          },
-          backgroundColor: Colors.lightGreen,
-          shape:  RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
-          child: Text('Accept', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),),
-          )
+      // bool isAdmin = true; 
+
+      floatingActionButton: Padding( 
+        padding: const EdgeInsets.only(bottom: 20),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+           
+            SizedBox(
+              width: 150, 
+              height: 56,
+              child: FloatingActionButton(
+                heroTag: "acceptBtn", 
+                onPressed: () async{
+                  // ... 你原有的 Accept 逻辑 ...
+                },
+                backgroundColor: Colors.lightGreen,
+                shape:  RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
+                child: const Text('Accept', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),),
+              )
+            ),
+            
+            
+            const SizedBox(width: 20), 
+            SizedBox(
+              width: 150,
+              height: 56,
+              child: FloatingActionButton(
+                heroTag: "delegateBtn",
+                onPressed: () {
+                  print("===== 1. 成功点击了 Delegate 按钮 =====");
+                
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => TeamSelectionPage(ticketId: widget.ticketId),
+                    ),
+                  );
+                },
+                backgroundColor: Colors.blueAccent,
+                shape:  RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
+                child: const Text('Delegate', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),),
+              )
+            ),
+            // ],
+          ],
         ),
       ),
       
