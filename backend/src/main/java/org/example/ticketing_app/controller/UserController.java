@@ -15,6 +15,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
+import java.util.List;
+
 /**
  * <p>
  *  前端控制器
@@ -45,4 +47,8 @@ public class UserController {
         return userService.signIn(request);
     }
 
+    @PostMapping("getUsersByEmail")
+    public List<UserReturn> getUsersByEmail(@RequestParam(required = false) String email) {
+        return userService.getUsersByEmail(email);
+    }
 }
