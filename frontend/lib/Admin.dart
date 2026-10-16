@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'Profile.dart';
+import 'adminSearch.dart';
 
 class AdminPage extends StatelessWidget {
   const AdminPage({
@@ -23,12 +24,21 @@ class AdminPage extends StatelessWidget {
     Navigator.maybePop(context);
   }
 
-  void _createUser() {
-    // TODO: Implement Create User API
+  void _createUser(BuildContext context) {
+    Navigator.push<void>(
+      context,
+      MaterialPageRoute<void>(
+        builder: (context) => AdminSearchPage(userName: userName),
+      ),
+    );
   }
 
   void _deleteUser() {
     // TODO: Implement Delete User API
+  }
+
+  void _delegateJob() {
+    // TODO: Implement Delegate Job
   }
 
   void _openReporting() {
@@ -39,6 +49,8 @@ class AdminPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final displayName = userName.trim().isEmpty ? 'User' : userName.trim();
     final isMemberManagement = teamMemberId != null;
+    final isTeamManagement = teamId != null && teamMemberId == null;
+    final isOrganisationManagement = teamId == null && teamMemberId == null;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
@@ -122,16 +134,16 @@ class AdminPage extends StatelessWidget {
                 style: TextStyle(color: Color(0xFF6B7280), fontSize: 14),
               ),
               const SizedBox(height: 36),
-              if (!isMemberManagement)
+              if (isTeamManagement)
                 _AdminActionCard(
                   icon: Icons.person_add_alt_1_outlined,
                   iconColor: const Color(0xFF2563EB),
                   iconBackgroundColor: const Color(0xFFEFF6FF),
                   title: 'Create User',
                   description: 'Create a new user account.',
-                  onTap: _createUser,
-                )
-              else
+                  onTap: () => _createUser(context),
+                ),
+              if (isMemberManagement) ...[
                 _AdminActionCard(
                   icon: Icons.person_remove_outlined,
                   iconColor: const Color(0xFFDC2626),
@@ -140,7 +152,17 @@ class AdminPage extends StatelessWidget {
                   description: 'Remove or deactivate a user.',
                   onTap: _deleteUser,
                 ),
-              const SizedBox(height: 30),
+                const SizedBox(height: 30),
+                _AdminActionCard(
+                  icon: Icons.assignment_ind_outlined,
+                  iconColor: const Color(0xFF2563EB),
+                  iconBackgroundColor: const Color(0xFFEFF6FF),
+                  title: 'Delegate Job',
+                  description: 'Delegate a job to this member.',
+                  onTap: _delegateJob,
+                ),
+              ],
+              if (!isOrganisationManagement) const SizedBox(height: 30),
               _AdminActionCard(
                 icon: Icons.bar_chart_rounded,
                 iconColor: const Color(0xFF16A34A),
