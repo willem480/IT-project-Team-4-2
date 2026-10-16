@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'package:ticketing_app/Signup.dart';
 import 'package:ticketing_app/main.dart';
-
 
 class SignIn extends StatelessWidget {
   const SignIn({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Sign in',
       theme: ThemeData(
-  
         colorScheme: ColorScheme.fromSeed(seedColor: const Color.fromARGB(255, 255, 255, 255)),
       ),
       home: const SignInPage(title: 'Flutter Demo Home Page'),
@@ -23,15 +22,6 @@ class SignIn extends StatelessWidget {
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key, required this.title});
 
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
   final String title;
 
   @override
@@ -39,129 +29,197 @@ class SignInPage extends StatefulWidget {
 }
 
 class _SignInPageState extends State<SignInPage> {
-
   bool isObsecure = true;
+  bool isLoading = false;
+
+
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+
+  void handleSignIn() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter both email and password')),
+      );
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+
+  
+    final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/user/signin');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          "email": email,
+          "password": password,
+        }),
+      );
+
+      setState(() {
+        isLoading = false;
+      });
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        
+  
+        final int userId = responseData['idUser'] ?? 1;
+        final String userName = responseData['name'] ?? 'User';
+
+        print("✅ 登录成功！当前用户 ID: $userId, 用户名: $userName");
+
+      
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MyHomePage(title: 'Find a job'),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sign in failed: Invalid credentials')),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+      print("💥 网络请求错误: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Network error: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       backgroundColor: Colors.white,
-
       body: Center(
-        //title
         child: SizedBox(
           width: 500,
-          
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 64),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Center(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children:[
-                    Icon(Icons.local_activity_outlined, color: Colors.black),
-                    SizedBox(width: 8),
-                    Text('MyTi', style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold),),
-                  ]
-                ),
-              ),
-              SizedBox(height: 8),
-              Text('Sign in to your account', style: TextStyle(fontSize: 50)),
-              Text('Welcome back, enter your crendential to access your ticket', style: TextStyle(fontSize: 12, color: Colors.grey)),
-              SizedBox(height: 8),
-              //email enter area
-              const Text('Email address', style:TextStyle(fontSize: 12)),
-              const SizedBox(height: 8),
-              TextField(
-                decoration: InputDecoration(
-                  hintText: 'ABC@gmail.com',
-                  hintStyle: TextStyle(color: Colors.grey, fontSize: 12),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: Colors.black, width: 1.0)
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: Colors.blue, width: 1.0)
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 64),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.local_activity_outlined, color: Colors.black),
+                      SizedBox(width: 8),
+                      Text('MyTi', style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold)),
+                    ],
                   ),
                 ),
-              ),
+                const SizedBox(height: 8),
+                const Text('Sign in to your account', style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold)),
+                const Text('Welcome back, enter your credential to access your ticket', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                const SizedBox(height: 24),
+                
               
-              SizedBox(height: 32),
-              Text('Password', style: TextStyle(fontSize: 12)), 
-              SizedBox(height: 8),
-              TextField(
-                decoration: InputDecoration(
-                  hintText: '******',
-                  hintStyle: TextStyle(color: Colors.grey, fontSize: 12),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: Colors.black, width: 1.0)
+                const Text('Email address', style: TextStyle(fontSize: 12)),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _emailController, 
+                  decoration: InputDecoration(
+                    hintText: 'ABC@gmail.com',
+                    hintStyle: const TextStyle(color: Colors.grey, fontSize: 12),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(color: Colors.black, width: 1.0),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(color: Colors.blue, width: 1.0),
+                    ),
                   ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: Colors.blue, width: 1.0),
+                ),
+                
+                const SizedBox(height: 24),
+                // Password 输入框
+                const Text('Password', style: TextStyle(fontSize: 12)), 
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _passwordController, // 绑定控制器
+                  obscureText: isObsecure, // 控制密码暗文显示
+                  decoration: InputDecoration(
+                    hintText: '******',
+                    hintStyle: const TextStyle(color: Colors.grey, fontSize: 12),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(color: Colors.black, width: 1.0),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(color: Colors.blue, width: 1.0),
+                    ),
+                    suffixIcon: IconButton(
+                      onPressed: () {
+                        setState(() {
+                          isObsecure = !isObsecure;
+                        });
+                      }, 
+                      icon: Icon(
+                        isObsecure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        color: Colors.grey,
+                      ),
+                    ),
                   ),
-                  //eye icon
-                  suffixIcon: IconButton(
+                ),
+                const SizedBox(height: 18),
+                
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () {}, 
+                    child: const Text('Forgot a password?', style: TextStyle(color: Colors.grey, decoration: TextDecoration.underline)),
+                  ),
+                ),
+
+                Align(
+                  alignment: Alignment.center,
+                  child: TextButton(
                     onPressed: () {
-                      setState(() {
-                        isObsecure = !isObsecure;
-                        
-                      });
-                    }, 
-                    icon: Icon(isObsecure ? Icons.visibility_off_outlined: Icons.visibility_outlined,
-                    color: Colors.grey)),
-                ),
-              ),
-              SizedBox(height: 18),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () {}, 
-                  child: Text('Forgot a password?', style: TextStyle(color: Colors.grey, decoration: TextDecoration.underline)),
-                ),
-              ),
-
-              Align(
-                alignment: Alignment.center,
-                child: TextButton(
-                  onPressed: (){Navigator.push(context, MaterialPageRoute(builder: (context) => SignUp()),);},
-                  child: Text('Don/t have an account? Sign up here', style: TextStyle(color: Colors.green, decoration: TextDecoration.underline),
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => SignUp()));
+                    },
+                    child: const Text('Don\'t have an account? Sign up here', style: TextStyle(color: Colors.green, decoration: TextDecoration.underline)),
                   ),
                 ),
-              ),
-
-              SizedBox(height: 32),
-            ],
+                const SizedBox(height: 32),
+              ],
+            ),
           ),
         ),
-        )
       ),
 
-
+  
       floatingActionButton: Padding(
-        padding: EdgeInsets.only(bottom: 50),
+        padding: const EdgeInsets.only(bottom: 50),
         child: SizedBox(
           width: 200,
           height: 50,
           child: FloatingActionButton(
-            onPressed: (){Navigator.push(context, MaterialPageRoute(builder: (context) => MyHomePage(title:'Find a job')),);},
+            onPressed: isLoading ? null : handleSignIn, 
             backgroundColor: Colors.green,
             tooltip: 'Log in',
-            child: const Text('Sign in', style: TextStyle(color: Colors.white))),
-        )
+            child: isLoading 
+              ? const CircularProgressIndicator(color: Colors.white) 
+              : const Text('Sign in', style: TextStyle(color: Colors.white, fontSize: 16)),
+          ),
+        ),
       ),
-
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
