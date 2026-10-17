@@ -134,7 +134,7 @@ class _MembersPageState extends State<MembersPage> {
     }
   }
 
-  void _openAdmin(int teamMemberId) {
+  Future<void> _openAdmin(int teamMemberId) async {
     final organisationId = widget.isOrganisationView
         ? widget.organisationId
         : _organizationId;
@@ -145,16 +145,24 @@ class _MembersPageState extends State<MembersPage> {
       return;
     }
 
-    Navigator.push<void>(
+    final deleted = await Navigator.push<bool>(
       context,
-      MaterialPageRoute<void>(
+      MaterialPageRoute<bool>(
         builder: (context) => AdminPage(
           userId: widget.userId,
           organisationId: organisationId,
+          teamId: widget.teamId,
           teamMemberId: teamMemberId,
         ),
       ),
     );
+    if (deleted == true && mounted) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+      fetchMembers();
+    }
   }
 
   @override
