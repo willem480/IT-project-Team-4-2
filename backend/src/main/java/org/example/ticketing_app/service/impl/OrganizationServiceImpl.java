@@ -7,16 +7,22 @@ import org.example.ticketing_app.entity.Organization;
 import org.example.ticketing_app.entity.Team;
 import org.example.ticketing_app.entity.TeamMember;
 import org.example.ticketing_app.entity.TicketAssignment;
+import org.example.ticketing_app.entity.User;
 import org.example.ticketing_app.mapper.ManagerMapper;
 import org.example.ticketing_app.mapper.OrganizationMapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.example.ticketing_app.mapper.TeamMapper;
 import org.example.ticketing_app.mapper.TeamMemberMapper;
 import org.example.ticketing_app.mapper.TicketAssignmentMapper;
+import org.example.ticketing_app.mapper.UserMapper;
+import org.example.ticketing_app.service.organizationServiceHelper.AddManagerRequest;
 import org.example.ticketing_app.service.organizationServiceHelper.AddTeamRequest;
+import org.example.ticketing_app.service.organizationServiceHelper.CreateOrganizationRequest;
+import org.example.ticketing_app.service.organizationServiceHelper.OrganizationManagerSummary;
 import org.example.ticketing_app.service.organizationServiceHelper.OrganizationTeamListResponse;
 import org.example.ticketing_app.service.organizationServiceHelper.OrganizationTeamSummary;
 import org.example.ticketing_app.service.organizationServiceHelper.OrganizationSummary;
+import org.example.ticketing_app.service.organizationServiceHelper.UpdateOrganizationRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,6 +47,26 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
     private final TeamMemberMapper teamMemberMapper;
     private final TeamMapper teamMapper;
     private final TicketAssignmentMapper ticketAssignmentMapper;
+    private final UserMapper userMapper;
+
+    /** Creates an organization and makes its creator the first manager in one transaction. */
+    @Transactional
+    public OrganizationSummary createOrganization(CreateOrganizationRequest request) {
+        requireUser(request.getActorUserId());
+        String name = normalizeName(request.getName());
+        requireUniqueOrganizationName(name, null);
+
+        Organization organization = new Organization();
+        organization.setName(name);
+        save(organization);
+
+        Manager manager = new Manager();
+        manager.setOrganizationId(organization.getIdOrganization());
+        manager.setUserId(request.getActorUserId());
+        managerMapper.insert(manager);
+
+        return toOrganizationSummary(organization, request.getActorUserId());
+    }
 
     /**
      * Returns the organization cards needed by the organization-list page.
@@ -48,13 +74,75 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
      */
     public List<OrganizationSummary> getOrganizations(Integer viewerUserId) {
         return list().stream()
-                .map(organization -> new OrganizationSummary(
-                        organization.getIdOrganization(),
-                        organization.getName(),
-                        countMembers(organization.getIdOrganization()),
-                        canManageOrganization(viewerUserId, organization.getIdOrganization())
-                ))
+                .map(organization -> toOrganizationSummary(organization, viewerUserId))
                 .toList();
+    }
+
+    /** Renames an organization after enforcing its manager permission. */
+    @Transactional
+    public OrganizationSummary updateOrganization(UpdateOrganizationRequest request) {
+        Organization organization = requireOrganization(request.getOrganizationId());
+        requireManager(request.getActorUserId(), organization.getIdOrganization());
+
+        String name = normalizeName(request.getName());
+        requireUniqueOrganizationName(name, organization.getIdOrganization());
+        organization.setName(name);
+        updateById(organization);
+
+        return toOrganizationSummary(organization, request.getActorUserId());
+    }
+
+    /** Returns manager records with user details so the UI can select a manager to remove. */
+    public List<OrganizationManagerSummary> getOrganizationManagers(Integer organizationId) {
+        requireOrganization(organizationId);
+        return managerMapper.selectList(
+                        new LambdaQueryWrapper<Manager>()
+                                .eq(Manager::getOrganizationId, organizationId)
+                ).stream()
+                .map(this::toManagerSummary)
+                .toList();
+    }
+
+    /** Grants manager permission to an existing user after the acting manager is verified. */
+    @Transactional
+    public OrganizationManagerSummary addManager(AddManagerRequest request) {
+        requireOrganization(request.getOrganizationId());
+        requireManager(request.getActorUserId(), request.getOrganizationId());
+        requireUser(request.getUserId());
+
+        if (isManager(request.getUserId(), request.getOrganizationId())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "User is already a manager of this organization");
+        }
+
+        Manager manager = new Manager();
+        manager.setUserId(request.getUserId());
+        manager.setOrganizationId(request.getOrganizationId());
+        managerMapper.insert(manager);
+        return toManagerSummary(manager);
+    }
+
+    /** Revokes one manager role but prevents an organization from becoming unmanaged. */
+    @Transactional
+    public void removeManager(Integer actorUserId, Integer organizationId, Integer managerId) {
+        requireOrganization(organizationId);
+        requireManager(actorUserId, organizationId);
+
+        Manager manager = managerMapper.selectById(managerId);
+        if (manager == null || !Objects.equals(manager.getOrganizationId(), organizationId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Manager does not exist in the organization");
+        }
+
+        Long managerCount = managerMapper.selectCount(
+                new LambdaQueryWrapper<Manager>()
+                        .eq(Manager::getOrganizationId, organizationId)
+        );
+        if (managerCount == null || managerCount <= 1) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "An organization must retain at least one manager");
+        }
+        managerMapper.deleteById(managerId);
     }
 
     /** Returns organization teams and whether the current viewer may manage them. */
@@ -135,15 +223,7 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
 
     /** A user can manage an organization only when a matching manager row exists. */
     private boolean canManageOrganization(Integer viewerUserId, Integer organizationId) {
-        if (viewerUserId == null) {
-            return false;
-        }
-        Long managerCount = managerMapper.selectCount(
-                new LambdaQueryWrapper<Manager>()
-                        .eq(Manager::getUserId, viewerUserId)
-                        .eq(Manager::getOrganizationId, organizationId)
-        );
-        return managerCount != null && managerCount > 0;
+        return viewerUserId != null && isManager(viewerUserId, organizationId);
     }
 
     /** Rejects every team change made by a user who is not an organization manager. */
@@ -151,6 +231,40 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
         if (!canManageOrganization(actorUserId, organizationId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Only an organization manager can change members");
+        }
+    }
+
+    private boolean isManager(Integer userId, Integer organizationId) {
+        Long managerCount = managerMapper.selectCount(
+                new LambdaQueryWrapper<Manager>()
+                        .eq(Manager::getUserId, userId)
+                        .eq(Manager::getOrganizationId, organizationId)
+        );
+        return managerCount != null && managerCount > 0;
+    }
+
+    private User requireUser(Integer userId) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User does not exist");
+        }
+        return user;
+    }
+
+    private String normalizeName(String name) {
+        return name.trim();
+    }
+
+    private void requireUniqueOrganizationName(String name, Integer excludedOrganizationId) {
+        Long sameNameCount = list().stream()
+                .filter(organization -> !Objects.equals(organization.getIdOrganization(), excludedOrganizationId))
+                .map(Organization::getName)
+                .filter(Objects::nonNull)
+                .filter(existingName -> existingName.equalsIgnoreCase(name))
+                .count();
+        if (sameNameCount > 0) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "An organization with this name already exists");
         }
     }
 
@@ -179,6 +293,25 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Organization does not exist");
         }
         return organization;
+    }
+
+    private OrganizationSummary toOrganizationSummary(Organization organization, Integer viewerUserId) {
+        return new OrganizationSummary(
+                organization.getIdOrganization(),
+                organization.getName(),
+                countMembers(organization.getIdOrganization()),
+                canManageOrganization(viewerUserId, organization.getIdOrganization())
+        );
+    }
+
+    private OrganizationManagerSummary toManagerSummary(Manager manager) {
+        User user = requireUser(manager.getUserId());
+        return new OrganizationManagerSummary(
+                manager.getIdManager(),
+                user.getIdUser(),
+                user.getName(),
+                user.getEmail()
+        );
     }
 
     private OrganizationTeamSummary toTeamSummary(Team team) {

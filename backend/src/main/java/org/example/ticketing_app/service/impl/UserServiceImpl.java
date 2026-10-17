@@ -18,6 +18,7 @@ import org.example.ticketing_app.service.userServiceHelper.SignUpRequest;
 
 import java.time.YearMonth;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -213,8 +214,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> {
                     "User not found");
         }
 
-        save(user);
-
         return createBasicUserReturn(user);
+    }
+
+    public List<UserReturn> getUsersByEmail(String email) {
+        if (StringUtils.isBlank(email)) {
+            return list().stream().map(user -> createBasicUserReturn(user)).collect(Collectors.toList());
+        }
+        List<User> users = list(new LambdaQueryWrapper<User>().eq(User::getEmail, email));
+        return users.stream().map(user -> createBasicUserReturn(user)).collect(Collectors.toList());
     }
 }

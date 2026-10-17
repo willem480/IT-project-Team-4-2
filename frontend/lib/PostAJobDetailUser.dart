@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ticketing_app/main.dart';
 import 'package:ticketing_app/models/ticket_comment.dart';
 import 'dart:convert';
-import 'package:ticketing_app/models/ticket_model.dart';
 import 'package:http/http.dart' as http;
-import 'package:ticketing_app/models/ticket_comment.dart';
 
 
 
