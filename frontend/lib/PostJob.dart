@@ -202,54 +202,6 @@ class _PostJobPageState extends State<PostJob> {
 
             SizedBox(height: 32.0),
           
-
-            //Company
- 
-            const Text(
-              'Company',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.black),
-            ),
-
-
-            DropdownButtonFormField<String>(
-              
-              initialValue: selectedCompany, 
-              icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
-              
-              decoration: InputDecoration(
-                hintText: 'Choose a company',
-                hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: Colors.black, width: 1.0)
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: Colors.blue, width: 1.0)
-                ),
-              ),
-
-
-              //fake input
-              items: ['A', 'B', 'C'].map((String companyName){
-                return DropdownMenuItem<String>(
-                  value:companyName,
-                  child: Text(companyName),
-                );
-              }).toList(),
-
-              onChanged: (String? newValue){
-                setState(() {
-                  selectedCompany = newValue;
-                });
-              },
-
-
-            ),
-
-            SizedBox(height: 32.0),
-  
-
             //Final date
 
             const Text(
