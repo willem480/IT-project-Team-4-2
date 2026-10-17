@@ -1,9 +1,12 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 import 'Profile.dart';
 import 'adminSearch.dart';
 
-class AdminPage extends StatelessWidget {
+class AdminPage extends StatefulWidget {
   const AdminPage({
     super.key,
     required this.userId,
@@ -20,25 +23,129 @@ class AdminPage extends StatelessWidget {
   final int? teamMemberId;
   final String userName;
 
+  @override
+  State<AdminPage> createState() => _AdminPageState();
+}
+
+class _AdminPageState extends State<AdminPage> {
+  bool _isDeleting = false;
+
   void _goBack(BuildContext context) {
     Navigator.maybePop(context);
   }
 
   void _createUser(BuildContext context) {
+    final teamId = widget.teamId;
+    if (teamId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a team before adding a user.'),
+        ),
+      );
+      return;
+    }
     Navigator.push<void>(
       context,
       MaterialPageRoute<void>(
-        builder: (context) => AdminSearchPage(userName: userName),
+        builder: (context) => AdminSearchPage(
+          userName: widget.userName,
+          actorUserId: widget.userId,
+          teamId: teamId,
+        ),
       ),
     );
   }
 
-  void _deleteUser() {
-    // TODO: Implement Delete User API
+  Future<void> _deleteUser() async {
+    if (_isDeleting) return;
+    final teamId = widget.teamId;
+    final teamMemberId = widget.teamMemberId;
+    if (teamId == null || teamMemberId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to delete user: team or member is missing.'),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isDeleting = true);
+    try {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Delete User'),
+          content: const Text('Remove this user from the team?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Delete'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+
+      final url =
+          Uri.parse(
+            'http://127.0.0.1:4523/m1/8806835-8598944-default/team/removeTeamMember',
+          ).replace(
+            queryParameters: {
+              'actorUserId': '${widget.userId}',
+              'teamId': '$teamId',
+              'teamMemberId': '$teamMemberId',
+            },
+          );
+      final response = await http
+          .delete(url, headers: {'Content-Type': 'application/json'})
+          .timeout(const Duration(seconds: 30));
+      if (!mounted) return;
+
+      final succeeded = response.statusCode >= 200 && response.statusCode < 300;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              succeeded
+                  ? 'User removed from the team successfully.'
+                  : _deleteErrorMessage(response),
+            ),
+          ),
+        );
+      if (succeeded) Navigator.pop(context, true);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to delete user. Please try again.'),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isDeleting = false);
+    }
   }
 
-  void _delegateJob() {
-    // TODO: Implement Delegate Job
+  String _deleteErrorMessage(http.Response response) {
+    final body = response.body.trim();
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map<String, dynamic>) {
+        for (final key in ['message', 'detail', 'error']) {
+          final message = decoded[key];
+          if (message is String && message.trim().isNotEmpty) return message;
+        }
+      } else if (decoded is String && decoded.trim().isNotEmpty) {
+        return decoded;
+      }
+    } on FormatException {
+      if (body.isNotEmpty && !body.startsWith('<')) return body;
+    }
+    return 'Unable to delete user (HTTP ${response.statusCode}). Please try again.';
   }
 
   void _openReporting() {
@@ -47,10 +154,14 @@ class AdminPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final displayName = userName.trim().isEmpty ? 'User' : userName.trim();
-    final isMemberManagement = teamMemberId != null;
-    final isTeamManagement = teamId != null && teamMemberId == null;
-    final isOrganisationManagement = teamId == null && teamMemberId == null;
+    final displayName = widget.userName.trim().isEmpty
+        ? 'User'
+        : widget.userName.trim();
+    final isMemberManagement = widget.teamMemberId != null;
+    final isTeamManagement =
+        widget.teamId != null && widget.teamMemberId == null;
+    final isOrganisationManagement =
+        widget.teamId == null && widget.teamMemberId == null;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
@@ -143,25 +254,15 @@ class AdminPage extends StatelessWidget {
                   description: 'Create a new user account.',
                   onTap: () => _createUser(context),
                 ),
-              if (isMemberManagement) ...[
+              if (isMemberManagement)
                 _AdminActionCard(
                   icon: Icons.person_remove_outlined,
                   iconColor: const Color(0xFFDC2626),
                   iconBackgroundColor: const Color(0xFFFEF2F2),
                   title: 'Delete User',
                   description: 'Remove or deactivate a user.',
-                  onTap: _deleteUser,
+                  onTap: _isDeleting ? null : _deleteUser,
                 ),
-                const SizedBox(height: 30),
-                _AdminActionCard(
-                  icon: Icons.assignment_ind_outlined,
-                  iconColor: const Color(0xFF2563EB),
-                  iconBackgroundColor: const Color(0xFFEFF6FF),
-                  title: 'Delegate Job',
-                  description: 'Delegate a job to this member.',
-                  onTap: _delegateJob,
-                ),
-              ],
               if (!isOrganisationManagement) const SizedBox(height: 30),
               _AdminActionCard(
                 icon: Icons.bar_chart_rounded,
@@ -194,7 +295,7 @@ class _AdminActionCard extends StatelessWidget {
   final Color iconBackgroundColor;
   final String title;
   final String description;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
