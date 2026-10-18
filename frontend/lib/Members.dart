@@ -12,11 +12,13 @@ class MembersPage extends StatefulWidget {
     super.key,
     required this.teamId,
     required this.userId,
+    this.userName = '',
     required this.isManager,
   });
 
   final int teamId;
   final int userId;
+  final String userName;
   // Retained for existing callers; the members API determines permission.
   final bool isManager;
 
@@ -25,6 +27,38 @@ class MembersPage extends StatefulWidget {
 }
 
 class _MembersPageState extends State<MembersPage> {
+  String _userName = '';
+
+  String get _displayName => _userName.isEmpty ? 'Loading...' : _userName;
+
+  Future<void> _fetchUserName() async {
+    // Reuse the current user's name when a parent page has already loaded it.
+    if (_userName.isNotEmpty) return;
+    final userId = widget.userId;
+    try {
+      final response = await http
+          .post(
+            Uri.parse(
+              'http://127.0.0.1:8080/profilePage/getUser?userId=$userId',
+            ),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({}),
+          )
+          .timeout(const Duration(seconds: 30));
+      if (response.statusCode != 200) {
+        throw Exception('User profile request failed (${response.statusCode})');
+      }
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final name = (data['name'] as String?)?.trim() ?? '';
+      if (!mounted || widget.userId != userId || _userName.isNotEmpty) return;
+      setState(() => _userName = name.isEmpty ? 'User' : name);
+    } catch (error) {
+      debugPrint('Failed to load greeting name for user $userId: $error');
+      if (!mounted || widget.userId != userId || _userName.isNotEmpty) return;
+      setState(() => _userName = 'User');
+    }
+  }
+
   List<({int? teamMemberId, String name, String email})> members = [];
   bool canManage = false;
   bool _isLoading = true;
@@ -47,7 +81,19 @@ class _MembersPageState extends State<MembersPage> {
   @override
   void initState() {
     super.initState();
+    _userName = widget.userName.trim();
+    _fetchUserName();
     fetchMembers();
+  }
+
+  @override
+  void didUpdateWidget(covariant MembersPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.userId != widget.userId ||
+        oldWidget.userName != widget.userName) {
+      _userName = widget.userName.trim();
+      _fetchUserName();
+    }
   }
 
   void fetchMembers() async {
@@ -117,6 +163,7 @@ class _MembersPageState extends State<MembersPage> {
       MaterialPageRoute<bool>(
         builder: (context) => AdminPage(
           userId: widget.userId,
+          userName: _userName,
           organisationId: organisationId,
           teamId: widget.teamId,
           teamMemberId: teamMemberId,
@@ -150,17 +197,17 @@ class _MembersPageState extends State<MembersPage> {
         ),
         centerTitle: true,
         toolbarHeight: 72,
-        title: const Column(
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            const Text(
               'Good morning,',
               style: TextStyle(color: Color(0xFF6B7280), fontSize: 14),
             ),
-            SizedBox(height: 2),
+            const SizedBox(height: 2),
             Text(
-              'Alan',
-              style: TextStyle(
+              _displayName,
+              style: const TextStyle(
                 color: Color(0xFF111827),
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -168,13 +215,16 @@ class _MembersPageState extends State<MembersPage> {
             ),
           ],
         ),
-        actions: const [
+        actions: [
           Padding(
-            padding: EdgeInsets.only(right: 16),
+            padding: const EdgeInsets.only(right: 16),
             child: CircleAvatar(
               radius: 20,
               backgroundColor: Color(0xFF111827),
-              child: Text('A', style: TextStyle(color: Colors.white)),
+              child: Text(
+                _displayName.characters.first.toUpperCase(),
+                style: const TextStyle(color: Colors.white),
+              ),
             ),
           ),
         ],

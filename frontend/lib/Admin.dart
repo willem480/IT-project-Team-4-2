@@ -13,7 +13,7 @@ class AdminPage extends StatefulWidget {
     this.organisationId,
     this.teamId,
     this.teamMemberId,
-    this.userName = 'Alan',
+    this.userName = '',
   });
 
   final int userId;
@@ -28,6 +28,55 @@ class AdminPage extends StatefulWidget {
 }
 
 class _AdminPageState extends State<AdminPage> {
+  String _userName = '';
+
+  String get _displayName => _userName.isEmpty ? 'Loading...' : _userName;
+
+  Future<void> _fetchUserName() async {
+    // Reuse the current user's name when a parent page has already loaded it.
+    if (_userName.isNotEmpty) return;
+    final userId = widget.userId;
+    try {
+      final response = await http
+          .post(
+            Uri.parse(
+              'http://127.0.0.1:8080/profilePage/getUser?userId=$userId',
+            ),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({}),
+          )
+          .timeout(const Duration(seconds: 30));
+      if (response.statusCode != 200) {
+        throw Exception('User profile request failed (${response.statusCode})');
+      }
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final name = (data['name'] as String?)?.trim() ?? '';
+      if (!mounted || widget.userId != userId || _userName.isNotEmpty) return;
+      setState(() => _userName = name.isEmpty ? 'User' : name);
+    } catch (error) {
+      debugPrint('Failed to load greeting name for user $userId: $error');
+      if (!mounted || widget.userId != userId || _userName.isNotEmpty) return;
+      setState(() => _userName = 'User');
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _userName = widget.userName.trim();
+    _fetchUserName();
+  }
+
+  @override
+  void didUpdateWidget(covariant AdminPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.userId != widget.userId ||
+        oldWidget.userName != widget.userName) {
+      _userName = widget.userName.trim();
+      _fetchUserName();
+    }
+  }
+
   bool tmpEmailCopy = true;
   bool _isDeleting = false;
   bool _isAddingTeam = false;
@@ -53,7 +102,7 @@ class _AdminPageState extends State<AdminPage> {
       context,
       MaterialPageRoute<void>(
         builder: (context) => AdminSearchPage(
-          userName: widget.userName,
+          userName: _userName,
           actorUserId: widget.userId,
           teamId: teamId,
         ),
@@ -655,9 +704,7 @@ class _AdminPageState extends State<AdminPage> {
 
   @override
   Widget build(BuildContext context) {
-    final displayName = widget.userName.trim().isEmpty
-        ? 'User'
-        : widget.userName.trim();
+    final displayName = _displayName;
     final isMemberManagement = widget.teamMemberId != null;
     final isTeamManagement =
         widget.teamId != null && widget.teamMemberId == null;

@@ -22,6 +22,59 @@ class AdminSearchPage extends StatefulWidget {
 }
 
 class _AdminSearchPageState extends State<AdminSearchPage> {
+  String _userName = '';
+
+  String get _displayName => _userName.isEmpty ? 'Loading...' : _userName;
+
+  Future<void> _fetchUserName() async {
+    // Reuse the current user's name when a parent page has already loaded it.
+    if (_userName.isNotEmpty) return;
+    final userId = widget.actorUserId;
+    try {
+      final response = await http
+          .post(
+            Uri.parse(
+              'http://127.0.0.1:8080/profilePage/getUser?userId=$userId',
+            ),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({}),
+          )
+          .timeout(const Duration(seconds: 30));
+      if (response.statusCode != 200) {
+        throw Exception('User profile request failed (${response.statusCode})');
+      }
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final name = (data['name'] as String?)?.trim() ?? '';
+      if (!mounted || widget.actorUserId != userId || _userName.isNotEmpty) {
+        return;
+      }
+      setState(() => _userName = name.isEmpty ? 'User' : name);
+    } catch (error) {
+      debugPrint('Failed to load greeting name for user $userId: $error');
+      if (!mounted || widget.actorUserId != userId || _userName.isNotEmpty) {
+        return;
+      }
+      setState(() => _userName = 'User');
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _userName = widget.userName.trim();
+    _fetchUserName();
+  }
+
+  @override
+  void didUpdateWidget(covariant AdminSearchPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.actorUserId != widget.actorUserId ||
+        oldWidget.userName != widget.userName) {
+      _userName = widget.userName.trim();
+      _fetchUserName();
+    }
+  }
+
   bool _isLoading = false;
   final Set<int> _addingUserIds = {};
   List<({int idUser, String name, String email})>? _users;
@@ -207,9 +260,7 @@ class _AdminSearchPageState extends State<AdminSearchPage> {
 
   @override
   Widget build(BuildContext context) {
-    final displayName = widget.userName.trim().isEmpty
-        ? 'User'
-        : widget.userName.trim();
+    final displayName = _displayName;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),

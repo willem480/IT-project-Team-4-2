@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -10,11 +12,13 @@ class TeamsPage extends StatefulWidget {
   const TeamsPage({
     super.key,
     required this.userId,
+    this.userName = '',
     required this.organizationId,
     required this.organisationName,
   });
 
   final int userId;
+  final String userName;
   final int organizationId;
   final String organisationName;
 
@@ -23,6 +27,38 @@ class TeamsPage extends StatefulWidget {
 }
 
 class _TeamsPageState extends State<TeamsPage> {
+  String _userName = '';
+
+  String get _displayName => _userName.isEmpty ? 'Loading...' : _userName;
+
+  Future<void> _fetchUserName() async {
+    // Reuse the current user's name when a parent page has already loaded it.
+    if (_userName.isNotEmpty) return;
+    final userId = widget.userId;
+    try {
+      final response = await http
+          .post(
+            Uri.parse(
+              'http://127.0.0.1:8080/profilePage/getUser?userId=$userId',
+            ),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({}),
+          )
+          .timeout(const Duration(seconds: 30));
+      if (response.statusCode != 200) {
+        throw Exception('User profile request failed (${response.statusCode})');
+      }
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final name = (data['name'] as String?)?.trim() ?? '';
+      if (!mounted || widget.userId != userId || _userName.isNotEmpty) return;
+      setState(() => _userName = name.isEmpty ? 'User' : name);
+    } catch (error) {
+      debugPrint('Failed to load greeting name for user $userId: $error');
+      if (!mounted || widget.userId != userId || _userName.isNotEmpty) return;
+      setState(() => _userName = 'User');
+    }
+  }
+
   List<Team> teams = [];
   bool canManage = false;
   static const _avatarColors = [
@@ -37,7 +73,19 @@ class _TeamsPageState extends State<TeamsPage> {
   @override
   void initState() {
     super.initState();
+    _userName = widget.userName.trim();
+    _fetchUserName();
     fetchTeams();
+  }
+
+  @override
+  void didUpdateWidget(covariant TeamsPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.userId != widget.userId ||
+        oldWidget.userName != widget.userName) {
+      _userName = widget.userName.trim();
+      _fetchUserName();
+    }
   }
 
   void fetchTeams() async {
@@ -74,6 +122,7 @@ class _TeamsPageState extends State<TeamsPage> {
         builder: (context) => MembersPage(
           teamId: teamId,
           userId: widget.userId,
+          userName: _userName,
           isManager: canManage,
         ),
       ),
@@ -84,7 +133,11 @@ class _TeamsPageState extends State<TeamsPage> {
     Navigator.push<void>(
       context,
       MaterialPageRoute<void>(
-        builder: (context) => AdminPage(userId: widget.userId, teamId: teamId),
+        builder: (context) => AdminPage(
+          userId: widget.userId,
+          userName: _userName,
+          teamId: teamId,
+        ),
       ),
     );
   }
@@ -105,19 +158,19 @@ class _TeamsPageState extends State<TeamsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
-              padding: EdgeInsets.all(16.0),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  const Text(
                     'Good morning,',
                     style: TextStyle(color: Color(0xFF6B7280), fontSize: 14),
                   ),
-                  SizedBox(height: 2),
+                  const SizedBox(height: 2),
                   Text(
-                    'Alan',
-                    style: TextStyle(
+                    _displayName,
+                    style: const TextStyle(
                       color: Color(0xFF111827),
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
