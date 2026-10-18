@@ -34,16 +34,16 @@ class _SignInPageState extends State<SignInPage> {
 
 
   final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+
 
 
   void handleSignIn() async {
     final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
 
-    if (email.isEmpty || password.isEmpty) {
+
+    if (email.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter both email and password')),
+        const SnackBar(content: Text('Please enter both email')),
       );
       return;
     }
@@ -61,7 +61,6 @@ class _SignInPageState extends State<SignInPage> {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           "email": email,
-          "password": password,
         }),
       );
 
@@ -148,46 +147,8 @@ class _SignInPageState extends State<SignInPage> {
                 ),
                 
                 const SizedBox(height: 24),
-                // Password 输入框
-                const Text('Password', style: TextStyle(fontSize: 12)), 
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _passwordController, // 绑定控制器
-                  obscureText: isObsecure, // 控制密码暗文显示
-                  decoration: InputDecoration(
-                    hintText: '******',
-                    hintStyle: const TextStyle(color: Colors.grey, fontSize: 12),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Colors.black, width: 1.0),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Colors.blue, width: 1.0),
-                    ),
-                    suffixIcon: IconButton(
-                      onPressed: () {
-                        setState(() {
-                          isObsecure = !isObsecure;
-                        });
-                      }, 
-                      icon: Icon(
-                        isObsecure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () {}, 
-                    child: const Text('Forgot a password?', style: TextStyle(color: Colors.grey, decoration: TextDecoration.underline)),
-                  ),
-                ),
 
+                
                 Align(
                   alignment: Alignment.center,
                   child: TextButton(

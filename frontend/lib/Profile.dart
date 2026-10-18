@@ -299,8 +299,11 @@ class _ProfilePage extends State<Profile> {
                   ),
                   const SizedBox(height: 30),
                   //button
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 12,
+                    runSpacing: 16,
                     children: [
                       _buildTabButton('Posted jobs', is_Detail_Tab, (){
                         setState(() => is_Detail_Tab = true);
@@ -312,12 +315,7 @@ class _ProfilePage extends State<Profile> {
                       }),
 
                       SizedBox(width: 20),
-
-Padding(
-                padding:  EdgeInsets.all(16.0),
-                child: Row(// from left to right
-                  children: [
-                    OutlinedButton.icon(
+                      OutlinedButton.icon(
                       
                       onPressed:(){
                         setState(() {
@@ -365,9 +363,7 @@ Padding(
                       
                     ),
                     
-                  ]
-                )
-              ),
+
                   
                     ],
                   ),
