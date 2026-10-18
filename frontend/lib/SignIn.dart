@@ -34,16 +34,16 @@ class _SignInPageState extends State<SignInPage> {
 
 
   final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+
 
 
   void handleSignIn() async {
     final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
 
-    if (email.isEmpty || password.isEmpty) {
+
+    if (email.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter both email and password')),
+        const SnackBar(content: Text('Please enter both email')),
       );
       return;
     }
@@ -61,7 +61,6 @@ class _SignInPageState extends State<SignInPage> {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           "email": email,
-          "password": password,
         }),
       );
 
