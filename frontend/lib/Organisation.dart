@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -21,6 +23,8 @@ class _OrganisationPageState extends State<OrganisationPage> {
   static const _avatarColors = [Colors.pink, Colors.teal, Colors.red];
 
   String _query = '';
+  bool _isCreating = false;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -28,16 +32,15 @@ class _OrganisationPageState extends State<OrganisationPage> {
     fetchOrganisations();
   }
 
-  void fetchOrganisations() async {
+  Future<void> fetchOrganisations() async {
     final url = Uri.parse(
       'http://127.0.0.1:8080/organization/getOrganizations?viewerUserId=${widget.userId}',
     );
 
     try {
-      final response = await http.get(
-        url,
-        headers: {'Content-Type': 'application/json'},
-      );
+      final response = await http
+          .get(url, headers: {'Content-Type': 'application/json'})
+          .timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 200) {
         final parsedOrganisations = organisationFromJson(response.body);
@@ -52,6 +55,128 @@ class _OrganisationPageState extends State<OrganisationPage> {
     } catch (e) {
       debugPrint('Failed to load organisations: $e');
     }
+  }
+
+  Future<void> _createOrganisation() async {
+    if (_isCreating) return;
+    setState(() => _isCreating = true);
+    try {
+      final formKey = GlobalKey<FormState>();
+      var organisationName = '';
+      var submitted = false;
+      final name = await showDialog<String>(
+        context: context,
+        builder: (dialogContext) {
+          void submit() {
+            if (submitted || !formKey.currentState!.validate()) return;
+            formKey.currentState!.save();
+            submitted = true;
+            Navigator.pop(dialogContext, organisationName);
+          }
+
+          return AlertDialog(
+            title: const Text('Create Organisation'),
+            content: Form(
+              key: formKey,
+              child: TextFormField(
+                autofocus: true,
+                maxLength: 200,
+                textCapitalization: TextCapitalization.words,
+                textInputAction: TextInputAction.done,
+                decoration: const InputDecoration(
+                  labelText: 'Organisation name',
+                ),
+                validator: (value) {
+                  final trimmedName = value?.trim() ?? '';
+                  if (trimmedName.isEmpty) {
+                    return 'Please enter an organisation name.';
+                  }
+                  if (trimmedName.length > 200) {
+                    return 'Name must be 200 characters or fewer.';
+                  }
+                  return null;
+                },
+                onSaved: (value) => organisationName = value!.trim(),
+                onFieldSubmitted: (_) => submit(),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(onPressed: submit, child: const Text('Create')),
+            ],
+          );
+        },
+      );
+      if (name == null || !mounted) return;
+
+      setState(() => _isSubmitting = true);
+      final response = await http
+          .post(
+            Uri.parse('http://127.0.0.1:8080/organization/createOrganization'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'actorUserId': widget.userId, 'name': name}),
+          )
+          .timeout(const Duration(seconds: 30));
+      if (!mounted) return;
+
+      if (response.statusCode == 201) {
+        final organisation = OrganisationModel.fromJson(
+          jsonDecode(response.body) as Map<String, dynamic>,
+        );
+        setState(() => organisations = [...organisations, organisation]);
+        await fetchOrganisations();
+        if (!mounted) return;
+      }
+
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              response.statusCode == 201
+                  ? 'Organisation created successfully.'
+                  : _createOrganisationError(response),
+            ),
+          ),
+        );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Unable to create organisation. Please try again.'),
+          ),
+        );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isCreating = false;
+          _isSubmitting = false;
+        });
+      }
+    }
+  }
+
+  String _createOrganisationError(http.Response response) {
+    try {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        for (final key in ['message', 'detail']) {
+          final message = decoded[key];
+          if (message is String && message.trim().isNotEmpty) return message;
+        }
+      }
+    } on FormatException {
+      // Fall back to a readable message for non-JSON responses.
+    }
+    if (response.statusCode == 400 || response.statusCode == 409) {
+      return 'Check the organisation name. It may already exist.';
+    }
+    return 'Unable to create organisation (HTTP ${response.statusCode}). Please try again.';
   }
 
   void _openTeams(
@@ -183,10 +308,27 @@ class _OrganisationPageState extends State<OrganisationPage> {
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 keyboardDismissBehavior:
                     ScrollViewKeyboardDismissBehavior.onDrag,
-                itemCount: visibleOrganisations.length,
+                itemCount: visibleOrganisations.length + 1,
                 separatorBuilder: (context, index) =>
                     const SizedBox(height: 12),
                 itemBuilder: (context, index) {
+                  if (index == visibleOrganisations.length) {
+                    return Center(
+                      child: IconButton.filledTonal(
+                        tooltip: 'Create organisation',
+                        onPressed: _isCreating ? null : _createOrganisation,
+                        icon: _isSubmitting
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.add),
+                      ),
+                    );
+                  }
                   final organisation = visibleOrganisations[index];
                   return OrganizationCard(
                     isManager: organisation.canManage,
@@ -234,7 +376,7 @@ class _OrganisationPageState extends State<OrganisationPage> {
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute<void>(
-                    builder: (context) =>  Profile(userId: widget.userId,),
+                    builder: (context) => Profile(userId: widget.userId),
                   ),
                 );
               },
