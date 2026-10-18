@@ -14,21 +14,54 @@ const _border = Color(0xFFE5E7EB);
 // Keep the existing entry point so callers do not need routing changes.
 // ignore: camel_case_types
 class Acceptjob extends AcceptJobPage {
-  const Acceptjob({super.key, required super.userId});
+  const Acceptjob({super.key, required super.userId, super.userName});
 }
 
 class AcceptJobPage extends StatefulWidget {
-  const AcceptJobPage({super.key, required this.userId});
+  const AcceptJobPage({super.key, required this.userId, this.userName = ''});
 
   // Match the current user used by main.dart/Profile.dart until callers pass
   // the actor ID, as they already do for OrganisationPage and TeamsPage.
   final int userId;
+  final String userName;
 
   @override
   State<AcceptJobPage> createState() => _AcceptJobPageState();
 }
 
 class _AcceptJobPageState extends State<AcceptJobPage> {
+  String _userName = '';
+
+  String get _displayName => _userName.isEmpty ? 'Loading...' : _userName;
+
+  Future<void> _fetchUserName() async {
+    // Reuse the current user's name when a parent page has already loaded it.
+    if (_userName.isNotEmpty) return;
+    final userId = widget.userId;
+    try {
+      final response = await http
+          .post(
+            Uri.parse(
+              'http://127.0.0.1:8080/profilePage/getUser?userId=$userId',
+            ),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({}),
+          )
+          .timeout(const Duration(seconds: 30));
+      if (response.statusCode != 200) {
+        throw Exception('User profile request failed (${response.statusCode})');
+      }
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final name = (data['name'] as String?)?.trim() ?? '';
+      if (!mounted || widget.userId != userId || _userName.isNotEmpty) return;
+      setState(() => _userName = name.isEmpty ? 'User' : name);
+    } catch (error) {
+      debugPrint('Failed to load greeting name for user $userId: $error');
+      if (!mounted || widget.userId != userId || _userName.isNotEmpty) return;
+      setState(() => _userName = 'User');
+    }
+  }
+
   List<TicketModel> _tickets = [];
   bool _isLoading = true;
   String? _error;
@@ -36,12 +69,19 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
   @override
   void initState() {
     super.initState();
+    _userName = widget.userName.trim();
+    _fetchUserName();
     _fetchAcceptedJobs();
   }
 
   @override
   void didUpdateWidget(covariant AcceptJobPage oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.userId != widget.userId ||
+        oldWidget.userName != widget.userName) {
+      _userName = widget.userName.trim();
+      _fetchUserName();
+    }
     if (oldWidget.userId != widget.userId) {
       _fetchAcceptedJobs();
     }
@@ -162,19 +202,19 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const Align(
+                        Align(
                           alignment: Alignment.center,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
+                              const Text(
                                 'Good morning,',
                                 style: TextStyle(color: _muted, fontSize: 14),
                               ),
-                              SizedBox(height: 2),
+                              const SizedBox(height: 2),
                               Text(
-                                'Alan',
-                                style: TextStyle(
+                                _displayName,
+                                style: const TextStyle(
                                   color: _ink,
                                   fontSize: 18,
                                   fontWeight: FontWeight.w700,
