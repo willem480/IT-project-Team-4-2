@@ -293,7 +293,7 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
                 onPressed: () {},
                 icon: const Icon(Icons.check_circle_outlined),
                 label: const Text(
-                  'Accept a Job',
+                  'Accepted Job',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
