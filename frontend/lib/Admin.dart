@@ -28,8 +28,10 @@ class AdminPage extends StatefulWidget {
 }
 
 class _AdminPageState extends State<AdminPage> {
+  bool tmpEmailCopy = true;
   bool _isDeleting = false;
   bool _isAddingTeam = false;
+  bool _isRemovingTeam = false;
   bool _isGeneratingReport = false;
   Map<String, dynamic>? _report;
 
@@ -175,6 +177,189 @@ class _AdminPageState extends State<AdminPage> {
         return 'This organisation no longer exists.';
       default:
         return 'Unable to add team (HTTP ${response.statusCode}). Please try again.';
+    }
+  }
+
+  Future<void> _removeTeam() async {
+    if (_isRemovingTeam) return;
+    final organisationId = widget.organisationId;
+    if (organisationId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to remove team: organisation is missing.'),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isRemovingTeam = true);
+    try {
+      final listUrl =
+          Uri.parse('http://127.0.0.1:8080/organization/getOrganizationTeams')
+              .replace(
+                queryParameters: {
+                  'organizationId': '$organisationId',
+                  'viewerUserId': '${widget.userId}',
+                },
+              );
+      final listResponse = await http
+          .get(listUrl)
+          .timeout(const Duration(seconds: 30));
+      if (!mounted) return;
+      if (listResponse.statusCode != 200) {
+        throw FormatException(
+          _removeTeamErrorMessage(listResponse, loading: true),
+        );
+      }
+
+      final data = jsonDecode(utf8.decode(listResponse.bodyBytes));
+      if (data is! Map<String, dynamic> || data['teams'] is! List) {
+        throw const FormatException(
+          'The server returned an invalid team list.',
+        );
+      }
+      final teams = <Map<String, dynamic>>[];
+      for (final team in data['teams'] as List) {
+        if (team is! Map<String, dynamic> ||
+            team['teamId'] is! int ||
+            team['name'] is! String) {
+          throw const FormatException(
+            'The server returned an invalid team list.',
+          );
+        }
+        teams.add(team);
+      }
+      if (teams.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('There are no teams to remove.')),
+        );
+        return;
+      }
+
+      final selectedTeam = await showDialog<Map<String, dynamic>>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Remove Team'),
+          content: SizedBox(
+            width: 400,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 320),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final team in teams)
+                      ListTile(
+                        title: Text(team['name'] as String),
+                        subtitle: team['memberCount'] is num
+                            ? Text('Members: ${team['memberCount']}')
+                            : null,
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => Navigator.pop(dialogContext, team),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+          ],
+        ),
+      );
+      if (selectedTeam == null || !mounted) return;
+
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Confirm Remove Team'),
+          content: Text(
+            'Remove "${selectedTeam['name']}"? '
+            'The team must have no members or ticket assignments. '
+            'This cannot be undone.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Remove'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+
+      final url = Uri.parse('http://127.0.0.1:8080/organization/removeTeam')
+          .replace(
+            queryParameters: {
+              'actorUserId': '${widget.userId}',
+              'organizationId': '$organisationId',
+              'teamId': '${selectedTeam['teamId']}',
+            },
+          );
+      final response = await http
+          .delete(url)
+          .timeout(const Duration(seconds: 30));
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              response.statusCode >= 200 && response.statusCode < 300
+                  ? 'Team removed successfully.'
+                  : _removeTeamErrorMessage(response),
+            ),
+          ),
+        );
+    } on FormatException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to remove team. Please try again.'),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isRemovingTeam = false);
+    }
+  }
+
+  String _removeTeamErrorMessage(
+    http.Response response, {
+    bool loading = false,
+  }) {
+    try {
+      final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+      if (decoded is Map<String, dynamic>) {
+        for (final key in ['message', 'detail']) {
+          final message = decoded[key];
+          if (message is String && message.trim().isNotEmpty) return message;
+        }
+      }
+    } on FormatException {
+      // Use a readable fallback when the server does not return JSON.
+    }
+    switch (response.statusCode) {
+      case 403:
+        return 'Only an organisation manager can remove teams.';
+      case 404:
+        return 'The organisation or team no longer exists.';
+      case 409:
+        return 'Remove all team members and resolve ticket assignments before deleting the team.';
+      default:
+        final action = loading ? 'load teams' : 'remove team';
+        return 'Unable to $action (HTTP ${response.statusCode}). Please try again.';
     }
   }
 
@@ -361,7 +546,7 @@ class _AdminPageState extends State<AdminPage> {
         if (member is Map<String, dynamic> &&
             member['teamMemberId'] == widget.teamMemberId &&
             member['userId'] is int) {
-          return {'userId': '${member['userId']}', 'teamId': '$teamId'};
+          return {'teamMemberId': '${member['userId']}', 'teamId': '$teamId'};
         }
       }
     }
@@ -394,6 +579,10 @@ class _AdminPageState extends State<AdminPage> {
         parameters = {'organizationId': '${widget.organisationId}'};
       }
 
+      parameters.addAll({
+        'managerId': '${widget.userId}',
+        'emailCopy': '$tmpEmailCopy',
+      });
       final report = await _loadReportData(path, parameters, generate: true);
       if (!mounted) return;
       if (report['title'] is! String || report['body'] is! String) {
@@ -410,6 +599,13 @@ class _AdminPageState extends State<AdminPage> {
     } finally {
       if (mounted) setState(() => _isGeneratingReport = false);
     }
+  }
+
+  String _formatReportDateTime(String text) {
+    return text.replaceAllMapped(
+      RegExp(r'(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})(?:\.\d+)?'),
+      (match) => '${match[1]} ${match[2]}',
+    );
   }
 
   void _viewReport() {
@@ -434,11 +630,15 @@ class _AdminPageState extends State<AdminPage> {
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: SelectableText(
-                        '${entry.key}: ${entry.value ?? '-'}',
+                        _formatReportDateTime(
+                          '${entry.key}: ${entry.value ?? '-'}',
+                        ),
                       ),
                     ),
                 const Divider(),
-                SelectableText(report['body'] as String),
+                SelectableText(
+                  _formatReportDateTime(report['body'] as String),
+                ),
               ],
             ),
           ),
@@ -554,6 +754,15 @@ class _AdminPageState extends State<AdminPage> {
                   title: _isAddingTeam ? 'Adding Team...' : 'Add Team',
                   description: 'Create a new team in this organisation.',
                   onTap: _isAddingTeam ? null : _addTeam,
+                ),
+                const SizedBox(height: 30),
+                _AdminActionCard(
+                  icon: Icons.group_remove_outlined,
+                  iconColor: const Color(0xFFDC2626),
+                  iconBackgroundColor: const Color(0xFFFEF2F2),
+                  title: _isRemovingTeam ? 'Removing Team...' : 'Remove Team',
+                  description: 'Remove a team from this organisation.',
+                  onTap: _isRemovingTeam ? null : _removeTeam,
                 ),
                 const SizedBox(height: 30),
               ],
