@@ -818,8 +818,8 @@ class _AdminPageState extends State<AdminPage> {
                   icon: Icons.person_add_alt_1_outlined,
                   iconColor: const Color(0xFF2563EB),
                   iconBackgroundColor: const Color(0xFFEFF6FF),
-                  title: 'Create User',
-                  description: 'Create a new user account.',
+                  title: 'Add a member',
+                  description: 'Add a member to your team',
                   onTap: () => _createUser(context),
                 ),
               if (isMemberManagement)
