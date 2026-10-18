@@ -62,8 +62,8 @@ class _MembersPageState extends State<MembersPage> {
   void fetchMembers() async {
     final url = Uri.parse(
       widget.isOrganisationView
-          ? 'http://127.0.0.1:4523/m1/8806835-8598944-default/organization/getOrganizationMembers?organizationId=${widget.organisationId}&viewerUserId=${widget.userId}'
-          : 'http://127.0.0.1:4523/m1/8806835-8598944-default/team/getTeamMembers?teamId=${widget.teamId}&viewerUserId=${widget.userId}',
+          ? 'http://127.0.0.1:8080/organization/getOrganizationMembers?organizationId=${widget.organisationId}&viewerUserId=${widget.userId}'
+          : 'http://127.0.0.1:8080/team/getTeamMembers?teamId=${widget.teamId}&viewerUserId=${widget.userId}',
     );
 
     try {

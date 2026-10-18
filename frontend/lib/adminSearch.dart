@@ -49,7 +49,7 @@ class _AdminSearchPageState extends State<AdminSearchPage> {
 
     try {
       final url = Uri.parse(
-        'http://127.0.0.1:4523/m1/8806835-8598944-default/user/getUsersByEmail',
+        'http://127.0.0.1:8080/user/getUsersByEmail',
       ).replace(queryParameters: {'email': email});
       final response = await http
           .post(url, headers: {'Content-Type': 'application/json'})
@@ -97,7 +97,7 @@ class _AdminSearchPageState extends State<AdminSearchPage> {
     setState(() => _addingUserIds.add(user.idUser));
     try {
       final url = Uri.parse(
-        'http://127.0.0.1:4523/m1/8806835-8598944-default/team/addTeamMember',
+        'http://127.0.0.1:8080/team/addTeamMember',
       );
       final response = await http
           .post(

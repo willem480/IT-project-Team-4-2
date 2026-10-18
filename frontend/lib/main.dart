@@ -50,7 +50,7 @@ class _MyHomePageState extends State<MyHomePage> {
       fetchOpenTickets('none');
       return;
     }
-    final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/ticket/getOpenTicketsByKeyword?keyword=$keyword');
+    final url = Uri.parse('http://127.0.0.1:8080/ticket/getOpenTicketsByKeyword?keyword=$keyword');
 
     try {
       final response = await http.post(
@@ -79,7 +79,7 @@ class _MyHomePageState extends State<MyHomePage> {
   //getting organization
   void fetchOpenTickets(String filterType) async {
       
-      final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/ticket/getOpenTickets?filter=$filterType');
+      final url = Uri.parse('http://127.0.0.1:8080/ticket/getOpenTickets?filter=$filterType');
 
       try {
         final response = await http.post(
@@ -107,7 +107,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
 void fetchAssignTickets() async {
       
-      final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/ticketAssignment/GetAcceptedJobWithFilter');
+      final url = Uri.parse('http://127.0.0.1:8080/ticketAssignment/getAcceptedJobsWithFilter');
 
       try {
         final response = await http.post(
@@ -134,7 +134,7 @@ void fetchAssignTickets() async {
     }
 
     void fetchUserData() async{
-      final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/profilePage/getUser?userId=1');
+      final url = Uri.parse('http://127.0.0.1:8080/profilePage/getUser?userId=1');
 
       //Post
       final response = await http.post(

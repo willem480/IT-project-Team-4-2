@@ -42,7 +42,7 @@ class _TeamsPageState extends State<TeamsPage> {
 
   void fetchTeams() async {
     final url = Uri.parse(
-      'http://127.0.0.1:4523/m1/8806835-8598944-default/organization/getOrganizationTeams?organizationId=${widget.organizationId}&viewerUserId=${widget.userId}',
+      'http://127.0.0.1:8080/organization/getOrganizationTeams?organizationId=${widget.organizationId}&viewerUserId=${widget.userId}',
     );
 
     try {

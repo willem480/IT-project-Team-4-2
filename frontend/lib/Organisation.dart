@@ -30,7 +30,7 @@ class _OrganisationPageState extends State<OrganisationPage> {
 
   void fetchOrganisations() async {
     final url = Uri.parse(
-      'http://127.0.0.1:4523/m1/8806835-8598944-default/organization/getOrganizations?viewerUserId=${widget.userId}',
+      'http://127.0.0.1:8080/organization/getOrganizations?viewerUserId=${widget.userId}',
     );
 
     try {

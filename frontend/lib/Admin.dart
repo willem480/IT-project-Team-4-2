@@ -92,7 +92,7 @@ class _AdminPageState extends State<AdminPage> {
 
       final url =
           Uri.parse(
-            'http://127.0.0.1:4523/m1/8806835-8598944-default/team/removeTeamMember',
+            'http://127.0.0.1:8080/team/removeTeamMember',
           ).replace(
             queryParameters: {
               'actorUserId': '${widget.userId}',

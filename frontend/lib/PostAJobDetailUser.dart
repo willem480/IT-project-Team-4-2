@@ -38,7 +38,7 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
 
 //Getting comment
   Future<void> fetchComment() async{
-    final url = Uri.parse("http://127.0.0.1:4523/m1/8806835-8598944-default/ticketComment/getTicketComments");
+    final url = Uri.parse("http://127.0.0.1:8080/ticketComment/getTicketComments");
 
     try{
       final response = await http.post(url, 
@@ -68,7 +68,7 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
 
   Future<void> postNewComment()async{
     if(commentController.text.trim().isEmpty) return; //if it is empty then no send
-    final url = Uri.parse("http://127.0.0.1:4523/m1/8806835-8598944-default/ticketComment/postComment");
+    final url = Uri.parse("http://127.0.0.1:8080/ticketComment/postComment");
     try{
       final response = await http.post(
         url,
@@ -198,7 +198,7 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
           child: FloatingActionButton(
           onPressed: () async {
 
-            final url = Uri.parse("http://127.0.0.1:4523/m1/8806835-8598944-default/ticket/complete ticket?ticketId=${widget.ticketId}");
+            final url = Uri.parse("http://127.0.0.1:8080/ticket/complete ticket?ticketId=${widget.ticketId}");
             
             try{
               final response = await http.get(url);

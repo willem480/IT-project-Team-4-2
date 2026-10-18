@@ -30,7 +30,7 @@ class _AcceptedJobDetailState extends State<AcceptedJobDetail> {
   Future<void> fetchComment() async {
     if (widget.ticket.idTicket == null) return;
     final url = Uri.parse(
-      'http://127.0.0.1:4523/m1/8806835-8598944-default/ticketComment/getTicketComments',
+      'http://127.0.0.1:8080/ticketComment/getTicketComments',
     );
     try {
       final response = await http.post(
@@ -62,7 +62,7 @@ class _AcceptedJobDetailState extends State<AcceptedJobDetail> {
       return;
     }
     final url = Uri.parse(
-      'http://127.0.0.1:4523/m1/8806835-8598944-default/ticketComment/postComment',
+      'http://127.0.0.1:8080/ticketComment/postComment',
     );
     try {
       final response = await http.post(
@@ -90,9 +90,9 @@ class _AcceptedJobDetailState extends State<AcceptedJobDetail> {
     setState(() => _isCompleting = true);
 
     // The backend mapping contains a literal space. Uri encodes the path safely.
-    final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/')
+    final url = Uri.parse('http://127.0.0.1:8080/')
         .replace(
-          path: '/m1/8806835-8598944-default/ticket/complete ticket',
+          path: '/ticket/complete ticket',
           queryParameters: {'ticketId': '$ticketId'},
         );
     try {

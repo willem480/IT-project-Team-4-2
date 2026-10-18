@@ -47,7 +47,7 @@ class _ProfilePage extends State<Profile> {
 
   void fetchFirstUserData() async {
 
-    final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/profilePage/getUser?userId=1');
+    final url = Uri.parse('http://127.0.0.1:8080/profilePage/getUser?userId=1');
 
       //Post
       final response = await http.post(
@@ -72,7 +72,7 @@ class _ProfilePage extends State<Profile> {
   }
 
   Future<void> updateProfileDescription(String newDescription) async{
-      final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/user/updateUser');
+      final url = Uri.parse('http://127.0.0.1:8080/user/updateUser');
 
     try{
       //Post
@@ -106,7 +106,7 @@ class _ProfilePage extends State<Profile> {
 
   void fetchPostedTickets(String filterType) async {
 
-    final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/profilePage/getPostedTickets?userId=1&filter=$filterType');
+    final url = Uri.parse('http://127.0.0.1:8080/profilePage/getPostedTickets?userId=1&filter=$filterType');
 
     try{
       //Post
@@ -129,7 +129,7 @@ class _ProfilePage extends State<Profile> {
 
   void fetchCompletedTickets(String filterType) async {
 
-    final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/profilePage/getCompletedTickets?userId=1&filter=$filterType');
+    final url = Uri.parse('http://127.0.0.1:8080/profilePage/getCompletedTickets?userId=1&filter=$filterType');
 
       //Post
       final response = await http.post(

@@ -33,7 +33,7 @@ class _PostJobPageState extends State<PostJob> {
     super.dispose();
   }
   Future<void> submitTicketData() async {
-    final url = Uri.parse('http://127.0.0.1:4523/m1/8806835-8598944-default/ticket/createTicket');
+    final url = Uri.parse('http://127.0.0.1:8080/ticket/createTicket');
 
    
     Map<String, dynamic> requestData = {
