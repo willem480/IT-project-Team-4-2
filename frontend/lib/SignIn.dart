@@ -53,7 +53,7 @@ class _SignInPageState extends State<SignInPage> {
     });
 
   
-    final url = Uri.parse('http://127.0.0.1:8080/user/signin');
+    final url = Uri.parse('http://localhost:8080/user/signin');
 
     try {
       final response = await http.post(
@@ -76,6 +76,15 @@ class _SignInPageState extends State<SignInPage> {
         final String userName = responseData['name'] ?? 'User';
 
         print("✅ 登录成功！当前用户 ID: $userId, 用户名: $userName");
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MyHomePage(
+              title: 'Find a job', 
+              currentUserId: userId, // 🚨 这里把登录接口返回的真实 ID 传给下一页
+            ),
+          ),
+        );
 
       
         Navigator.pushReplacement(

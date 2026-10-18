@@ -1,549 +1,549 @@
-import 'package:flutter/material.dart';
-import 'package:ticketing_app/main.dart';
-import 'package:ticketing_app/PostAJobDetailUser.dart';
-import 'package:ticketing_app/models/ticket_model.dart';
-import 'Organisation.dart';
-import 'models/user_profile.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+  import 'package:flutter/material.dart';
+  import 'package:ticketing_app/main.dart';
+  import 'package:ticketing_app/PostAJobDetailUser.dart';
+  import 'package:ticketing_app/models/ticket_model.dart';
+  import 'Organisation.dart';
+  import 'models/user_profile.dart';
+  import 'package:http/http.dart' as http;
+  import 'dart:convert';
 
 
 
 
 
 
-class Profile extends StatefulWidget {
+  class Profile extends StatefulWidget {
 
 
-  const Profile({
-    super.key,
-});
+    const Profile({
+      super.key,
+  });
 
-  @override
-  State<Profile> createState() => _ProfilePage();
-  
-}
-
-
-
-class _ProfilePage extends State<Profile> {
-  int userId = 1;
-  String userEmail = 'Loading...';
-  String userName = 'Loading...';
-  String title = 'Loading...';
-  String location = 'Loading...';
-  DateTime? date ;
-  String description = "No description";
-  String userDescription = "No description";
-  double pay = 0.0;
-  double totalEarnings = 0.0;
-  double thisMonthEarnings = 0.0;
-  int thisMonthTimes = 0;
-  UserProfile? userProfile;
-  List<TicketModel> postedTickets = [];
-  List<TicketModel> completedTickets = [];
-  bool isAscending = true;
-
-
-  void fetchFirstUserData() async {
-
-    final url = Uri.parse('http://127.0.0.1:8080/profilePage/getUser?userId=1');
-
-      //Post
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-      );
-
-      if (response.statusCode == 200) {
-      
-        final Map<String, dynamic> jsonData = jsonDecode(response.body);
-        UserProfile myUser = UserProfile.fromJson(jsonData);
-        setState(() {
-          userId = myUser.idUser ?? 1;
-          userName = myUser.name ?? 'User';
-          userEmail = myUser.email ?? 'unknown@email.com';
-          totalEarnings = myUser.totalEarnings.toDouble() ?? 0.0;
-          thisMonthEarnings = myUser.totalEarningsThisMonth.toDouble() ?? 0.0;
-          thisMonthTimes = myUser.numberOfEarningsThisMonth.toInt() ?? 0;
-          userDescription= myUser.description ?? "No description";
-        });
-      }
-  }
-
-  Future<void> updateProfileDescription(String newDescription) async{
-      final url = Uri.parse('http://127.0.0.1:8080/user/updateUser');
-
-    try{
-      //Post
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'id': userId,
-          'name': userName,
-          'email': userEmail,
-          'description': newDescription
-          }),
-      );
-
-      if(response.statusCode == 200){
-        print("profile is success loaded");
-
-        setState(() {
-          userDescription = newDescription;
-        });
-        
-      }
-      else{
-        print("fail update description ");
-      }
-
-    }catch(e){
-      print("network request error");
-    }
-  }  
-
-  void fetchPostedTickets(String filterType) async {
-
-    final url = Uri.parse('http://127.0.0.1:8080/profilePage/getPostedTickets?userId=1&filter=$filterType');
-
-    try{
-      //Post
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-      );
-
-      if (response.statusCode == 200) {
-        List<TicketModel> parsedTickets = ticketFromJson(response.body);
-        setState(() {
-          postedTickets = parsedTickets;
-        });
-      }
-    }catch(e){
-      print("ticket crash");
-    }
-
-  }
-
-  void fetchCompletedTickets(String filterType) async {
-
-    final url = Uri.parse('http://127.0.0.1:8080/profilePage/getCompletedTickets?userId=1&filter=$filterType');
-
-      //Post
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-      );
-
-      if (response.statusCode == 200) {
-        List<TicketModel> parsedTickets = ticketFromJson(response.body);
-        setState(() {
-          completedTickets = parsedTickets;
-        });
-      }
+    @override
+    State<Profile> createState() => _ProfilePage();
+    
   }
 
 
 
-  @override
-  void initState() {
-    super.initState();
-    fetchFirstUserData();
-    fetchPostedTickets('none');
-    fetchCompletedTickets('none');
+  class _ProfilePage extends State<Profile> {
+    int userId = 1;
+    String userEmail = 'Loading...';
+    String userName = 'Loading...';
+    String title = 'Loading...';
+    String location = 'Loading...';
+    DateTime? date ;
+    String description = "No description";
+    String userDescription = "No description";
+    double pay = 0.0;
+    double totalEarnings = 0.0;
+    double thisMonthEarnings = 0.0;
+    int thisMonthTimes = 0;
+    UserProfile? userProfile;
+    List<TicketModel> postedTickets = [];
+    List<TicketModel> completedTickets = [];
+    bool isAscending = true;
 
-  }
 
-  void _showEditDescriptionDialog() {
-    TextEditingController editController = TextEditingController(text: userDescription);
+    void fetchFirstUserData() async {
 
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text("Edit Description"),
-          content: TextField(
-            controller: editController,
-            maxLines: 4,
-            decoration: const InputDecoration(
-              hintText: "Write something about yourself...",
-              border: OutlineInputBorder(),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                String newText = editController.text;
-                Navigator.pop(context);
-                updateProfileDescription(newText); // 调用网络请求去修改
-              },
-              child: const Text("Save"),
-            ),
-          ],
+      final url = Uri.parse('http://127.0.0.1:8080/profilePage/getUser?userId=1');
+
+        //Post
+        final response = await http.post(
+          url,
+          headers: {'Content-Type': 'application/json'},
         );
-      },
-    );
-  }
 
+        if (response.statusCode == 200) {
+        
+          final Map<String, dynamic> jsonData = jsonDecode(response.body);
+          UserProfile myUser = UserProfile.fromJson(jsonData);
+          setState(() {
+            userId = myUser.idUser ?? 1;
+            userName = myUser.name ?? 'User';
+            userEmail = myUser.email ?? 'unknown@email.com';
+            totalEarnings = myUser.totalEarnings.toDouble() ?? 0.0;
+            thisMonthEarnings = myUser.totalEarningsThisMonth.toDouble() ?? 0.0;
+            thisMonthTimes = myUser.numberOfEarningsThisMonth.toInt() ?? 0;
+            userDescription= myUser.description ?? "No description";
+          });
+        }
+    }
 
-  
-  bool is_Detail_Tab = true;
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Color(0xFFF9FAFB),
-      appBar: AppBar(
-        leading: BackButton(
-          onPressed: () {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute<void>(
-                builder: (context) => const MyHomePage(title: 'Find a job'),
-              ),
-              (route) => false,
-            );
-          },
-        ),
-        title: Text('Hello! $userName', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+    Future<void> updateProfileDescription(String newDescription) async{
+        final url = Uri.parse('http://127.0.0.1:8080/user/updateUser');
 
-      ),
-      body: Column(
+      try{
+        //Post
+        final response = await http.post(
+          url,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'id': userId,
+            'name': userName,
+            'email': userEmail,
+            'description': newDescription
+            }),
+        );
 
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(50),
-              child: SizedBox(
-                width: double.infinity,
-              
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  //intro
-                  Container(
-                    height: 250,
-                    width: 500,
-                    padding: const EdgeInsets.all(16),
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.grey), 
-                    ),
+        if(response.statusCode == 200){
+          print("profile is success loaded");
 
-                    child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          CircleAvatar(
-                            radius: 40,
-                            backgroundColor: Colors.blue,
-                            child: Text(
-                              userName.isNotEmpty? userName.substring(0,1).toUpperCase():'U',
-                              style: TextStyle(fontSize: 32, color:Colors.white, fontWeight:FontWeight.bold),),
-                          ),
-                          const SizedBox(width: 24),
-                          Expanded(
-                            child: Column(
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text("Description", style: TextStyle(color: Colors.grey, fontSize: 16, fontWeight: FontWeight.bold)),
-                                    IconButton(onPressed: (){_showEditDescriptionDialog();}, icon: Icon(Icons.edit),)            
-                                  ],
-                                ),
-                                
-                                const SizedBox(height: 20),
-                                Text(userDescription, style: const TextStyle(fontSize: 15, height: 1.4), maxLines: 7, overflow: TextOverflow.ellipsis,),
-                              ]
-                            ),
-                          ),
-                            
-                          
-    
-                        ],
-                    )
-                  ),
-                  const SizedBox(height:30),
-                  //job summary
-                  Container(
-                    height: 250,
-                    width: 500,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.grey), 
-                    ),
-
-                    child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          
-                          Text('TOTAL EARNINGS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.grey)), 
-                          const SizedBox(height: 25),
-                          Text('\$$totalEarnings',style: TextStyle(fontSize: 50, fontWeight: FontWeight.bold),),
-                          const SizedBox(height: 60),
-                          Text('This month: \$$thisMonthEarnings and $thisMonthTimes times payouts', style: const TextStyle(fontWeight:FontWeight.bold, fontSize: 15, color: Colors.grey)),
-                        ],
-                    )
-                  ),
-                  const SizedBox(height: 30),
-                  //button
-                  Wrap(
-                    alignment: WrapAlignment.center,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: 12,
-                    runSpacing: 16,
-                    children: [
-                      _buildTabButton('Posted jobs', is_Detail_Tab, (){
-                        setState(() => is_Detail_Tab = true);
-
-                      }),
-                      const SizedBox(width: 12),
-                      _buildTabButton('Completed jobs', !is_Detail_Tab, (){
-                        setState(() => is_Detail_Tab = false);
-                      }),
-
-                      SizedBox(width: 20),
-                      OutlinedButton.icon(
-                      
-                      onPressed:(){
-                        setState(() {
-                          isAscending = !isAscending;
-                        }); 
-
-                        String filterValue = isAscending ? 'up' : 'down';
-                        print("User toggled filter: $filterValue");
-                        if(is_Detail_Tab){
-                          fetchPostedTickets(filterValue);
-                        }
-                        else{
-                          fetchCompletedTickets(filterValue);
-                        }
-                        
-                      },
-
-                      icon: Icon(
-                        isAscending ? Icons.arrow_upward : Icons.arrow_downward,
-                        size:  16,
-                        color: Colors.black87,
-                      ),
-
-                      label: Text(
-                        isAscending ? "Date: new to last" : "Date : last to new",
-                        style: const TextStyle(
-                          color : Colors.black87,
-                          fontWeight: FontWeight.w500,
-                        )
-                      ),
-
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        backgroundColor:  Colors.white,
-                        side: BorderSide(color: Colors.grey),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        )
-
-
-                      )
-
-                    
-                      //visual button
-                      
-                    ),
-                    
-
-                  
-                    ],
-                  ),
-                
-
-                  is_Detail_Tab ? _buildPostedJobSection(context) : _buildCompletedJobs(), 
-
-
-                ],
-              ),
-              )
-
-
-          )),
+          setState(() {
+            userDescription = newDescription;
+          });
           
-          Text(
-            '',
-            style: Theme.of(context).textTheme.headlineMedium,
-          ),
-        ],
-      ),
-      
-          bottomNavigationBar: BottomAppBar(
-        color: Colors.white,
-        shape: const CircularNotchedRectangle(),
-        notchMargin: 8.0,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            TextButton.icon(
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute<void>(
-                    builder: (context) => OrganisationPage(userId: userId),
-                  ),
-                );
-              }, 
-              icon: Icon(Icons.bookmark_border, size: 25, color: Colors.black), 
-              label: Text('Organization', style: TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.bold)),
+        }
+        else{
+          print("fail update description ");
+        }
+
+      }catch(e){
+        print("network request error");
+      }
+    }  
+
+    void fetchPostedTickets(String filterType) async {
+
+      final url = Uri.parse('http://127.0.0.1:8080/profilePage/getPostedTickets?userId=1&filter=$filterType');
+
+      try{
+        //Post
+        final response = await http.post(
+          url,
+          headers: {'Content-Type': 'application/json'},
+        );
+
+        if (response.statusCode == 200) {
+          List<TicketModel> parsedTickets = ticketFromJson(response.body);
+          setState(() {
+            postedTickets = parsedTickets;
+          });
+        }
+      }catch(e){
+        print("ticket crash");
+      }
+
+    }
+
+    void fetchCompletedTickets(String filterType) async {
+
+      final url = Uri.parse('http://127.0.0.1:8080/profilePage/getCompletedTickets?userId=1&filter=$filterType');
+
+        //Post
+        final response = await http.post(
+          url,
+          headers: {'Content-Type': 'application/json'},
+        );
+
+        if (response.statusCode == 200) {
+          List<TicketModel> parsedTickets = ticketFromJson(response.body);
+          setState(() {
+            completedTickets = parsedTickets;
+          });
+        }
+    }
+
+
+
+    @override
+    void initState() {
+      super.initState();
+      fetchFirstUserData();
+      fetchPostedTickets('none');
+      fetchCompletedTickets('none');
+
+    }
+
+    void _showEditDescriptionDialog() {
+      TextEditingController editController = TextEditingController(text: userDescription);
+
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text("Edit Description"),
+            content: TextField(
+              controller: editController,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                hintText: "Write something about yourself...",
+                border: OutlineInputBorder(),
+              ),
             ),
-  
-            const SizedBox(width: 60),
-            TextButton.icon(
-              onPressed: () {}, 
-              icon: Icon(Icons.person_2_outlined, size: 25, color: Colors.black), 
-              label: Text('My Profile', style: TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.bold)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Cancel"),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  String newText = editController.text;
+                  Navigator.pop(context);
+                  updateProfileDescription(newText); // 调用网络请求去修改
+                },
+                child: const Text("Save"),
+              ),
+            ],
+          );
+        },
+      );
+    }
+
+
+    
+    bool is_Detail_Tab = true;
+    @override
+    Widget build(BuildContext context) {
+      return Scaffold(
+        backgroundColor: Color(0xFFF9FAFB),
+        appBar: AppBar(
+          leading: BackButton(
+            onPressed: () {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (context) => const MyHomePage(title: 'Find a job'),
+                ),
+                (route) => false,
+              );
+            },
+          ),
+          title: Text('Hello! $userName', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+
+        ),
+        body: Column(
+
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(50),
+                child: SizedBox(
+                  width: double.infinity,
+                
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    //intro
+                    Container(
+                      height: 250,
+                      width: 500,
+                      padding: const EdgeInsets.all(16),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.grey), 
+                      ),
+
+                      child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            CircleAvatar(
+                              radius: 40,
+                              backgroundColor: Colors.blue,
+                              child: Text(
+                                userName.isNotEmpty? userName.substring(0,1).toUpperCase():'U',
+                                style: TextStyle(fontSize: 32, color:Colors.white, fontWeight:FontWeight.bold),),
+                            ),
+                            const SizedBox(width: 24),
+                            Expanded(
+                              child: Column(
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text("Description", style: TextStyle(color: Colors.grey, fontSize: 16, fontWeight: FontWeight.bold)),
+                                      IconButton(onPressed: (){_showEditDescriptionDialog();}, icon: Icon(Icons.edit),)            
+                                    ],
+                                  ),
+                                  
+                                  const SizedBox(height: 20),
+                                  Text(userDescription, style: const TextStyle(fontSize: 15, height: 1.4), maxLines: 7, overflow: TextOverflow.ellipsis,),
+                                ]
+                              ),
+                            ),
+                              
+                            
+      
+                          ],
+                      )
+                    ),
+                    const SizedBox(height:30),
+                    //job summary
+                    Container(
+                      height: 250,
+                      width: 500,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.grey), 
+                      ),
+
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            
+                            Text('TOTAL EARNINGS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.grey)), 
+                            const SizedBox(height: 25),
+                            Text('\$$totalEarnings',style: TextStyle(fontSize: 50, fontWeight: FontWeight.bold),),
+                            const SizedBox(height: 60),
+                            Text('This month: \$$thisMonthEarnings and $thisMonthTimes times payouts', style: const TextStyle(fontWeight:FontWeight.bold, fontSize: 15, color: Colors.grey)),
+                          ],
+                      )
+                    ),
+                    const SizedBox(height: 30),
+                    //button
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 12,
+                      runSpacing: 16,
+                      children: [
+                        _buildTabButton('Posted jobs', is_Detail_Tab, (){
+                          setState(() => is_Detail_Tab = true);
+
+                        }),
+                        const SizedBox(width: 12),
+                        _buildTabButton('Completed jobs', !is_Detail_Tab, (){
+                          setState(() => is_Detail_Tab = false);
+                        }),
+
+                        SizedBox(width: 20),
+                        OutlinedButton.icon(
+                        
+                        onPressed:(){
+                          setState(() {
+                            isAscending = !isAscending;
+                          }); 
+
+                          String filterValue = isAscending ? 'up' : 'down';
+                          print("User toggled filter: $filterValue");
+                          if(is_Detail_Tab){
+                            fetchPostedTickets(filterValue);
+                          }
+                          else{
+                            fetchCompletedTickets(filterValue);
+                          }
+                          
+                        },
+
+                        icon: Icon(
+                          isAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                          size:  16,
+                          color: Colors.black87,
+                        ),
+
+                        label: Text(
+                          isAscending ? "Date: new to last" : "Date : last to new",
+                          style: const TextStyle(
+                            color : Colors.black87,
+                            fontWeight: FontWeight.w500,
+                          )
+                        ),
+
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          backgroundColor:  Colors.white,
+                          side: BorderSide(color: Colors.grey),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          )
+
+
+                        )
+
+                      
+                        //visual button
+                        
+                      ),
+                      
+
+                    
+                      ],
+                    ),
+                  
+
+                    is_Detail_Tab ? _buildPostedJobSection(context) : _buildCompletedJobs(), 
+
+
+                  ],
+                ),
+                )
+
+
+            )),
+            
+            Text(
+              '',
+              style: Theme.of(context).textTheme.headlineMedium,
             ),
           ],
-        )
-      ),
-    );
-  }
-
-  // The Details View (Description + Map)
-  Widget _buildPostedJobSection(BuildContext context) {
-    //if no ticket
-    if (postedTickets.isEmpty){
-        return Padding(
-          padding: const EdgeInsets.all(50.0),
-          child: Text('No jobs yet.', style: TextStyle(color: Colors.grey)),
-          );
-      }
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: postedTickets.map((ticket){ // assign postedTicket to ticket
-        return _buildTicket(
-          context, 
-          ticket.title.toString() ?? 'No title', 
-          ticket.organizationName ?? 'Unknown Location', 
-          ticket.pay?.toString() ?? '0',
-          ticket.description ?? "No description",
-          ticket.idTicket ?? 0,
-          ticket.datePosted?.toString() ?? "No date",
-
-          );
-          
-      }).toList(),
-    );
-  }
-
-
-  Widget _buildCompletedJobs() {
-     //if no ticket
-    if (completedTickets.isEmpty){
-        return Padding(
-          padding: const EdgeInsets.all(50.0),
-          child: Text('No jobs yet.', style: TextStyle(color: Colors.grey)),
-          );
-      }
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: completedTickets.map((ticket){ // assign completedTicket to ticket
-        return _buildTicket(
-          context, 
-          ticket.title.toString() ?? 'No title', 
-          ticket.organizationName ?? 'Unknown Location', 
-          ticket.pay?.toString() ?? '0',
-          ticket.description ?? "No description",
-          ticket.idTicket ?? 0, 
-          ticket.datePosted?.toString() ?? 'No date',
-          );
-          
-      }).toList(),
-    );
-  }
-  // Helper method for the pill-shaped toggle buttons
-  Widget _buildTabButton(String text, bool isSelected, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color.fromARGB(255, 0, 0, 0) : Colors.grey.shade200,
-          borderRadius: BorderRadius.circular(20),
         ),
-        child: Text(
-          text,
-          style: TextStyle(
-            color: isSelected ? const Color.fromARGB(255, 255, 255, 255) : Colors.black54,
-            fontWeight: FontWeight.bold,
+        
+            bottomNavigationBar: BottomAppBar(
+          color: Colors.white,
+          shape: const CircularNotchedRectangle(),
+          notchMargin: 8.0,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              TextButton.icon(
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (context) => OrganisationPage(userId: userId),
+                    ),
+                  );
+                }, 
+                icon: Icon(Icons.bookmark_border, size: 25, color: Colors.black), 
+                label: Text('Organization', style: TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.bold)),
+              ),
+    
+              const SizedBox(width: 60),
+              TextButton.icon(
+                onPressed: () {}, 
+                icon: Icon(Icons.person_2_outlined, size: 25, color: Colors.black), 
+                label: Text('My Profile', style: TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          )
+        ),
+      );
+    }
+
+    // The Details View (Description + Map)
+    Widget _buildPostedJobSection(BuildContext context) {
+      //if no ticket
+      if (postedTickets.isEmpty){
+          return Padding(
+            padding: const EdgeInsets.all(50.0),
+            child: Text('No jobs yet.', style: TextStyle(color: Colors.grey)),
+            );
+        }
+      
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: postedTickets.map((ticket){ // assign postedTicket to ticket
+          return _buildTicket(
+            context, 
+            ticket.title.toString() ?? 'No title', 
+            ticket.organizationName ?? 'Unknown Location', 
+            ticket.pay?.toString() ?? '0',
+            ticket.description ?? "No description",
+            ticket.idTicket ?? 0,
+            ticket.datePosted?.toString() ?? "No date",
+
+            );
+            
+        }).toList(),
+      );
+    }
+
+
+    Widget _buildCompletedJobs() {
+      //if no ticket
+      if (completedTickets.isEmpty){
+          return Padding(
+            padding: const EdgeInsets.all(50.0),
+            child: Text('No jobs yet.', style: TextStyle(color: Colors.grey)),
+            );
+        }
+      
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: completedTickets.map((ticket){ // assign completedTicket to ticket
+          return _buildTicket(
+            context, 
+            ticket.title.toString() ?? 'No title', 
+            ticket.organizationName ?? 'Unknown Location', 
+            ticket.pay?.toString() ?? '0',
+            ticket.description ?? "No description",
+            ticket.idTicket ?? 0, 
+            ticket.datePosted?.toString() ?? 'No date',
+            );
+            
+        }).toList(),
+      );
+    }
+    // Helper method for the pill-shaped toggle buttons
+    Widget _buildTabButton(String text, bool isSelected, VoidCallback onTap) {
+      return GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? const Color.fromARGB(255, 0, 0, 0) : Colors.grey.shade200,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            text,
+            style: TextStyle(
+              color: isSelected ? const Color.fromARGB(255, 255, 255, 255) : Colors.black54,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
-      ),
-    );
-  }
+      );
+    }
 
-  Widget _buildTicket(BuildContext context, String title, String companyName, String price, String description, int ticketId, String datePosted){
-      return InkWell(
-          onTap: (){
-            print('check your posted jobs');
-            Navigator.push(context, MaterialPageRoute(builder: (context) => PostAJobDetailUser(ticketId: ticketId, title: title, company: companyName, price: price, description: description, date: datePosted)));
-          },
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            width: 800,
-            height: 225,
-            margin: const EdgeInsets.all(50),
-            padding: EdgeInsets.all(16),
+    Widget _buildTicket(BuildContext context, String title, String companyName, String price, String description, int ticketId, String datePosted){
+        return InkWell(
+            onTap: (){
+              print('check your posted jobs');
+              Navigator.push(context, MaterialPageRoute(builder: (context) => PostAJobDetailUser(ticketId: ticketId, title: title, company: companyName, price: price, description: description, date: datePosted)));
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              width: 800,
+              height: 225,
+              margin: const EdgeInsets.all(50),
+              padding: EdgeInsets.all(16),
 
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withValues(alpha: 0.1),
-                  
-                  blurRadius: 2,
-                  offset: const Offset(0, 1),
-                )
-              ]
-            ),           
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withValues(alpha: 0.1),
+                    
+                    blurRadius: 2,
+                    offset: const Offset(0, 1),
+                  )
+                ]
+              ),           
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                    // alignment: Alignment.topLeft,
+                  Text(
+                  title,
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
                   // alignment: Alignment.topLeft,
                 Text(
-                title,
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-              ),
-                // alignment: Alignment.topLeft,
-              Text(
-                companyName,
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-              ),
-              
-              const Spacer(),
+                  companyName,
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                ),
+                
+                const Spacer(),
 
-              Text(
-                '\$$price',
-                style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
-              //more item
+                Text(
+                  '\$$price',
+                  style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
                 //more item
-              ],
+                  //more item
+                ],
+              )
             )
-          )
-        );
-  }
+          );
+    }
 
-}
+  }
