@@ -150,13 +150,13 @@ public class InboxServiceImpl extends ServiceImpl<InboxMapper, Inbox> {
 
                 } else if (ticketService.isCancelTicketEmail(emailData)) {
 
-                    Ticket cancelledTicket = ticketService.cancelTicketFromEmail(emailData);
-                    if (cancelledTicket != null) {
-                        EmailServiceHelper.sendTicketCancelledReply(
+                    Ticket deletedTicket = ticketService.deleteTicketFromEmail(emailData);
+                    if (deletedTicket != null) {
+                        EmailServiceHelper.sendTicketDeletedReply(
                                 emailData.getFrom(),
                                 emailData.getSubject(),
-                                cancelledTicket
-                        );
+                                deletedTicket
+                            );
                     } else {
                         EmailServiceHelper.sendTicketCancellationFailureReply(
                                 emailData.getFrom(),
