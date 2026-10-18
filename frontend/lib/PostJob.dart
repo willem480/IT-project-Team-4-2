@@ -3,7 +3,10 @@ import 'package:ticketing_app/SuccessPage.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 class PostJob extends StatefulWidget {
-  const PostJob({super.key});
+  final int currentUserId;
+  const PostJob({
+    super.key,
+    required this.currentUserId});
   // This widget is the root of your application.
   @override
   State<PostJob> createState() => _PostJobPageState();
@@ -59,7 +62,7 @@ class _PostJobPageState extends State<PostJob> {
    
         Navigator.pushReplacement(
           context, 
-          MaterialPageRoute(builder: (context) => const SuccessPage()),
+          MaterialPageRoute(builder: (context) =>  SuccessPage(currentUserId: widget.currentUserId,)),
         );
       } else {
         print("❌ 提交失败，状态码: ${response.statusCode}");

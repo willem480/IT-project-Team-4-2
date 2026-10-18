@@ -212,7 +212,7 @@ class _AdminPageState extends State<AdminPage> {
                     onPressed: () => Navigator.push<void>(
                       context,
                       MaterialPageRoute<void>(
-                        builder: (context) => const Profile(),
+                        builder: (context) =>  Profile(userId: widget.userId,),
                       ),
                     ),
                     icon: CircleAvatar(

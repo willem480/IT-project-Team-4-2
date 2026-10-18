@@ -259,7 +259,7 @@ class _AdminSearchPageState extends State<AdminSearchPage> {
                     onPressed: () => Navigator.push<void>(
                       context,
                       MaterialPageRoute<void>(
-                        builder: (context) => const Profile(),
+                        builder: (context) =>  Profile(userId: widget.actorUserId),
                       ),
                     ),
                     icon: CircleAvatar(

@@ -14,11 +14,11 @@ const _border = Color(0xFFE5E7EB);
 // Keep the existing entry point so callers do not need routing changes.
 // ignore: camel_case_types
 class Acceptjob extends AcceptJobPage {
-  const Acceptjob({super.key, super.userId});
+  const Acceptjob({super.key, required super.userId});
 }
 
 class AcceptJobPage extends StatefulWidget {
-  const AcceptJobPage({super.key, this.userId = 1});
+  const AcceptJobPage({super.key, required this.userId});
 
   // Match the current user used by main.dart/Profile.dart until callers pass
   // the actor ID, as they already do for OrganisationPage and TeamsPage.
@@ -98,7 +98,7 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
   Future<void> _openAcceptedJob(TicketModel ticket) async {
     final changed = await Navigator.push<bool>(
       context,
-      MaterialPageRoute(builder: (context) => AcceptedJobDetail(ticket: ticket)),
+      MaterialPageRoute(builder: (context) => AcceptedJobDetail(ticket: ticket, userId: widget.userId)),
     );
     if (!mounted || changed != true) return;
     await _fetchAcceptedJobs();
@@ -259,7 +259,7 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => PostJob()),
+            MaterialPageRoute(builder: (context) => PostJob(currentUserId:  widget.userId,)),
           );
         },
         backgroundColor: Colors.blue,

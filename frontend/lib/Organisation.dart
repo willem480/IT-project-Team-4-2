@@ -234,7 +234,7 @@ class _OrganisationPageState extends State<OrganisationPage> {
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute<void>(
-                    builder: (context) => const Profile(),
+                    builder: (context) =>  Profile(userId: widget.userId,),
                   ),
                 );
               },

@@ -52,7 +52,7 @@ class _MyHomePageState extends State<MyHomePage> {
   //search function
   void fetchTicketsByKeyword(String keyword) async{
     if(keyword.trim().isEmpty){
-      fetchOpenTickets('none');
+      fetchOpenTickets('');
       return;
     }
     final url = Uri.parse('http://127.0.0.1:8080/ticket/getOpenTicketsByKeyword?keyword=$keyword');
@@ -139,7 +139,7 @@ void fetchAssignTickets() async {
     }
 
     void fetchUserData() async{
-      final url = Uri.parse('http://127.0.0.1:8080/profilePage/getUser?userId=1');
+      final url = Uri.parse('http://127.0.0.1:8080/profilePage/getUser?UserId=${widget.currentUserId}');
 
       //Post
       final response = await http.post(
@@ -160,7 +160,7 @@ void fetchAssignTickets() async {
     @override
     void initState(){
       super.initState();
-      fetchOpenTickets('none');
+      fetchOpenTickets('');
       fetchUserData();
     }
 
@@ -186,7 +186,7 @@ void fetchAssignTickets() async {
             child: GestureDetector(
               onTap: () {
                 print('profile open');
-                Navigator.push(context, MaterialPageRoute(builder: (context) => Profile()),);
+                Navigator.push(context, MaterialPageRoute(builder: (context) => Profile(userId: widget.currentUserId)));
 
               },
               child: 
@@ -342,7 +342,7 @@ void fetchAssignTickets() async {
       ),
       
       floatingActionButton: FloatingActionButton(
-        onPressed: () {Navigator.push(context, MaterialPageRoute(builder: (context) => PostJob()),);},
+        onPressed: () {Navigator.push(context, MaterialPageRoute(builder: (context) => PostJob(currentUserId: widget.currentUserId)),);},
         backgroundColor: Colors.blue,
         shape: const CircleBorder(),
         tooltip: 'Post a Job',
@@ -368,7 +368,7 @@ void fetchAssignTickets() async {
   
             const SizedBox(width: 60),
             TextButton.icon(
-              onPressed: () {Navigator.push(context, MaterialPageRoute(builder: (context) => AcceptJobPage()),);}, 
+              onPressed: () {Navigator.push(context, MaterialPageRoute(builder: (context) => AcceptJobPage(userId: widget.currentUserId,)),);}, 
               icon: Icon(Icons.check_circle_outlined, color: Colors.black,), 
               label: Text('Accept a Job', style: TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.bold)),
             ),
@@ -384,7 +384,7 @@ void fetchAssignTickets() async {
       return InkWell(
         onTap: (){
           print('tap job ticket in find job page');
-          Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser(ticketId: ticketId, title: title, company: companyName, price: price, description: description, date: date)),);
+          Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser(ticketId: ticketId, title: title, company: companyName, price: price, description: description, date: date, currentUserId: widget.currentUserId,)),);
         },
         borderRadius: BorderRadius.circular(12),
         child: Container(

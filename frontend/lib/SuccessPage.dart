@@ -3,7 +3,11 @@ import 'package:ticketing_app/main.dart';
 
 
 class SuccessPage extends StatelessWidget {
-  const SuccessPage({super.key});
+  final int currentUserId;
+  const SuccessPage({
+    super.key,
+    required this.currentUserId
+    });
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +47,7 @@ class SuccessPage extends StatelessWidget {
         
         
           child: FloatingActionButton( 
-            onPressed: () {Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const MyHomePage(title: 'Find a job')), (Route<dynamic> route) => false);},
+            onPressed: () {Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) =>  MyHomePage(title: 'Find a job', currentUserId: currentUserId)), (Route<dynamic> route) => false);},
             backgroundColor: Colors.green,
             shape:  RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
             child: Text('OK', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),),

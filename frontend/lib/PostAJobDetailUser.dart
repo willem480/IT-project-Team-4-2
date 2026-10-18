@@ -13,6 +13,7 @@ class PostAJobDetailUser extends StatefulWidget {
   final String description;
   final int ticketId;
   final String date;
+  final int currentUserId;
   
 
   const PostAJobDetailUser({
@@ -23,6 +24,7 @@ class PostAJobDetailUser extends StatefulWidget {
     required this.description,
     required this.ticketId,
     required this.date,
+    required this.currentUserId,
     });
 
   @override
@@ -205,7 +207,7 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
                 if (response.statusCode == 200){
                   print("job has been completed successfully");
                   Navigator.pushAndRemoveUntil(
-                    context, MaterialPageRoute(builder: (context) => const MyHomePage(title: 'Find a job')), 
+                    context, MaterialPageRoute(builder: (context) =>  MyHomePage(title: 'Find a job', currentUserId: widget.currentUserId,)), 
                     (Route<dynamic> route) => false);
                 }
                 else{print("fail complet");}

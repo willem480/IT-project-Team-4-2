@@ -13,6 +13,7 @@ class FindAJobDetailUser extends StatefulWidget {
   final String description;
   final int ticketId;
   final String date;
+  final int currentUserId;
   
 
   const FindAJobDetailUser({
@@ -23,6 +24,7 @@ class FindAJobDetailUser extends StatefulWidget {
     required this.description,
     required this.ticketId,
     required this.date,
+    required this.currentUserId,
     });
 
   @override
@@ -32,7 +34,6 @@ class FindAJobDetailUser extends StatefulWidget {
 
 class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
   bool is_Detail_Tab = true;
-
   List<ticketComment> commentList = [];
   TextEditingController commentController = TextEditingController();
 
@@ -210,7 +211,7 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
                 if (response.statusCode == 200){
                   print("job has been accepted successfully");
                   Navigator.pushAndRemoveUntil(
-                    context, MaterialPageRoute(builder: (context) => const MyHomePage(title: 'Find a job')), 
+                    context, MaterialPageRoute(builder: (context) =>  MyHomePage(title: 'Find a job', currentUserId: widget.currentUserId)), 
                     (Route<dynamic> route) => false);
                 }
                 else{print("fail accept");}

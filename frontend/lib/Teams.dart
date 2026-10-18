@@ -247,7 +247,7 @@ class _TeamsPageState extends State<TeamsPage> {
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute<void>(
-                    builder: (context) => const Profile(),
+                    builder: (context) => Profile(userId: widget.userId,),
                   ),
                   (route) => route.isFirst,
                 );

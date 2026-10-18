@@ -53,7 +53,7 @@ class _SignInPageState extends State<SignInPage> {
     });
 
   
-    final url = Uri.parse('http://localhost:8080/user/signin');
+    final url = Uri.parse('http://127.0.0.1:8080/user/signin');
 
     try {
       final response = await http.post(
@@ -86,13 +86,7 @@ class _SignInPageState extends State<SignInPage> {
           ),
         );
 
-      
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => MyHomePage(title: 'Find a job'),
-          ),
-        );
+  
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Sign in failed: Invalid credentials')),

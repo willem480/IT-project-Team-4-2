@@ -351,7 +351,7 @@ class _MembersPageState extends State<MembersPage> {
                   Navigator.pushAndRemoveUntil(
                     context,
                     MaterialPageRoute<void>(
-                      builder: (context) => const Profile(),
+                      builder: (context) =>  Profile(userId: widget.userId,),
                     ),
                     (route) => route.isFirst,
                   );

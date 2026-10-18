@@ -13,10 +13,12 @@
 
 
   class Profile extends StatefulWidget {
-
+    final int userId;
+  
 
     const Profile({
       super.key,
+      required this.userId,
   });
 
     @override
@@ -27,7 +29,6 @@
 
 
   class _ProfilePage extends State<Profile> {
-    int userId = 1;
     String userEmail = 'Loading...';
     String userName = 'Loading...';
     String title = 'Loading...';
@@ -47,7 +48,7 @@
 
     void fetchFirstUserData() async {
 
-      final url = Uri.parse('http://127.0.0.1:8080/profilePage/getUser?userId=1');
+      final url = Uri.parse('http://127.0.0.1:8080/profilePage/getUser?userId=${widget.userId}');
 
         //Post
         final response = await http.post(
@@ -60,7 +61,6 @@
           final Map<String, dynamic> jsonData = jsonDecode(response.body);
           UserProfile myUser = UserProfile.fromJson(jsonData);
           setState(() {
-            userId = myUser.idUser ?? 1;
             userName = myUser.name ?? 'User';
             userEmail = myUser.email ?? 'unknown@email.com';
             totalEarnings = myUser.totalEarnings.toDouble() ?? 0.0;
@@ -80,7 +80,6 @@
           url,
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({
-            'id': userId,
             'name': userName,
             'email': userEmail,
             'description': newDescription
@@ -106,7 +105,7 @@
 
     void fetchPostedTickets(String filterType) async {
 
-      final url = Uri.parse('http://127.0.0.1:8080/profilePage/getPostedTickets?userId=1&filter=$filterType');
+      final url = Uri.parse('http://127.0.0.1:8080/profilePage/getPostedTickets?userId=${widget.userId}&filter=$filterType');
 
       try{
         //Post
@@ -129,7 +128,7 @@
 
     void fetchCompletedTickets(String filterType) async {
 
-      final url = Uri.parse('http://127.0.0.1:8080/profilePage/getCompletedTickets?userId=1&filter=$filterType');
+      final url = Uri.parse('http://127.0.0.1:8080/profilePage/getCompletedTickets?userId=${widget.userId}&filter=$filterType');
 
         //Post
         final response = await http.post(
@@ -151,8 +150,8 @@
     void initState() {
       super.initState();
       fetchFirstUserData();
-      fetchPostedTickets('none');
-      fetchCompletedTickets('none');
+      fetchPostedTickets('');
+      fetchCompletedTickets('');
 
     }
 
@@ -204,7 +203,7 @@
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute<void>(
-                  builder: (context) => const MyHomePage(title: 'Find a job'),
+                  builder: (context) => MyHomePage(title: 'Find a job', currentUserId: widget.userId),
                 ),
                 (route) => false,
               );
@@ -398,7 +397,7 @@
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute<void>(
-                      builder: (context) => OrganisationPage(userId: userId),
+                      builder: (context) => OrganisationPage(userId: widget.userId),
                     ),
                   );
                 }, 
@@ -439,6 +438,8 @@
             ticket.description ?? "No description",
             ticket.idTicket ?? 0,
             ticket.datePosted?.toString() ?? "No date",
+            widget.userId,
+
 
             );
             
@@ -467,6 +468,7 @@
             ticket.description ?? "No description",
             ticket.idTicket ?? 0, 
             ticket.datePosted?.toString() ?? 'No date',
+            widget.userId,
             );
             
         }).toList(),
@@ -493,11 +495,11 @@
       );
     }
 
-    Widget _buildTicket(BuildContext context, String title, String companyName, String price, String description, int ticketId, String datePosted){
+    Widget _buildTicket(BuildContext context, String title, String companyName, String price, String description, int ticketId, String datePosted, int currentUserId){
         return InkWell(
             onTap: (){
               print('check your posted jobs');
-              Navigator.push(context, MaterialPageRoute(builder: (context) => PostAJobDetailUser(ticketId: ticketId, title: title, company: companyName, price: price, description: description, date: datePosted)));
+              Navigator.push(context, MaterialPageRoute(builder: (context) => PostAJobDetailUser(ticketId: ticketId, title: title, company: companyName, price: price, description: description, date: datePosted, currentUserId: currentUserId ,)));
             },
             borderRadius: BorderRadius.circular(12),
             child: Container(

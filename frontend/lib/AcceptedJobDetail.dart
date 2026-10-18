@@ -6,7 +6,8 @@ import 'package:ticketing_app/models/ticket_comment.dart';
 import 'package:ticketing_app/models/ticket_model.dart';
 
 class AcceptedJobDetail extends StatefulWidget {
-  const AcceptedJobDetail({super.key, required this.ticket});
+  final int userId;
+  const AcceptedJobDetail({super.key, required this.ticket, required this.userId});
 
   final TicketModel ticket;
 
@@ -70,7 +71,7 @@ class _AcceptedJobDetailState extends State<AcceptedJobDetail> {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'ticketIdticket': widget.ticket.idTicket,
-          'userIduser': 1,
+          'userIduser': widget.userId,
           'content': commentController.text,
         }),
       );
