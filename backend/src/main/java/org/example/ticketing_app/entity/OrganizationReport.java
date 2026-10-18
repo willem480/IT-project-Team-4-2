@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
  * </p>
  *
  * @author Yucong
- * @since 2026-10-05
+ * @since 2026-10-18
  */
 @Getter
 @Setter
@@ -29,11 +29,11 @@ public class OrganizationReport implements Serializable {
     @TableId(value = "idOrganizationReport", type = IdType.AUTO)
     private Integer idOrganizationReport;
 
-    private Integer organizationId;
-
     private String title;
 
     private String body;
 
     private LocalDateTime dateGenerated;
+
+    private Integer organizationId;
 }

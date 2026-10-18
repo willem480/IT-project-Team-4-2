@@ -24,7 +24,7 @@ public class MemberreportController {
     private final MemberReportServiceImpl memberReportService;
 
     @PostMapping("generateTeamMemberReport")
-    public MemberReport generateMemberReport(@RequestParam int userId, @RequestParam int teamId) {
-        return memberReportService.generateTeamMemberReport(userId, teamId);
+    public MemberReport generateMemberReport(@RequestParam int userId, @RequestParam int teamId, @RequestParam boolean emailCopy) throws Exception {
+        return memberReportService.generateTeamMemberReport(userId, teamId, emailCopy);
     }
 }

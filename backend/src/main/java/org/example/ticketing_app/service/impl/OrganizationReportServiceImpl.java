@@ -3,6 +3,7 @@ package org.example.ticketing_app.service.impl;
 import org.example.ticketing_app.entity.*;
 import org.example.ticketing_app.mapper.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import org.example.ticketing_app.service.emailServiceHelper.EmailServiceHelper;
 import org.example.ticketing_app.service.ticketServiceHelper.TicketStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,7 +46,7 @@ public class OrganizationReportServiceImpl
     private final UserMapper userMapper;
 
     @Transactional
-    public OrganizationReport generateReport(int organizationId) {
+    public OrganizationReport generateReport(int managerId, int organizationId, boolean emailCopy) throws Exception {
 
         Organization organization =
                 organizationMapper.selectById(organizationId);
@@ -242,7 +243,14 @@ public class OrganizationReportServiceImpl
                 LocalDateTime.now());
 
         save(report);
-
+        if (emailCopy) {
+            try {
+                User manager = userMapper.selectById(managerId);
+                EmailServiceHelper.sendReply(manager.getEmail(), report.getTitle(), report.getBody());
+            } catch (Exception e) {
+                throw new ResponseStatusException(BAD_REQUEST, e.getMessage());
+            }
+        }
         return report;
     }
 }
