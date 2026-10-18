@@ -3,10 +3,12 @@ package org.example.ticketing_app.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import org.example.ticketing_app.entity.Manager;
+import org.example.ticketing_app.entity.MemberReport;
 import org.example.ticketing_app.entity.Team;
 import org.example.ticketing_app.entity.TeamMember;
 import org.example.ticketing_app.entity.User;
 import org.example.ticketing_app.mapper.ManagerMapper;
+import org.example.ticketing_app.mapper.MemberReportMapper;
 import org.example.ticketing_app.mapper.TeamMapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.example.ticketing_app.mapper.TeamMemberMapper;
@@ -35,6 +37,7 @@ import java.util.Objects;
 public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team> {
 
     private final TeamMemberMapper teamMemberMapper;
+    private final MemberReportMapper memberReportMapper;
     private final UserMapper userMapper;
     private final ManagerMapper managerMapper;
 
@@ -83,7 +86,10 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team> {
         return toMemberSummary(membership);
     }
 
-    /** Removes exactly one team membership and preserves the user's memberships in other teams. */
+    /**
+     * Removes exactly one team membership and preserves the user's memberships in other teams.
+     * Historical member reports are retained, so a membership with reports cannot be removed.
+     */
     @Transactional
     public void removeTeamMember(Integer actorUserId, Integer teamId, Integer teamMemberId) {
         Team team = requireTeam(teamId);
@@ -92,6 +98,14 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team> {
         TeamMember membership = teamMemberMapper.selectById(teamMemberId);
         if (membership == null || !Objects.equals(membership.getTeamId(), teamId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Team membership does not exist");
+        }
+        Long reportCount = memberReportMapper.selectCount(
+                new LambdaQueryWrapper<MemberReport>()
+                        .eq(MemberReport::getTeammemberId, teamMemberId)
+        );
+        if (reportCount != null && reportCount > 0) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "This team member has historical reports and cannot be removed");
         }
         teamMemberMapper.deleteById(teamMemberId);
     }
