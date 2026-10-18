@@ -138,25 +138,33 @@ void fetchAssignTickets() async {
       }
     }
 
-    void fetchUserData() async{
-      final url = Uri.parse('http://127.0.0.1:8080/profilePage/getUser?UserId=${widget.currentUserId}');
+  void fetchUserData() async {
+    final url = Uri.parse('http://127.0.0.1:8080/profilePage/getUser?userId=${widget.currentUserId}');
 
-      //Post
+    try {
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({}), // 保持有 body
       );
 
+      print("📡 getUser 状态码: ${response.statusCode}");
+      print("📦 getUser 返回内容: ${response.body}");
+
       if (response.statusCode == 200) {
-      
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
         UserProfile myUser = UserProfile.fromJson(jsonData);
         setState(() {
           userName = myUser.name ?? 'User';
         });
+        print("✅ 用户名成功更新为: $userName");
+      } else {
+        print("❌ 获取用户失败，状态码: ${response.statusCode}");
       }
-
+    } catch (e) {
+      print("💥 解析用户数据时发生异常: $e"); // 👈 错误会精准打印在这里
     }
+  }
     @override
     void initState(){
       super.initState();
@@ -220,44 +228,97 @@ void fetchAssignTickets() async {
                 child: Text('Hello, $userName', style: TextStyle(fontSize: 20)), 
               ),
 
-              //Search area
+//Search area
               Padding(
                 padding: const EdgeInsets.all(16.0),
+                child: Autocomplete<TicketModel>(
 
-                child: TextField(
-                  //submit function
-                  onSubmitted: (value){
-                    fetchTicketsByKeyword(value);
+                  onSelected: (TicketModel selection) {
+                    print('user choose: ${selection.title}');
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => FindAJobDetailUser(
+                          ticketId: selection.idTicket ?? 0,
+                          title: selection.title ?? "No title",
+                          company: selection.location ?? selection.posterName ?? "Unknown",
+                          price: selection.pay?.toString() ?? '0',
+                          description: selection.description ?? "No description",
+                          date: selection.datePosted?.toString() ?? "no date",
+                          currentUserId: widget.currentUserId,
+                        ),
+                      ),
+                    );
                   },
 
-                  decoration: InputDecoration(
-                    //hint area
-                    hintText: 'Search tickets, assignees, or locations...',
-                    hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14), 
 
-                    prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                  optionsBuilder: (TextEditingValue textEditingValue) {
+                    if (textEditingValue.text.trim().isEmpty) {
+                      return const Iterable<TicketModel>.empty();
+                    }
+                    return openTickets.where((TicketModel ticket) {
+                      return (ticket.title ?? '').toLowerCase().contains(textEditingValue.text.toLowerCase());
+                    });
+                  },
 
-                    //filled background color
-                    filled: true,
-                    fillColor: Colors.white,
 
-                    //search frame by default
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30.0),
-                      borderSide: BorderSide(color: Colors.grey.shade300, width: 1.0), 
-      
-                    ),
+                  optionsViewBuilder: (BuildContext context, AutocompleteOnSelected<TicketModel> onSelected, Iterable<TicketModel> options) {
+                    return Align(
+                      alignment: Alignment.topLeft,
+                      child: Material(
+                        elevation: 4.0,
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          width: MediaQuery.of(context).size.width - 32,
+                          constraints: const BoxConstraints(maxHeight: 250),
+                          color: Colors.white,
+                          child: ListView.builder(
+                            padding: EdgeInsets.zero,
+                            shrinkWrap: true,
+                            itemCount: options.length,
+                            itemBuilder: (BuildContext context, int index) {
+                              final TicketModel option = options.elementAt(index);
+                              return ListTile(
+                                title: Text(option.title ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                subtitle: Text('\$${option.pay ?? 0} - ${option.location ?? option.posterName ?? ''}', style: const TextStyle(color: Colors.grey)),
+                                onTap: () {
+                                  onSelected(option);
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    );
+                  },
 
-                    //color after i click it
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30.0),
-                      borderSide: const BorderSide(color: Colors.blue, width: 1.0),
-                    ),
 
-                    //up vertical padding
-                    contentPadding: const EdgeInsets.symmetric(vertical: 14.0),
-
-                  ),
+                  fieldViewBuilder: (BuildContext context, TextEditingController fieldTextEditingController, FocusNode fieldFocusNode, VoidCallback onFieldSubmitted) {
+                    return TextField(
+                      controller: fieldTextEditingController,
+                      focusNode: fieldFocusNode,
+                      onSubmitted: (value) {
+                        onFieldSubmitted();
+                        fetchTicketsByKeyword(value);
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'Search tickets, assignees, or locations...',
+                        hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+                        prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                        filled: true,
+                        fillColor: Colors.white,
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(30.0),
+                          borderSide: BorderSide(color: Colors.grey.shade300, width: 1.0),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(30.0),
+                          borderSide: const BorderSide(color: Colors.blue, width: 1.0),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 14.0),
+                      ),
+                    );
+                  },
                 ),
               ),
 
@@ -325,7 +386,7 @@ void fetchAssignTickets() async {
                         return _buildJobCard(
                           context,
                           ticket.title ?? "No title",
-                          ticket.organizationName ?? ticket.posterName ?? "Unknown Location",
+                          ticket.location ?? ticket.posterName ?? "Unknown Location",
                           ticket.pay?.toString() ?? '0',
                           ticket.description ?? "No description",
                           ticket.idTicket ?? 0,
