@@ -36,7 +36,7 @@ public class MemberReportServiceImpl extends ServiceImpl<MemberReportMapper, Mem
     private final TicketMapper ticketMapper;
 
     @Transactional
-    public MemberReport generateTeamMemberReport(int userId, int teamId, boolean emailCopy) throws Exception {
+    public MemberReport generateTeamMemberReport(int managerId, int userId, int teamId, boolean emailCopy) throws Exception {
 
         TeamMember teamMember = teamMemberMapper.selectOne(
                 new LambdaQueryWrapper<TeamMember>()
@@ -214,7 +214,8 @@ public class MemberReportServiceImpl extends ServiceImpl<MemberReportMapper, Mem
         save(report);
         if (emailCopy) {
             try {
-                EmailServiceHelper.sendReply(user.getEmail(), report.getTitle(), report.getBody());
+                User manager = userMapper.selectById(managerId);
+                EmailServiceHelper.sendReply(manager.getEmail(), report.getTitle(), report.getBody());
             } catch (Exception e) {
                 throw new ResponseStatusException(BAD_REQUEST, e.getMessage());
             }

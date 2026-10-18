@@ -5,7 +5,6 @@ import org.example.ticketing_app.entity.MemberReport;
 import org.example.ticketing_app.service.impl.MemberReportServiceImpl;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -24,7 +23,7 @@ public class MemberreportController {
     private final MemberReportServiceImpl memberReportService;
 
     @PostMapping("generateTeamMemberReport")
-    public MemberReport generateMemberReport(@RequestParam int userId, @RequestParam int teamId, @RequestParam boolean emailCopy) throws Exception {
-        return memberReportService.generateTeamMemberReport(userId, teamId, emailCopy);
+    public MemberReport generateMemberReport(@RequestParam int managerId, @RequestParam int teamMemberId, @RequestParam int teamId, @RequestParam boolean emailCopy) throws Exception {
+        return memberReportService.generateTeamMemberReport(managerId, teamMemberId, teamId, emailCopy);
     }
 }

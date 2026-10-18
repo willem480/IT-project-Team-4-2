@@ -461,7 +461,7 @@ public class TicketServiceTest {
     void reportTest() throws Exception {
         MemberReport report =
                 memberReportService.generateTeamMemberReport(
-                        2001,
+                        1001, 2001,
                         4,
                 false);
         TeamReport teamReport = teamReportService.generateReport(1001, 4, false);
