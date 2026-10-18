@@ -735,8 +735,8 @@ public final class EmailServiceHelper {
         Transport.send(reply);
     }
 
-    /** Sends an English confirmation after an owner cancels an open ticket. */
-    public static void sendTicketCancelledReply(
+    /** Sends an English confirmation after an owner permanently deletes an open ticket. */
+    public static void sendTicketDeletedReply(
             String recipient,
             String originalSubject,
             Ticket ticket
@@ -764,10 +764,9 @@ public final class EmailServiceHelper {
         reply.setRecipient(Message.RecipientType.TO, new InternetAddress(recipient));
         reply.setSubject("Re: " + originalSubject);
         reply.setText(
-                "Your ticket has been cancelled successfully.\n\n" +
+                "Your ticket has been deleted successfully.\n\n" +
                         "Ticket ID: " + ticket.getIdTicket() + "\n" +
-                        "Title: " + ticket.getTitle() + "\n" +
-                        "Status: " + ticket.getStatus()
+                        "Title: " + ticket.getTitle()
         );
 
         Transport.send(reply);

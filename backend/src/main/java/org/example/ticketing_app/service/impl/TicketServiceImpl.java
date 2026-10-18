@@ -4,7 +4,13 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.text.similarity.JaroWinklerSimilarity;
 import org.example.ticketing_app.entity.Ticket;
+import org.example.ticketing_app.entity.TicketAssignment;
+import org.example.ticketing_app.entity.TicketAttachment;
+import org.example.ticketing_app.entity.TicketComment;
 import org.example.ticketing_app.entity.User;
+import org.example.ticketing_app.mapper.TicketAssignmentMapper;
+import org.example.ticketing_app.mapper.TicketAttachmentMapper;
+import org.example.ticketing_app.mapper.TicketCommentMapper;
 import org.example.ticketing_app.mapper.TicketMapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.example.ticketing_app.service.emailServiceHelper.EmailData;
@@ -76,6 +82,9 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
     );
 
     private final UserServiceImpl userService;
+    private final TicketAssignmentMapper ticketAssignmentMapper;
+    private final TicketAttachmentMapper ticketAttachmentMapper;
+    private final TicketCommentMapper ticketCommentMapper;
 
     /**
      * Creates a ticket submitted manually from the app.
@@ -212,11 +221,12 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
     }
 
     /**
-     * Cancels an open ticket without deleting its assignments, comments, or attachments.
-     * Only the email address that created the ticket may request the cancellation.
+     * Permanently deletes an open ticket and only its direct dependent records.
+     * Reports are intentionally retained because they are historical records and do not reference Ticket ID.
+     * Only the email address that created the ticket may request the deletion.
      */
     @Transactional
-    public Ticket cancelTicketFromEmail(EmailData emailData) {
+    public Ticket deleteTicketFromEmail(EmailData emailData) {
         if (!isCancelTicketEmail(emailData) || emailData.getFrom() == null || emailData.getFrom().isBlank()) {
             return null;
         }
@@ -234,8 +244,22 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
             return null;
         }
 
-        ticket.setStatus(TicketStatus.CANCELLED.name());
-        updateById(ticket);
+        Integer targetTicketId = ticket.getIdTicket();
+
+        // Remove child rows first so foreign-key constraints continue to protect other tickets.
+        ticketCommentMapper.delete(
+                new LambdaQueryWrapper<TicketComment>()
+                        .eq(TicketComment::getTicketIdticket, targetTicketId)
+        );
+        ticketAttachmentMapper.delete(
+                new LambdaQueryWrapper<TicketAttachment>()
+                        .eq(TicketAttachment::getTicketId, targetTicketId)
+        );
+        ticketAssignmentMapper.delete(
+                new LambdaQueryWrapper<TicketAssignment>()
+                        .eq(TicketAssignment::getTicketId, targetTicketId)
+        );
+        removeById(targetTicketId);
         return ticket;
     }
 
