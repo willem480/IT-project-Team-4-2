@@ -37,7 +37,7 @@ class UserProfile {
         totalEarningsThisMonth: json["totalEarningsThisMonth"],
         numberOfEarningsThisMonth: json["numberOfEarningsThisMonth"],
         percentageEarningsCompareToLastMonth: json["percentageEarningsCompareToLastMonth"],
-        description: json["description"],
+        description: json["description"] ?? 'no description',
     );
 
     Map<String, dynamic> toJson() => {
