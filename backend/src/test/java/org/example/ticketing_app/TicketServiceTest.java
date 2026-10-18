@@ -282,6 +282,50 @@ public class TicketServiceTest {
         ticket8.setEmail("john@example.com");
         ticket8.setStatus(TicketStatus.CLOSED.name());
 
+        Ticket ticket9 = new Ticket();
+        ticket9.setIdTicket(9);
+        ticket9.setPosterId(1001);
+        ticket9.setTitle("Conference room setup");
+        ticket9.setDescription("Arrange tables and equipment for workshop.");
+        ticket9.setDatePosted(LocalDateTime.of(2026, 9, 18, 9, 0));
+        ticket9.setLocation("Building G");
+        ticket9.setPay(45);
+        ticket9.setEmail("john@example.com");
+        ticket9.setStatus(TicketStatus.OPEN.name());
+
+        Ticket ticket10 = new Ticket();
+        ticket10.setIdTicket(10);
+        ticket10.setPosterId(1002);
+        ticket10.setTitle("Monitor installation");
+        ticket10.setDescription("Install dual monitors at employee workstation.");
+        ticket10.setDatePosted(LocalDateTime.of(2026, 9, 18, 11, 0));
+        ticket10.setLocation("Building B");
+        ticket10.setPay(35);
+        ticket10.setEmail("alice@example.com");
+        ticket10.setStatus(TicketStatus.OPEN.name());
+
+        Ticket ticket11 = new Ticket();
+        ticket11.setIdTicket(11);
+        ticket11.setPosterId(1003);
+        ticket11.setTitle("WiFi coverage check");
+        ticket11.setDescription("Investigate weak WiFi signal in meeting rooms.");
+        ticket11.setDatePosted(LocalDateTime.of(2026, 9, 19, 8, 30));
+        ticket11.setLocation("Building C");
+        ticket11.setPay(55);
+        ticket11.setEmail("bob@example.com");
+        ticket11.setStatus(TicketStatus.OPEN.name());
+
+        Ticket ticket12 = new Ticket();
+        ticket12.setIdTicket(12);
+        ticket12.setPosterId(1002);
+        ticket12.setTitle("Desktop cleanup");
+        ticket12.setDescription("Remove unused files and organize workstation.");
+        ticket12.setDatePosted(LocalDateTime.of(2026, 9, 19, 13, 15));
+        ticket12.setLocation("Building D");
+        ticket12.setPay(25);
+        ticket12.setEmail("alice@example.com");
+        ticket12.setStatus(TicketStatus.OPEN.name());
+
         ticket8.setDateCompleted(
                 LocalDateTime.of(2026, 9, 17, 10, 0));
 
@@ -294,7 +338,6 @@ public class TicketServiceTest {
         ticket7.setDateCompleted(
                 LocalDateTime.of(2026, 9, 18, 14, 0));
 
-        ticketMapper.insertOrUpdate(ticket8);
         ticketMapper.insertOrUpdate(ticket1);
         ticketMapper.insertOrUpdate(ticket2);
         ticketMapper.insertOrUpdate(ticket3);
@@ -302,6 +345,11 @@ public class TicketServiceTest {
         ticketMapper.insertOrUpdate(ticket5);
         ticketMapper.insertOrUpdate(ticket6);
         ticketMapper.insertOrUpdate(ticket7);
+        ticketMapper.insertOrUpdate(ticket8);
+        ticketMapper.insertOrUpdate(ticket9);
+        ticketMapper.insertOrUpdate(ticket10);
+        ticketMapper.insertOrUpdate(ticket11);
+        ticketMapper.insertOrUpdate(ticket12);
 
         // Ticket Assignments
 
