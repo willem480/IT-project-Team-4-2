@@ -39,15 +39,16 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
   TextEditingController commentController = TextEditingController();
 
 //Getting comment
-  Future<void> fetchComment() async{
-    final url = Uri.parse("http://127.0.0.1:8080/ticketComment/getTicketComments");
+  Future<void> fetchComment() async {
+    final url = Uri.parse("http://127.0.0.1:8080/ticketComment/getTicketComments?ticketId=${widget.ticketId}");
 
-    try{
-      final response = await http.post(url, 
+    try {
+      final response = await http.post(
+        url,
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "ticketIdticket":widget.ticketId,
-        }));
+        body: jsonEncode({}), //
+      );
+
       if(response.statusCode == 200){
         var decodedData= json.decode(response.body);
         List<ticketComment> tempList = [];
@@ -62,34 +63,40 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
           commentList = tempList;
         });
       }
-    }
-    catch(e){
-      print("fail to get a comment");
+    } catch(e) {
+      print("💥 fail to get a comment: $e");
     }
   }
 
-  Future<void> postNewComment()async{
-    if(commentController.text.trim().isEmpty) return; //if it is empty then no send
-    final url = Uri.parse("http://127.0.0.1:8080/ticketComment/postComment");
-    try{
+  Future<void> postNewComment() async {
+    if (commentController.text.trim().isEmpty) return;
+    print("🚀 正在发送评论...");
+
+
+    final url = Uri.parse("http://127.0.0.1:8080/ticketComment/postComment?userId=${widget.currentUserId}&ticketId=${widget.ticketId}&comment=${commentController.text}");
+
+    try {
       final response = await http.post(
         url,
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "ticketIdticket":widget.ticketId,
-          "userIduser": 1,
-          "content": commentController.text,
-        })
+        body: jsonEncode({}), // 💡
       );
 
-      if (response.statusCode == 200){
-        print("success");
+      print("📡 Post comment 状态码: ${response.statusCode}");
+
+      if (response.statusCode == 200) {
         commentController.clear();
         fetchComment();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("✅ 评论发表成功！")),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("发表失败，状态码: ${response.statusCode}")),
+        );
       }
-    }
-    catch(e){
-      print("fail to post a comment");
+    } catch (e) {
+      print("💥 发送评论异常: $e");
     }
   }
 

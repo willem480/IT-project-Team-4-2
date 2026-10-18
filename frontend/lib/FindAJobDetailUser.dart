@@ -37,16 +37,16 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
   List<ticketComment> commentList = [];
   TextEditingController commentController = TextEditingController();
 
-//Getting comment
-  Future<void> fetchComment() async{
-    final url = Uri.parse("http://127.0.0.1:8080/ticketComment/getTicketComments");
+  Future<void> fetchComment() async {
+    final url = Uri.parse("http://127.0.0.1:8080/ticketComment/getTicketComments?ticketId=${widget.ticketId}");
 
-    try{
-      final response = await http.post(url, 
+    try {
+      final response = await http.post(
+        url,
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "ticketIdticket":widget.ticketId,
-        }));
+        body: jsonEncode({}), //
+      );
+
       if(response.statusCode == 200){
         var decodedData= json.decode(response.body);
         List<ticketComment> tempList = [];
@@ -61,34 +61,40 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
           commentList = tempList;
         });
       }
-    }
-    catch(e){
-      print("fail to get a comment");
+    } catch(e) {
+      print("💥 fail to get a comment: $e");
     }
   }
 
-  Future<void> postNewComment()async{
-    if(commentController.text.trim().isEmpty) return; //if it is empty then no send
-    final url = Uri.parse("http://127.0.0.1:8080/ticketComment/postComment");
-    try{
+  Future<void> postNewComment() async {
+    if (commentController.text.trim().isEmpty) return;
+    print("🚀 正在发送评论...");
+
+
+    final url = Uri.parse("http://127.0.0.1:8080/ticketComment/postComment?userId=${widget.currentUserId}&ticketId=${widget.ticketId}&comment=${commentController.text}");
+
+    try {
       final response = await http.post(
         url,
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "ticketIdticket":widget.ticketId,
-          "userIduser": 1,
-          "content": commentController.text,
-        })
+        body: jsonEncode({}), // 💡
       );
 
-      if (response.statusCode == 200){
-        print("success");
+      print("📡 Post comment 状态码: ${response.statusCode}");
+
+      if (response.statusCode == 200) {
         commentController.clear();
         fetchComment();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("✅ 评论发表成功！")),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("发表失败，状态码: ${response.statusCode}")),
+        );
       }
-    }
-    catch(e){
-      print("fail to post a comment");
+    } catch (e) {
+      print("💥 发送评论异常: $e");
     }
   }
 
@@ -195,30 +201,38 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
         child: SizedBox(
           width: 200,
           height: 56,
-          child: FloatingActionButton(
-          onPressed: () async{
-            final url = Uri.parse("http://127.0.0.1:8080/ticketAssignment/delegateJobIndividual");
-            
-            try{
+          child: FloatingActionButton(onPressed: () async {
+            print("🚀 正在点击 Accept 按钮...");
+
+            final url = Uri.parse("http://127.0.0.1:8080/ticketAssignment/delegateJobIndividual?ticketId=${widget.ticketId}&assigneeId=${widget.currentUserId}");
+
+            try {
               final response = await http.post(
                 url,
-                headers:{"Content-Type": "application/json"},
-                body: jsonEncode({
-                  "ticketId": widget.ticketId,
-                  "assigneeId": 1, 
-                  "teamId": null
-                }));
-                if (response.statusCode == 200){
-                  print("job has been accepted successfully");
-                  Navigator.pushAndRemoveUntil(
-                    context, MaterialPageRoute(builder: (context) =>  MyHomePage(title: 'Find a job', currentUserId: widget.currentUserId)), 
-                    (Route<dynamic> route) => false);
-                }
-                else{print("fail accept");}
+                headers: {"Content-Type": "application/json"},
+                body: jsonEncode({}), // 💡 body
+              );
 
-            }
-            catch(e){
-              print("network request error");
+              print("📡 Accept 状态码: ${response.statusCode}");
+              print("📦 Accept 返回: ${response.body}");
+
+              if (response.statusCode == 200) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("✅ 接受任务成功！")),
+                );
+
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => MyHomePage(title: 'Find a job', currentUserId: widget.currentUserId)),
+                      (Route<dynamic> route) => false,
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("接受任务失败，状态码: ${response.statusCode}")),
+                );
+              }
+            } catch (e) {
+              print("💥 接受任务网络异常: $e");
             }
           },
           backgroundColor: Colors.lightGreen,

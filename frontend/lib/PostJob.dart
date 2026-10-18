@@ -40,6 +40,7 @@ class _PostJobPageState extends State<PostJob> {
 
    
     Map<String, dynamic> requestData = {
+      'posterId': widget.currentUserId,
       "title": nameController.text, 
       "email": emailController.text,
       "location": addressController.text, 
@@ -53,7 +54,6 @@ class _PostJobPageState extends State<PostJob> {
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
-       
         body: jsonEncode(requestData), 
       );
 
@@ -66,6 +66,7 @@ class _PostJobPageState extends State<PostJob> {
         );
       } else {
         print("❌ 提交失败，状态码: ${response.statusCode}");
+        print("📦 后端返回的错误详情: ${response.body}");
       }
     } catch (e) {
       print("💥 请求发生错误: $e");

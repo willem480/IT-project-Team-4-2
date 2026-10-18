@@ -72,7 +72,9 @@
     }
 
     Future<void> updateProfileDescription(String newDescription) async{
-        final url = Uri.parse('http://127.0.0.1:8080/user/updateUser');
+        final url = Uri.parse(
+            'http://127.0.0.1:8080/user/updateUser?id=${widget.userId}&name=${Uri.encodeComponent(userName)}&email=${Uri.encodeComponent(userEmail)}&description=${Uri.encodeComponent(newDescription)}'
+        );
 
       try{
         //Post
@@ -80,9 +82,6 @@
           url,
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({
-            'name': userName,
-            'email': userEmail,
-            'description': newDescription
             }),
         );
 
@@ -92,7 +91,8 @@
           setState(() {
             userDescription = newDescription;
           });
-          
+
+
         }
         else{
           print("fail update description ");
@@ -101,7 +101,7 @@
       }catch(e){
         print("network request error");
       }
-    }  
+    }
 
     void fetchPostedTickets(String filterType) async {
 
@@ -384,14 +384,16 @@
             ),
           ],
         ),
-        
-            bottomNavigationBar: BottomAppBar(
+
+// Bottom Navigation Bar with highlighted "My Profile" tab and shadow effect
+        bottomNavigationBar: BottomAppBar(
           color: Colors.white,
           shape: const CircularNotchedRectangle(),
           notchMargin: 8.0,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
+              // Unselected Organization Tab
               TextButton.icon(
                 onPressed: () {
                   Navigator.pushReplacement(
@@ -400,19 +402,35 @@
                       builder: (context) => OrganisationPage(userId: widget.userId),
                     ),
                   );
-                }, 
-                icon: Icon(Icons.bookmark_border, size: 25, color: Colors.black), 
-                label: Text('Organization', style: TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.bold)),
+                },
+                icon: const Icon(Icons.bookmark_border, size: 25, color: Colors.grey),
+                label: const Text('Organization', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500)),
               ),
-    
+
               const SizedBox(width: 60),
-              TextButton.icon(
-                onPressed: () {}, 
-                icon: Icon(Icons.person_2_outlined, size: 25, color: Colors.black), 
-                label: Text('My Profile', style: TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.bold)),
+
+              // Highlighted My Profile Tab with shadow container wrapper
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.blue.withValues(alpha: 0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: TextButton.icon(
+                  onPressed: () {},
+                  icon: const Icon(Icons.person_2_outlined, size: 25, color: Colors.blue),
+                  label: const Text('My Profile', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+                ),
               ),
             ],
-          )
+          ),
         ),
       );
     }

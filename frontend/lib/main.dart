@@ -414,6 +414,7 @@ void fetchAssignTickets() async {
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
 
       //bottom navigation bar
+// Bottom Navigation Bar with highlighted "Find a Job" tab and shadow effect
       bottomNavigationBar: BottomAppBar(
         color: Colors.white,
         shape: const CircularNotchedRectangle(),
@@ -421,20 +422,44 @@ void fetchAssignTickets() async {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            TextButton.icon(
-              onPressed: () {}, 
-              icon: Icon(Icons.search, color: Colors.black,), 
-              label: Text('Find a Job', style: TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.bold)),
+            // Highlighted Find a Job Tab with shadow container wrapper
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.blue.withValues(alpha: 0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: TextButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.search, size: 25, color: Colors.blue),
+                label: const Text('Find a Job', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+              ),
             ),
-  
+
             const SizedBox(width: 60),
+
+            // Unselected Accept a Job Tab (navigates to AcceptJobPage)
             TextButton.icon(
-              onPressed: () {Navigator.push(context, MaterialPageRoute(builder: (context) => AcceptJobPage(userId: widget.currentUserId,)),);}, 
-              icon: Icon(Icons.check_circle_outlined, color: Colors.black,), 
-              label: Text('Accept a Job', style: TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.bold)),
+              onPressed: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (context) => AcceptJobPage(userId: widget.currentUserId),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.check_circle_outlined, size: 25, color: Colors.grey),
+              label: const Text('Accept a Job', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500)),
             ),
           ],
-        )
+        ),
       ),
 
 
