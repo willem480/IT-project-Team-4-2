@@ -243,7 +243,7 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
     }
 
     @Transactional
-    public void delegateJobIndividual(Integer ticketID, Integer assigneeID,  int teamId) {
+    public void delegateJobIndividual(Integer ticketID, Integer assigneeID, Integer teamId) {
         TicketAssignment ticketAssignment = lambdaQuery().eq(TicketAssignment::getTicketId, ticketID).eq(TicketAssignment::getAssigneeId, assigneeID).one();
         if (ticketAssignment == null) {
             ticketAssignment = new TicketAssignment();
