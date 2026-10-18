@@ -11,6 +11,23 @@ const _ink = Color(0xFF111827);
 const _muted = Color(0xFF6B7280);
 const _border = Color(0xFFE5E7EB);
 
+enum _JobSort { time, pay, status }
+
+class _RelatedTeam {
+  const _RelatedTeam({
+    required this.id,
+    required this.name,
+    this.organizationName = '',
+    this.canManage = false,
+  });
+
+  // A null ID represents the "All accepted jobs" menu option.
+  final int? id;
+  final String name;
+  final String organizationName;
+  final bool canManage;
+}
+
 // Keep the existing entry point so callers do not need routing changes.
 // ignore: camel_case_types
 class Acceptjob extends AcceptJobPage {
@@ -65,6 +82,228 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
   List<TicketModel> _tickets = [];
   bool _isLoading = true;
   String? _error;
+  final _searchController = TextEditingController();
+  String _keyword = '';
+  _JobSort? _sortBy;
+  bool _isAscending = true;
+  _RelatedTeam? _selectedTeam;
+  bool _isLoadingTeams = false;
+  int _jobsRequestId = 0;
+  int _teamsRequestId = 0;
+
+  // The backend exposes three independent queries, so selecting one replaces
+  // the previous query rather than displaying conditions it cannot apply.
+  void _toggleSort(_JobSort sortBy) {
+    _searchController.clear();
+    setState(() {
+      _isAscending = _sortBy == sortBy ? !_isAscending : true;
+      _sortBy = sortBy;
+      _keyword = '';
+      _selectedTeam = null;
+    });
+    _fetchAcceptedJobs();
+  }
+
+  String _sortLabel(_JobSort sortBy) {
+    if (_sortBy != sortBy) {
+      return switch (sortBy) {
+        _JobSort.time => 'Time',
+        _JobSort.pay => 'Pay',
+        _JobSort.status => 'Status',
+      };
+    }
+    return switch (sortBy) {
+      _JobSort.time =>
+        _isAscending ? 'Time: Oldest first' : 'Time: Newest first',
+      _JobSort.pay => _isAscending ? 'Pay: Low to High' : 'Pay: High to Low',
+      _JobSort.status =>
+        _isAscending ? 'Status: In Progress first' : 'Status: Closed first',
+    };
+  }
+
+  void _submitSearch(String value) {
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _keyword = value.trim();
+      _sortBy = null;
+      _selectedTeam = null;
+    });
+    _fetchAcceptedJobs();
+  }
+
+  void _resetQuery() {
+    _searchController.clear();
+    _submitSearch('');
+  }
+
+  Future<dynamic> _getJson(String path, Map<String, String> parameters) async {
+    final response = await http
+        .get(Uri.http('127.0.0.1:8080', path, parameters))
+        .timeout(const Duration(seconds: 30));
+    if (response.statusCode != 200) {
+      throw Exception('Team lookup failed (${response.statusCode})');
+    }
+    return jsonDecode(response.body);
+  }
+
+  Future<List<_RelatedTeam>> _fetchMyTeams(int userId) async {
+    final organizations = await _getJson('/organization/getOrganizations', {
+      'viewerUserId': '$userId',
+    }) as List;
+    final organizationTeams = await Future.wait(
+      organizations.map((organization) async {
+        final data = await _getJson('/organization/getOrganizationTeams', {
+          'organizationId': '${organization['organizationId']}',
+          'viewerUserId': '$userId',
+        }) as Map<String, dynamic>;
+        return (data['teams'] as List)
+            .map(
+              (team) => _RelatedTeam(
+                id: team['teamId'] as int,
+                name: team['name'] as String,
+                organizationName: organization['name'] as String,
+                canManage: data['canManage'] == true,
+              ),
+            )
+            .toList();
+      }),
+    );
+    final teams = {
+      for (final team in organizationTeams.expand((teams) => teams))
+        team.id: team,
+    }.values.toList();
+    final myTeams = <_RelatedTeam>[];
+    // Bound the number of membership lookups in flight for large team lists.
+    for (var start = 0; start < teams.length; start += 6) {
+      final members = await Future.wait(
+        teams.skip(start).take(6).map((team) async {
+          // Creating a team does not add its manager to the membership table.
+          // Include managed teams as well as teams the current user has joined.
+          if (team.canManage) return team;
+          final data = await _getJson('/team/getTeamMembers', {
+            'teamId': '${team.id}',
+            'viewerUserId': '$userId',
+          }) as Map<String, dynamic>;
+          final belongsToTeam = (data['members'] as List).any(
+            (member) => member['userId'] == userId,
+          );
+          return belongsToTeam ? team : null;
+        }),
+      );
+      myTeams.addAll(members.whereType<_RelatedTeam>());
+    }
+    myTeams.sort((a, b) {
+      final organizationOrder = a.organizationName.toLowerCase().compareTo(
+        b.organizationName.toLowerCase(),
+      );
+      return organizationOrder != 0
+          ? organizationOrder
+          : a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    });
+    return myTeams;
+  }
+
+  Future<void> _openRelatedTeams() async {
+    if (_isLoadingTeams) return;
+    final userId = widget.userId;
+    final requestId = ++_teamsRequestId;
+    setState(() => _isLoadingTeams = true);
+    try {
+      final teams = await _fetchMyTeams(userId);
+      if (!mounted || widget.userId != userId || requestId != _teamsRequestId) {
+        return;
+      }
+      setState(() => _isLoadingTeams = false);
+      final selected = await showModalBottomSheet<_RelatedTeam>(
+        context: context,
+        isScrollControlled: true,
+        builder: (sheetContext) => SafeArea(
+          child: SizedBox(
+            height: MediaQuery.sizeOf(sheetContext).height * 0.6,
+            child: Column(
+              children: [
+                ListTile(
+                  title: const Text(
+                    'Related to',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  trailing: IconButton(
+                    tooltip: 'Close teams',
+                    onPressed: () => Navigator.pop(sheetContext),
+                    icon: const Icon(Icons.close),
+                  ),
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child: ListView(
+                    children: [
+                      ListTile(
+                        title: const Text('All accepted jobs'),
+                        selected: _selectedTeam == null,
+                        onTap: () => Navigator.pop(
+                          sheetContext,
+                          const _RelatedTeam(
+                            id: null,
+                            name: 'All accepted jobs',
+                          ),
+                        ),
+                      ),
+                      if (teams.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Text(
+                            'You do not manage or belong to any teams.',
+                          ),
+                        ),
+                      for (final team in teams)
+                        ListTile(
+                          leading: const Icon(Icons.groups_outlined),
+                          title: Text(team.name),
+                          subtitle: Text(team.organizationName),
+                          selected: _selectedTeam?.id == team.id,
+                          onTap: () => Navigator.pop(sheetContext, team),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      if (!mounted ||
+          selected == null ||
+          widget.userId != userId ||
+          requestId != _teamsRequestId) {
+        return;
+      }
+      _searchController.clear();
+      setState(() {
+        _selectedTeam = selected.id == null ? null : selected;
+        _keyword = '';
+        _sortBy = null;
+      });
+      await _fetchAcceptedJobs();
+    } catch (error) {
+      if (!mounted || widget.userId != userId || requestId != _teamsRequestId) {
+        return;
+      }
+      setState(() => _isLoadingTeams = false);
+      debugPrint('Failed to load teams for user $userId: $error');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Unable to load your teams. Please try again.'),
+          action: SnackBarAction(label: 'Retry', onPressed: _openRelatedTeams),
+        ),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -83,20 +322,41 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
       _fetchUserName();
     }
     if (oldWidget.userId != widget.userId) {
+      _searchController.clear();
+      _keyword = '';
+      _sortBy = null;
+      _selectedTeam = null;
+      _isLoadingTeams = false;
+      _teamsRequestId++;
       _fetchAcceptedJobs();
     }
   }
 
   Future<void> _fetchAcceptedJobs() async {
     final userId = widget.userId;
+    final requestId = ++_jobsRequestId;
     setState(() {
       _isLoading = true;
       _error = null;
       _tickets = [];
     });
-    final url = Uri.parse(
-      'http://127.0.0.1:8080/ticketAssignment/getAcceptedJobsWithFilter',
-    ).replace(queryParameters: {'assigneeID': '$userId'});
+    var endpoint = 'getAcceptedJobsWithFilter';
+    final parameters = {'assigneeID': '$userId'};
+    if (_keyword.isNotEmpty) {
+      endpoint = 'getAcceptedJobsKeyWord';
+      parameters['keyword'] = _keyword;
+    } else if (_selectedTeam != null) {
+      endpoint = 'getAcceptedJobsRelatedTo';
+      parameters['teamID'] = '${_selectedTeam!.id}';
+    } else if (_sortBy != null) {
+      parameters['filter'] =
+          '${_sortBy!.name}${_isAscending ? 'Ascending' : 'Descending'}';
+    }
+    final url = Uri.http(
+      '127.0.0.1:8080',
+      '/ticketAssignment/$endpoint',
+      parameters,
+    );
     http.Response? response;
 
     try {
@@ -112,10 +372,13 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
       }
       final tickets = decoded
           .map<TicketModel>(
-            (item) => TicketModel.fromJson(Map<String, dynamic>.from(item as Map)),
+            (item) =>
+                TicketModel.fromJson(Map<String, dynamic>.from(item as Map)),
           )
           .toList();
-      if (!mounted || widget.userId != userId) return;
+      if (!mounted || widget.userId != userId || requestId != _jobsRequestId) {
+        return;
+      }
       setState(() {
         _tickets = tickets;
         _isLoading = false;
@@ -127,7 +390,9 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
         debugPrint('Response body: ${response.body}');
       }
       debugPrintStack(stackTrace: stackTrace);
-      if (!mounted || widget.userId != userId) return;
+      if (!mounted || widget.userId != userId || requestId != _jobsRequestId) {
+        return;
+      }
       setState(() {
         _error = 'Unable to load accepted jobs. Please try again later.';
         _isLoading = false;
@@ -138,7 +403,10 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
   Future<void> _openAcceptedJob(TicketModel ticket) async {
     final changed = await Navigator.push<bool>(
       context,
-      MaterialPageRoute(builder: (context) => AcceptedJobDetail(ticket: ticket, userId: widget.userId)),
+      MaterialPageRoute(
+        builder: (context) =>
+            AcceptedJobDetail(ticket: ticket, userId: widget.userId),
+      ),
     );
     if (!mounted || changed != true) return;
     await _fetchAcceptedJobs();
@@ -150,11 +418,26 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
     }
     if (_error != null) {
       return Center(
-        child: Text(_error!, style: const TextStyle(color: _muted)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(_error!, style: const TextStyle(color: _muted)),
+            TextButton(
+              onPressed: _fetchAcceptedJobs,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
       );
     }
     if (_tickets.isEmpty) {
-      return const Center(child: Text('No accepted jobs'));
+      return Center(
+        child: Text(
+          _selectedTeam == null
+              ? 'No accepted jobs'
+              : 'No accepted jobs for this team',
+        ),
+      );
     }
     return ListView.builder(
       padding: EdgeInsets.zero,
@@ -224,7 +507,16 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
                           ),
                         ),
                         const SizedBox(height: 20),
-                        const _SearchField(),
+                        _SearchField(
+                          controller: _searchController,
+                          onSubmitted: _submitSearch,
+                          onCleared: _resetQuery,
+                          onChanged: (value) {
+                            if (value.isEmpty && _keyword.isNotEmpty) {
+                              _submitSearch('');
+                            }
+                          },
+                        ),
                         const SizedBox(height: 16),
                         IntrinsicHeight(
                           child: Row(
@@ -257,7 +549,38 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
-                          children: [const _FilterButton(label: 'Time')],
+                          children: [
+                            for (final sort in _JobSort.values)
+                              _FilterButton(
+                                label: _sortLabel(sort),
+                                isActive: _sortBy == sort,
+                                icon: _sortBy != sort
+                                    ? Icons.unfold_more
+                                    : _isAscending
+                                    ? Icons.arrow_upward
+                                    : Icons.arrow_downward,
+                                onPressed: () => _toggleSort(sort),
+                              ),
+                            _FilterButton(
+                              label: _isLoadingTeams
+                                  ? 'Loading teams...'
+                                  : _selectedTeam == null
+                                  ? 'Related to'
+                                  : 'Related to: ${_selectedTeam!.name}',
+                              isActive: _selectedTeam != null,
+                              icon: Icons.keyboard_arrow_down,
+                              onPressed: _isLoadingTeams
+                                  ? null
+                                  : _openRelatedTeams,
+                            ),
+                            if (_sortBy != null ||
+                                _keyword.isNotEmpty ||
+                                _selectedTeam != null)
+                              TextButton(
+                                onPressed: _resetQuery,
+                                child: const Text('Reset'),
+                              ),
+                          ],
                         ),
                         const SizedBox(height: 20),
                         Row(
@@ -265,7 +588,11 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
                           children: [
                             Flexible(
                               child: Text(
-                                'Assigned to you',
+                                _keyword.isNotEmpty
+                                    ? 'Results for “$_keyword”'
+                                    : _selectedTeam != null
+                                    ? 'Related to ${_selectedTeam!.name}'
+                                    : 'Assigned to you',
                                 style: TextStyle(
                                   color: _ink,
                                   fontSize: 18,
@@ -299,7 +626,9 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => PostJob(currentUserId:  widget.userId,)),
+            MaterialPageRoute(
+              builder: (context) => PostJob(currentUserId: widget.userId),
+            ),
           );
         },
         backgroundColor: Colors.blue,
@@ -457,29 +786,57 @@ class JobCard extends StatelessWidget {
 }
 
 class _SearchField extends StatelessWidget {
-  const _SearchField();
+  const _SearchField({
+    required this.controller,
+    required this.onSubmitted,
+    required this.onCleared,
+    required this.onChanged,
+  });
+
+  final TextEditingController controller;
+  final ValueChanged<String> onSubmitted;
+  final VoidCallback onCleared;
+  final ValueChanged<String> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
-      style: const TextStyle(color: _ink, fontSize: 14),
-      decoration: InputDecoration(
-        hintText: 'Search tickets, assignees, or locations...',
-        hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
-        prefixIcon: const Icon(Icons.search, color: Color(0xFF9CA3AF)),
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(32),
-          borderSide: const BorderSide(color: _border),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(32),
-          borderSide: const BorderSide(color: Colors.blue),
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: controller,
+      builder: (context, value, child) => TextField(
+        controller: controller,
+        textInputAction: TextInputAction.search,
+        onSubmitted: onSubmitted,
+        onChanged: onChanged,
+        style: const TextStyle(color: _ink, fontSize: 14),
+        decoration: InputDecoration(
+          hintText: 'Search ticket titles or descriptions...',
+          hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
+          prefixIcon: IconButton(
+            tooltip: 'Search accepted jobs',
+            onPressed: () => onSubmitted(controller.text),
+            icon: const Icon(Icons.search, color: Color(0xFF9CA3AF)),
+          ),
+          suffixIcon: value.text.isEmpty
+              ? null
+              : IconButton(
+                  tooltip: 'Clear search',
+                  onPressed: onCleared,
+                  icon: const Icon(Icons.close),
+                ),
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(32),
+            borderSide: const BorderSide(color: _border),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(32),
+            borderSide: const BorderSide(color: Colors.blue),
+          ),
         ),
       ),
     );
@@ -521,36 +878,34 @@ class _StatusSummaryCard extends StatelessWidget {
 }
 
 class _FilterButton extends StatelessWidget {
-  const _FilterButton({required this.label});
+  const _FilterButton({
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+    this.isActive = false,
+  });
 
   final String label;
+  final IconData icon;
+  final VoidCallback? onPressed;
+  final bool isActive;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(minHeight: 48),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: _border),
+    return OutlinedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 16),
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size(0, 48),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        backgroundColor: isActive ? const Color(0xFFEFF6FF) : Colors.white,
+        foregroundColor: isActive ? Colors.blue : _ink,
+        side: BorderSide(color: isActive ? Colors.blue : Colors.grey),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Flexible(
-            child: Text(
-              label,
-              style: const TextStyle(
-                color: _ink,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          const SizedBox(width: 6),
-          const Icon(Icons.keyboard_arrow_down, size: 18, color: _muted),
-        ],
+      label: Text(
+        label,
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
       ),
     );
   }
