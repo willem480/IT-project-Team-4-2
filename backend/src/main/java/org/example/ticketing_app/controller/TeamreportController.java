@@ -24,7 +24,7 @@ public class TeamreportController {
     private final TeamReportServiceImpl teamReportService;
 
     @PostMapping("generateTeamReport")
-    public TeamReport generateTeamReport(@RequestParam int teamId) {
-        return teamReportService.generateReport(teamId);
+    public TeamReport generateTeamReport(@RequestParam int managerId, @RequestParam int teamId, @RequestParam boolean emailCopy) {
+        return teamReportService.generateReport(managerId, teamId, emailCopy);
     }
 }

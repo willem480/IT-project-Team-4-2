@@ -458,14 +458,14 @@ public class TicketServiceTest {
     }
 
     @Test
-    void reportTest(){
+    void reportTest() throws Exception {
         MemberReport report =
                 memberReportService.generateTeamMemberReport(
-                        2001,
-                        4
-                );
-        TeamReport teamReport = teamReportService.generateReport(3);
-        OrganizationReport organizationReport = organizationReportService.generateReport(1);
+                        1001, 2001,
+                        4,
+                false);
+        TeamReport teamReport = teamReportService.generateReport(1001, 4, false);
+        OrganizationReport organizationReport = organizationReportService.generateReport(1001, 1, false);
         System.out.println(report.getBody());
     }
 

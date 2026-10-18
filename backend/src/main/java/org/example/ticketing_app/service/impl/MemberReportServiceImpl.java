@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.ticketing_app.entity.*;
 import org.example.ticketing_app.mapper.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import org.example.ticketing_app.service.emailServiceHelper.EmailServiceHelper;
 import org.example.ticketing_app.service.ticketServiceHelper.TicketStatus;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -35,7 +36,7 @@ public class MemberReportServiceImpl extends ServiceImpl<MemberReportMapper, Mem
     private final TicketMapper ticketMapper;
 
     @Transactional
-    public MemberReport generateTeamMemberReport(int userId, int teamId) {
+    public MemberReport generateTeamMemberReport(int managerId, int userId, int teamId, boolean emailCopy) throws Exception {
 
         TeamMember teamMember = teamMemberMapper.selectOne(
                 new LambdaQueryWrapper<TeamMember>()
@@ -211,7 +212,14 @@ public class MemberReportServiceImpl extends ServiceImpl<MemberReportMapper, Mem
         );
 
         save(report);
-
+        if (emailCopy) {
+            try {
+                User manager = userMapper.selectById(managerId);
+                EmailServiceHelper.sendReply(manager.getEmail(), report.getTitle(), report.getBody());
+            } catch (Exception e) {
+                throw new ResponseStatusException(BAD_REQUEST, e.getMessage());
+            }
+        }
         return report;
     }
 }
