@@ -315,13 +315,10 @@ public final class EmailServiceHelper {
         }
     }
 
-    public static void sendDummyReply(
-            String smtpHost,
-            int smtpPort,
-            String smtpUsername,
-            String smtpPassword,
+    public static void sendReply(
             String recipient,
-            String originalSubject
+            String subject,
+             String body
     ) throws Exception {
 
         Properties props = new Properties();
@@ -361,11 +358,11 @@ public final class EmailServiceHelper {
         );
 
         reply.setSubject(
-                "Re: " + originalSubject
+                subject
         );
 
         reply.setText(
-                "Automated test reply."
+                body
         );
 
         Transport.send(reply);

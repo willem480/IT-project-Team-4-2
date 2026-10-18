@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
  * </p>
  *
  * @author Yucong
- * @since 2026-10-05
+ * @since 2026-10-18
  */
 @Getter
 @Setter
@@ -29,11 +29,11 @@ public class MemberReport implements Serializable {
     @TableId(value = "idMemberReport", type = IdType.AUTO)
     private Integer idMemberReport;
 
-    private Integer teammemberId;
-
     private String title;
 
     private String body;
 
     private LocalDateTime dateGenerated;
+
+    private Integer teammemberId;
 }

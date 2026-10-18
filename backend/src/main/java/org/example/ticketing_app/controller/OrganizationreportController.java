@@ -24,7 +24,7 @@ public class OrganizationreportController {
     private final OrganizationReportServiceImpl organizationReportService;
 
     @PostMapping("generateOrganizationReport")
-    public OrganizationReport generateOrganizationReport(@RequestParam int organizationId) {
-        return organizationReportService.generateReport(organizationId);
+    public OrganizationReport generateOrganizationReport(@RequestParam int managerId, @RequestParam int organizationId, @RequestParam boolean emailCopy) throws Exception {
+        return organizationReportService.generateReport(managerId, organizationId, emailCopy);
     }
 }

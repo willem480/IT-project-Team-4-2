@@ -8,14 +8,13 @@ import lombok.ToString;
 
 import java.io.Serializable;
 
-
 /**
  * <p>
  * 
  * </p>
  *
  * @author Yucong
- * @since 2026-10-05
+ * @since 2026-10-18
  */
 @Getter
 @Setter
@@ -32,5 +31,4 @@ public class User implements Serializable {
     private String email;
 
     private String description;
-
 }

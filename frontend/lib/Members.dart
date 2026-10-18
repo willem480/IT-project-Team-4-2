@@ -5,40 +5,31 @@ import 'package:http/http.dart' as http;
 
 import 'Admin.dart';
 import 'Profile.dart';
-import 'models/organisation_members_model.dart';
 import 'models/team_members_model.dart';
 
 class MembersPage extends StatefulWidget {
   const MembersPage({
     super.key,
-    this.organisationId,
-    this.teamId,
+    required this.teamId,
     required this.userId,
     required this.isManager,
-  }) : assert(
-         (organisationId == null) != (teamId == null),
-         'Provide exactly one of organisationId or teamId.',
-       );
+  });
 
-  final int? organisationId;
-  final int? teamId;
+  final int teamId;
   final int userId;
   // Retained for existing callers; the members API determines permission.
   final bool isManager;
-
-  bool get isOrganisationView => organisationId != null;
 
   @override
   State<MembersPage> createState() => _MembersPageState();
 }
 
 class _MembersPageState extends State<MembersPage> {
-  List<({int? teamMemberId, String name, String email, String teamName})>
-  members = [];
+  List<({int? teamMemberId, String name, String email})> members = [];
   bool canManage = false;
   bool _isLoading = true;
   String? _errorMessage;
-  // Used for Team Member Admin navigation, not to determine the page source.
+  // Used for Team Member Admin navigation.
   int? _organizationId;
 
   static const _avatarColors = [
@@ -61,9 +52,7 @@ class _MembersPageState extends State<MembersPage> {
 
   void fetchMembers() async {
     final url = Uri.parse(
-      widget.isOrganisationView
-          ? 'http://127.0.0.1:8080/organization/getOrganizationMembers?organizationId=${widget.organisationId}&viewerUserId=${widget.userId}'
-          : 'http://127.0.0.1:8080/team/getTeamMembers?teamId=${widget.teamId}&viewerUserId=${widget.userId}',
+      'http://127.0.0.1:8080/team/getTeamMembers?teamId=${widget.teamId}&viewerUserId=${widget.userId}',
     );
 
     try {
@@ -77,41 +66,21 @@ class _MembersPageState extends State<MembersPage> {
         if (parsedResponse is! Map<String, dynamic>) {
           throw const FormatException('Invalid members response.');
         }
-        final teamResponse = widget.isOrganisationView
-            ? null
-            : TeamMembersResponse.fromJson(parsedResponse);
-        final organisationResponse = widget.isOrganisationView
-            ? OrganisationMembersResponse.fromJson(parsedResponse)
-            : null;
-        final parsedMembers = teamResponse != null
-            ? teamResponse.members
-                  .map(
-                    (member) => (
-                      teamMemberId: member.teamMemberId,
-                      name: member.userName,
-                      email: member.email,
-                      teamName: '',
-                    ),
-                  )
-                  .toList()
-            : organisationResponse!.members
-                  .map(
-                    (member) => (
-                      teamMemberId: member.teamMemberId,
-                      name: member.userName,
-                      email: member.email,
-                      teamName: member.teamName,
-                    ),
-                  )
-                  .toList();
+        final teamResponse = TeamMembersResponse.fromJson(parsedResponse);
+        final parsedMembers = teamResponse.members
+            .map(
+              (member) => (
+                teamMemberId: member.teamMemberId,
+                name: member.userName,
+                email: member.email,
+              ),
+            )
+            .toList();
         if (!mounted) return;
         setState(() {
           members = parsedMembers;
-          canManage =
-              teamResponse?.canManage ?? organisationResponse!.canManage;
-          if (teamResponse != null) {
-            _organizationId = teamResponse.organizationId;
-          }
+          canManage = teamResponse.canManage;
+          _organizationId = teamResponse.organizationId;
           _isLoading = false;
           _errorMessage = null;
         });
@@ -135,9 +104,7 @@ class _MembersPageState extends State<MembersPage> {
   }
 
   Future<void> _openAdmin(int teamMemberId) async {
-    final organisationId = widget.isOrganisationView
-        ? widget.organisationId
-        : _organizationId;
+    final organisationId = _organizationId;
     if (organisationId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Unable to determine the organisation.')),
@@ -245,12 +212,10 @@ class _MembersPageState extends State<MembersPage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Flexible(
+                  const Flexible(
                     child: Text(
-                      widget.isOrganisationView
-                          ? 'Organisation Members'
-                          : 'Team Members',
-                      style: const TextStyle(
+                      'Team Members',
+                      style: TextStyle(
                         color: Color(0xFF111827),
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
@@ -278,9 +243,7 @@ class _MembersPageState extends State<MembersPage> {
                             ? 'Loading members...'
                             : _errorMessage ??
                                   (members.isEmpty
-                                      ? (widget.isOrganisationView
-                                            ? 'No members in this organisation yet.'
-                                            : 'No members in this team yet.')
+                                      ? 'No members in this team yet.'
                                       : 'No members match your search.'),
                         style: const TextStyle(color: Color(0xFF6B7280)),
                       ),
@@ -298,9 +261,6 @@ class _MembersPageState extends State<MembersPage> {
                         onManage: _openAdmin,
                         name: visibleMembers[index].name,
                         email: visibleMembers[index].email,
-                        teamName: widget.isOrganisationView
-                            ? visibleMembers[index].teamName
-                            : null,
                         avatarColor:
                             _avatarColors[members.indexOf(
                                   visibleMembers[index],
@@ -323,7 +283,7 @@ class _MembersPageState extends State<MembersPage> {
               child: TextButton.icon(
                 onPressed: () {
                   // Team entry has an extra TeamsPage above Organisation.
-                  final routesToPop = widget.isOrganisationView ? 1 : 2;
+                  const routesToPop = 2;
                   var poppedRoutes = 0;
                   Navigator.popUntil(
                     context,
@@ -351,7 +311,7 @@ class _MembersPageState extends State<MembersPage> {
                   Navigator.pushAndRemoveUntil(
                     context,
                     MaterialPageRoute<void>(
-                      builder: (context) =>  Profile(userId: widget.userId,),
+                      builder: (context) => Profile(userId: widget.userId),
                     ),
                     (route) => route.isFirst,
                   );
@@ -384,7 +344,6 @@ class MemberCard extends StatelessWidget {
     required this.onManage,
     required this.name,
     required this.email,
-    this.teamName,
     required this.avatarColor,
     required this.isManager,
   });
@@ -393,7 +352,6 @@ class MemberCard extends StatelessWidget {
   final ValueChanged<int> onManage;
   final String name;
   final String email;
-  final String? teamName;
   final Color avatarColor;
   final bool isManager;
 
@@ -443,16 +401,6 @@ class MemberCard extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                if (teamName != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    teamName!,
-                    style: const TextStyle(
-                      color: Color(0xFF6B7280),
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
                 const SizedBox(height: 4),
                 Text(
                   email,
