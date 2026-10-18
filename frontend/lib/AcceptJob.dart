@@ -6,6 +6,7 @@ import 'package:ticketing_app/models/ticket_model.dart';
 
 import 'AcceptedJobDetail.dart';
 import 'PostJob.dart';
+import 'Profile.dart';
 
 const _ink = Color(0xFF111827);
 const _muted = Color(0xFF6B7280);
@@ -485,26 +486,57 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Align(
+                        Stack(
                           alignment: Alignment.center,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Good morning,',
-                                style: TextStyle(color: _muted, fontSize: 14),
+                          children: [
+                            Align(
+                              alignment: Alignment.center,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Good morning,',
+                                    style: TextStyle(color: _muted, fontSize: 14),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    _displayName,
+                                    style: const TextStyle(
+                                      color: _ink,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                _displayName,
-                                style: const TextStyle(
-                                  color: _ink,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
+                            ),
+                            Positioned(
+                              right: 0,
+                              child: GestureDetector(
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        Profile(userId: widget.userId),
+                                  ),
+                                ),
+                                child: CircleAvatar(
+                                  radius: 16,
+                                  backgroundColor: Colors.blue,
+                                  child: Text(
+                                    _userName.isNotEmpty
+                                        ? _userName.substring(0, 1).toUpperCase()
+                                        : 'U',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 20),
                         _SearchField(
