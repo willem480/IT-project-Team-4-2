@@ -469,9 +469,42 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
         .length;
 
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFF9FAFB),
+        elevation: 0,
+        title: const Text(
+          'MYTI',
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => Profile(userId: widget.userId),
+                ),
+              ),
+              child: CircleAvatar(
+                radius: 16,
+                backgroundColor: Colors.blue,
+                child: Text(
+                  _displayName.substring(0, 1).toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
           child: LayoutBuilder(
             builder: (context, constraints) => Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -486,59 +519,14 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            Align(
-                              alignment: Alignment.center,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Good morning,',
-                                    style: TextStyle(color: _muted, fontSize: 14),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    _displayName,
-                                    style: const TextStyle(
-                                      color: _ink,
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Positioned(
-                              right: 0,
-                              child: GestureDetector(
-                                onTap: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        Profile(userId: widget.userId),
-                                  ),
-                                ),
-                                child: CircleAvatar(
-                                  radius: 16,
-                                  backgroundColor: Colors.blue,
-                                  child: Text(
-                                    _userName.isNotEmpty
-                                        ? _userName.substring(0, 1).toUpperCase()
-                                        : 'U',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          child: Text(
+                            'Hello, $_displayName',
+                            style: const TextStyle(fontSize: 20),
+                          ),
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 16),
                         _SearchField(
                           controller: _searchController,
                           onSubmitted: _submitSearch,
