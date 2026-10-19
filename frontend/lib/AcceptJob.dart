@@ -7,6 +7,7 @@ import 'package:ticketing_app/models/ticket_model.dart';
 import 'AcceptedJobDetail.dart';
 import 'PostJob.dart';
 import 'Profile.dart';
+import 'main.dart' show MyHomePage;
 
 const _ink = Color(0xFF111827);
 const _muted = Color(0xFF6B7280);
@@ -468,7 +469,6 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
         .length;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
@@ -679,23 +679,55 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
             Flexible(
               child: TextButton.icon(
                 onPressed: () {
-                  Navigator.pop(context);
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (context) => MyHomePage(
+                        title: 'Find a job',
+                        currentUserId: widget.userId,
+                      ),
+                    ),
+                  );
                 },
-                icon: const Icon(Icons.search),
+                icon: const Icon(Icons.search, size: 25, color: Colors.grey),
                 label: const Text(
                   'Find a Job',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ),
             const SizedBox(width: 60),
             Flexible(
-              child: TextButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.check_circle_outlined),
-                label: const Text(
-                  'Accepted Job',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.blue.withValues(alpha: 0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: TextButton.icon(
+                  onPressed: () {},
+                  icon: const Icon(
+                    Icons.check_circle_outlined,
+                    size: 25,
+                    color: Colors.blue,
+                  ),
+                  label: const Text(
+                    'Accepted Job',
+                    style: TextStyle(
+                      color: Colors.blue,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
             ),
