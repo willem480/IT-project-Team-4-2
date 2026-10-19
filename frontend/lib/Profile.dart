@@ -43,7 +43,8 @@
     UserProfile? userProfile;
     List<TicketModel> postedTickets = [];
     List<TicketModel> completedTickets = [];
-    bool isAscending = true;
+    bool isPayAscending = true;
+    bool isDateAscending = true;
 
 
     void fetchFirstUserData() async {
@@ -180,7 +181,7 @@
                 onPressed: () {
                   String newText = editController.text;
                   Navigator.pop(context);
-                  updateProfileDescription(newText); // 调用网络请求去修改
+                  updateProfileDescription(newText);
                 },
                 child: const Text("Save"),
               ),
@@ -318,10 +319,10 @@
                         
                         onPressed:(){
                           setState(() {
-                            isAscending = !isAscending;
+                            isDateAscending = !isDateAscending;
                           }); 
 
-                          String filterValue = isAscending ? 'up' : 'down';
+                          String filterValue = isDateAscending ? 'timeAscending' : 'timeDescending';
                           print("User toggled filter: $filterValue");
                           if(is_Detail_Tab){
                             fetchPostedTickets(filterValue);
@@ -333,13 +334,13 @@
                         },
 
                         icon: Icon(
-                          isAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                          isDateAscending ? Icons.arrow_upward : Icons.arrow_downward,
                           size:  16,
                           color: Colors.black87,
                         ),
 
                         label: Text(
-                          isAscending ? "Date: new to last" : "Date : last to new",
+                            isDateAscending ? "Date: New to Last" : "Date : Last to New",
                           style: const TextStyle(
                             color : Colors.black87,
                             fontWeight: FontWeight.w500,
@@ -353,14 +354,60 @@
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           )
-
-
                         )
 
                       
                         //visual button
                         
                       ),
+                        const SizedBox(width: 20),
+
+                        OutlinedButton.icon(
+
+                            onPressed:(){
+                              setState(() {
+                                isPayAscending = !isPayAscending;
+                              });
+
+                              String filterValue = isPayAscending ? 'payDescending' : 'payAscending';
+                              print("User toggled filter: $filterValue");
+                              if(is_Detail_Tab){
+                                fetchPostedTickets(filterValue);
+                              }
+                              else{
+                                fetchCompletedTickets(filterValue);
+                              }
+
+                            },
+
+                            icon: Icon(
+                              isPayAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                              size:  16,
+                              color: Colors.black87,
+                            ),
+
+                            label: Text(
+                                isPayAscending ? "Pay: High to Low" : "Pay : Low to High",
+                                style: const TextStyle(
+                                  color : Colors.black87,
+                                  fontWeight: FontWeight.w500,
+                                )
+                            ),
+
+                            style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                backgroundColor:  Colors.white,
+                                side: BorderSide(color: Colors.grey),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                )
+                            )
+
+
+                          //visual button
+
+                        ),
+
                       
 
                     

@@ -47,7 +47,8 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   List<TicketModel> openTickets = [];
   String userName = 'Loading...';
-  bool isAscending = true;
+  bool isPayAscending = true;
+  bool isDateAscending = true;
 
   //search function
   void fetchTicketsByKeyword(String keyword) async{
@@ -112,7 +113,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
 void fetchAssignTickets() async {
       
-      final url = Uri.parse('http://127.0.0.1:8080/ticketAssignment/getAcceptedJobsWithFilter');
+      final url = Uri.parse('http://127.0.0.1:8080/ticketAssignment/getAcceptedJobsWithFilter?assigneeID=${widget.currentUserId}');
 
       try {
         final response = await http.post(
@@ -330,22 +331,22 @@ void fetchAssignTickets() async {
                       
                       onPressed:(){
                         setState(() {
-                          isAscending = !isAscending;
+                          isPayAscending = !isPayAscending;
                         }); 
 
-                        String filterValue = isAscending ? 'up' : 'down';
+                        String filterValue = isPayAscending ? 'payDescending' : 'payAscending';
                         print("User toggled filter: $filterValue");
                         fetchOpenTickets(filterValue);
                       },
 
                       icon: Icon(
-                        isAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                        isPayAscending ? Icons.arrow_upward : Icons.arrow_downward,
                         size:  16,
                         color: Colors.black87,
                       ),
 
                       label: Text(
-                        isAscending ? "Pay: Low to High" : "Pay : High to Low",
+                          isPayAscending ? "Pay: High to Low" : "Pay : Low to High",
                         style: const TextStyle(
                           color : Colors.black87,
                           fontWeight: FontWeight.w500,
@@ -359,15 +360,46 @@ void fetchAssignTickets() async {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         )
-
-
-                      )
-
-                    
+                      ),
                       //visual button
-                      
+
+
                     ),
-                    
+                    const SizedBox(width: 20,),
+                    OutlinedButton.icon(
+                        onPressed:(){
+                          setState(() {
+                            isDateAscending = !isDateAscending;
+                          });
+
+                          String filterValue = isDateAscending ? 'timeAscending' : 'timeDescending';
+                          print("User toggled filter: $filterValue");
+                          fetchOpenTickets(filterValue);
+                        },
+
+                        icon: Icon(
+                          isDateAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                          size:  16,
+                          color: Colors.black87,
+                        ),
+
+                        label: Text(
+                            isDateAscending ? "Date: earliest to lastest" : "Date: lastest to earliest",
+                            style: const TextStyle(
+                              color : Colors.black87,
+                              fontWeight: FontWeight.w500,
+                            )
+                        ),
+
+                        style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            backgroundColor:  Colors.white,
+                            side: BorderSide(color: Colors.grey),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            )
+                        )
+                    )
                   ]
                 )
               ),
