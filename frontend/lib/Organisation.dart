@@ -9,15 +9,48 @@ import 'Teams.dart';
 import 'models/organisation_model.dart';
 
 class OrganisationPage extends StatefulWidget {
-  const OrganisationPage({super.key, required this.userId});
+  const OrganisationPage({super.key, required this.userId, this.userName = ''});
 
   final int userId;
+  final String userName;
 
   @override
   State<OrganisationPage> createState() => _OrganisationPageState();
 }
 
 class _OrganisationPageState extends State<OrganisationPage> {
+  String _userName = '';
+
+  String get _displayName => _userName.isEmpty ? 'Loading...' : _userName;
+
+  Future<void> _fetchUserName() async {
+    // Reuse the current user's name when a parent page has already loaded it.
+    if (_userName.isNotEmpty) return;
+    final userId = widget.userId;
+    try {
+      final response = await http
+          .post(
+            Uri.parse(
+              'http://127.0.0.1:8080/profilePage/getUser?userId=$userId',
+            ),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({}),
+          )
+          .timeout(const Duration(seconds: 30));
+      if (response.statusCode != 200) {
+        throw Exception('User profile request failed (${response.statusCode})');
+      }
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final name = (data['name'] as String?)?.trim() ?? '';
+      if (!mounted || widget.userId != userId || _userName.isNotEmpty) return;
+      setState(() => _userName = name.isEmpty ? 'User' : name);
+    } catch (error) {
+      debugPrint('Failed to load greeting name for user $userId: $error');
+      if (!mounted || widget.userId != userId || _userName.isNotEmpty) return;
+      setState(() => _userName = 'User');
+    }
+  }
+
   List<OrganisationModel> organisations = [];
   static const _avatarColors = [Colors.pink, Colors.teal, Colors.red];
 
@@ -28,7 +61,19 @@ class _OrganisationPageState extends State<OrganisationPage> {
   @override
   void initState() {
     super.initState();
+    _userName = widget.userName.trim();
+    _fetchUserName();
     fetchOrganisations();
+  }
+
+  @override
+  void didUpdateWidget(covariant OrganisationPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.userId != widget.userId ||
+        oldWidget.userName != widget.userName) {
+      _userName = widget.userName.trim();
+      _fetchUserName();
+    }
   }
 
   Future<void> fetchOrganisations() async {
@@ -188,6 +233,7 @@ class _OrganisationPageState extends State<OrganisationPage> {
       MaterialPageRoute<void>(
         builder: (context) => TeamsPage(
           userId: widget.userId,
+          userName: _userName,
           organizationId: organisationId,
           organisationName: organisationName,
         ),
@@ -201,6 +247,7 @@ class _OrganisationPageState extends State<OrganisationPage> {
       MaterialPageRoute<void>(
         builder: (context) => AdminPage(
           userId: widget.userId,
+          userName: _userName,
           organisationId: organisation.organizationId,
         ),
       ),
@@ -219,18 +266,21 @@ class _OrganisationPageState extends State<OrganisationPage> {
       appBar: AppBar(
         backgroundColor: const Color(0xFFF9FAFB),
         elevation: 0,
-        title: const Text(
-          'Good morning, Alan',
-          style: TextStyle(color: Colors.black),
+        title: Text(
+          'Good morning, $_displayName',
+          style: const TextStyle(color: Colors.black),
         ),
       ),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text('Good morning, Alan', style: TextStyle(fontSize: 20)),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                'Good morning, $_displayName',
+                style: const TextStyle(fontSize: 20),
+              ),
             ),
             Padding(
               padding: const EdgeInsets.all(16.0),

@@ -455,6 +455,7 @@ public class TicketServiceTest {
     @Test
     void findAJobPageTest(){
         ticketService.getOpenTickets();
+        ticketAssignmentService.delegateJobIndividual(10, 1001, null);
     }
 
     @Test

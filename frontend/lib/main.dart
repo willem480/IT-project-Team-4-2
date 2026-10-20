@@ -47,7 +47,8 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   List<TicketModel> openTickets = [];
   String userName = 'Loading...';
-  bool isAscending = true;
+  bool isPayAscending = true;
+  bool isDateAscending = true;
 
   //search function
   void fetchTicketsByKeyword(String keyword) async{
@@ -112,7 +113,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
 void fetchAssignTickets() async {
       
-      final url = Uri.parse('http://127.0.0.1:8080/ticketAssignment/getAcceptedJobsWithFilter');
+      final url = Uri.parse('http://127.0.0.1:8080/ticketAssignment/getAcceptedJobsWithFilter?assigneeID=${widget.currentUserId}');
 
       try {
         final response = await http.post(
@@ -330,22 +331,22 @@ void fetchAssignTickets() async {
                       
                       onPressed:(){
                         setState(() {
-                          isAscending = !isAscending;
+                          isPayAscending = !isPayAscending;
                         }); 
 
-                        String filterValue = isAscending ? 'up' : 'down';
+                        String filterValue = isPayAscending ? 'payDescending' : 'payAscending';
                         print("User toggled filter: $filterValue");
                         fetchOpenTickets(filterValue);
                       },
 
                       icon: Icon(
-                        isAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                        isPayAscending ? Icons.arrow_upward : Icons.arrow_downward,
                         size:  16,
                         color: Colors.black87,
                       ),
 
                       label: Text(
-                        isAscending ? "Pay: Low to High" : "Pay : High to Low",
+                          isPayAscending ? "Pay: High to Low" : "Pay : Low to High",
                         style: const TextStyle(
                           color : Colors.black87,
                           fontWeight: FontWeight.w500,
@@ -359,15 +360,46 @@ void fetchAssignTickets() async {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         )
-
-
-                      )
-
-                    
+                      ),
                       //visual button
-                      
+
+
                     ),
-                    
+                    const SizedBox(width: 20,),
+                    OutlinedButton.icon(
+                        onPressed:(){
+                          setState(() {
+                            isDateAscending = !isDateAscending;
+                          });
+
+                          String filterValue = isDateAscending ? 'timeAscending' : 'timeDescending';
+                          print("User toggled filter: $filterValue");
+                          fetchOpenTickets(filterValue);
+                        },
+
+                        icon: Icon(
+                          isDateAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                          size:  16,
+                          color: Colors.black87,
+                        ),
+
+                        label: Text(
+                            isDateAscending ? "Date: earliest to lastest" : "Date: lastest to earliest",
+                            style: const TextStyle(
+                              color : Colors.black87,
+                              fontWeight: FontWeight.w500,
+                            )
+                        ),
+
+                        style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            backgroundColor:  Colors.white,
+                            side: BorderSide(color: Colors.grey),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            )
+                        )
+                    )
                   ]
                 )
               ),
@@ -414,6 +446,7 @@ void fetchAssignTickets() async {
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
 
       //bottom navigation bar
+// Bottom Navigation Bar with highlighted "Find a Job" tab and shadow effect
       bottomNavigationBar: BottomAppBar(
         color: Colors.white,
         shape: const CircularNotchedRectangle(),
@@ -421,20 +454,44 @@ void fetchAssignTickets() async {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            TextButton.icon(
-              onPressed: () {}, 
-              icon: Icon(Icons.search, color: Colors.black,), 
-              label: Text('Find a Job', style: TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.bold)),
+            // Highlighted Find a Job Tab with shadow container wrapper
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.blue.withValues(alpha: 0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: TextButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.search, size: 25, color: Colors.blue),
+                label: const Text('Find a Job', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+              ),
             ),
-  
+
             const SizedBox(width: 60),
+
+            // Unselected Accept a Job Tab (navigates to AcceptJobPage)
             TextButton.icon(
-              onPressed: () {Navigator.push(context, MaterialPageRoute(builder: (context) => AcceptJobPage(userId: widget.currentUserId,)),);}, 
-              icon: Icon(Icons.check_circle_outlined, color: Colors.black,), 
-              label: Text('Accept a Job', style: TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.bold)),
+              onPressed: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (context) => AcceptJobPage(userId: widget.currentUserId),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.check_circle_outlined, size: 25, color: Colors.grey),
+              label: const Text('Accept a Job', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500)),
             ),
           ],
-        )
+        ),
       ),
 
 

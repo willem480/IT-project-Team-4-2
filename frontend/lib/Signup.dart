@@ -59,12 +59,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
   final nameController = TextEditingController();
   final emailController = TextEditingController();
-  final passwordController = TextEditingController();
-  final confirmPasswordController = TextEditingController();
   bool _isSigningUp = false;
-
-  bool isObsecure = true;
-  bool isConfirmObsecure = true;
 
   void _showError(String message) {
     if (!mounted) return;
@@ -78,8 +73,6 @@ class _SignUpPageState extends State<SignUpPage> {
 
     final name = nameController.text.trim();
     final email = emailController.text.trim();
-    final password = passwordController.text;
-    final confirmPassword = confirmPasswordController.text;
 
     if (name.isEmpty) {
       _showError('Please enter your name.');
@@ -87,18 +80,6 @@ class _SignUpPageState extends State<SignUpPage> {
     }
     if (email.isEmpty) {
       _showError('Please enter your email.');
-      return;
-    }
-    if (password.isEmpty) {
-      _showError('Please enter your password.');
-      return;
-    }
-    if (confirmPassword.isEmpty) {
-      _showError('Please confirm your password.');
-      return;
-    }
-    if (password != confirmPassword) {
-      _showError('Passwords do not match.');
       return;
     }
 
@@ -149,8 +130,6 @@ class _SignUpPageState extends State<SignUpPage> {
   void dispose() {
     nameController.dispose();
     emailController.dispose();
-    passwordController.dispose();
-    confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -230,64 +209,6 @@ class _SignUpPageState extends State<SignUpPage> {
                 ),
               ),
 
-              SizedBox(height: 32),
-              Text('Password', style: TextStyle(fontSize: 12)),
-              SizedBox(height: 8),
-              TextField(
-                controller: passwordController,
-                obscureText: isObsecure,
-                decoration: InputDecoration(
-                  hintText: '******',
-                  hintStyle: TextStyle(color: Colors.grey, fontSize: 12),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: Colors.black, width: 1.0)
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: Colors.blue, width: 1.0),
-                  ),
-                  //eye icon
-                  suffixIcon: IconButton(
-                    onPressed: () {
-                      setState(() {
-                        isObsecure = !isObsecure;
-
-                      });
-                    },
-                    icon: Icon(isObsecure ? Icons.visibility_off_outlined: Icons.visibility_outlined,
-                    color: Colors.grey)),
-                ),
-              ),
-              SizedBox(height: 32),
-              Text('Confirm your password', style: TextStyle(fontSize: 12)),
-              SizedBox(height: 8),
-              TextField(
-                controller: confirmPasswordController,
-                obscureText: isConfirmObsecure,
-                decoration: InputDecoration(
-                  hintText: '******',
-                  hintStyle: TextStyle(color: Colors.grey, fontSize: 12),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: Colors.black, width: 1.0)
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: Colors.blue, width: 1.0),
-                  ),
-                  //eye icon
-                  suffixIcon: IconButton(
-                    onPressed: () {
-                      setState(() {
-                        isConfirmObsecure = !isConfirmObsecure;
-
-                      });
-                    },
-                    icon: Icon(isConfirmObsecure ? Icons.visibility_off_outlined: Icons.visibility_outlined,
-                    color: Colors.grey)),
-                ),
-              ),
               SizedBox(height: 18),
               Align(
                 alignment: Alignment.center,
