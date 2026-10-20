@@ -19,6 +19,7 @@ import org.example.ticketing_app.service.organizationServiceHelper.AddManagerReq
 import org.example.ticketing_app.service.organizationServiceHelper.AddTeamRequest;
 import org.example.ticketing_app.service.organizationServiceHelper.CreateOrganizationRequest;
 import org.example.ticketing_app.service.organizationServiceHelper.OrganizationManagerSummary;
+import org.example.ticketing_app.service.organizationServiceHelper.OrganizationMemberSummary;
 import org.example.ticketing_app.service.organizationServiceHelper.OrganizationTeamListResponse;
 import org.example.ticketing_app.service.organizationServiceHelper.OrganizationTeamSummary;
 import org.example.ticketing_app.service.organizationServiceHelper.OrganizationSummary;
@@ -100,6 +101,20 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
                                 .eq(Manager::getOrganizationId, organizationId)
                 ).stream()
                 .map(this::toManagerSummary)
+                .toList();
+    }
+
+    /**
+     * Returns every team membership in an organization.
+     * Each result includes both IDs required to remove that exact membership later.
+     */
+    public List<OrganizationMemberSummary> getOrganizationMembers(Integer organizationId) {
+        requireOrganization(organizationId);
+        return teamMemberMapper.selectList(
+                        new LambdaQueryWrapper<TeamMember>()
+                                .eq(TeamMember::getOrganizationId, organizationId)
+                ).stream()
+                .map(this::toOrganizationMemberSummary)
                 .toList();
     }
 
@@ -311,6 +326,17 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
                 user.getIdUser(),
                 user.getName(),
                 user.getEmail()
+        );
+    }
+
+    private OrganizationMemberSummary toOrganizationMemberSummary(TeamMember membership) {
+        User user = userMapper.selectById(membership.getUserId());
+        return new OrganizationMemberSummary(
+                membership.getIdTeamMember(),
+                membership.getTeamId(),
+                membership.getUserId(),
+                user == null ? null : user.getName(),
+                user == null ? null : user.getEmail()
         );
     }
 

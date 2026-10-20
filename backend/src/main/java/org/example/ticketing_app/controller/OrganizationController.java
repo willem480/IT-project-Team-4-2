@@ -6,6 +6,7 @@ import org.example.ticketing_app.service.organizationServiceHelper.AddManagerReq
 import org.example.ticketing_app.service.organizationServiceHelper.AddTeamRequest;
 import org.example.ticketing_app.service.organizationServiceHelper.CreateOrganizationRequest;
 import org.example.ticketing_app.service.organizationServiceHelper.OrganizationManagerSummary;
+import org.example.ticketing_app.service.organizationServiceHelper.OrganizationMemberSummary;
 import org.example.ticketing_app.service.organizationServiceHelper.OrganizationTeamListResponse;
 import org.example.ticketing_app.service.organizationServiceHelper.OrganizationTeamSummary;
 import org.example.ticketing_app.service.organizationServiceHelper.OrganizationSummary;
@@ -69,6 +70,14 @@ public class OrganizationController {
             @RequestParam Integer organizationId
     ) {
         return organizationService.getOrganizationManagers(organizationId);
+    }
+
+    /** Lists all team memberships in an organization, including membership and team IDs. */
+    @GetMapping("getOrganizationMembers")
+    public List<OrganizationMemberSummary> getOrganizationMembers(
+            @RequestParam Integer organizationId
+    ) {
+        return organizationService.getOrganizationMembers(organizationId);
     }
 
     /** Grants manager permission to an existing user. */
