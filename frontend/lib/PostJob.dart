@@ -126,7 +126,7 @@ class _PostJobPageState extends State<PostJob> {
 
             //name
             const Text(
-              'Full Name',
+              'Title',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.black),
             ),
             TextField(
