@@ -13,6 +13,7 @@ class PostAJobDetailUser extends StatefulWidget {
   final String description;
   final int ticketId;
   final String date;
+  final String finalDate;
   final int currentUserId;
   
 
@@ -24,6 +25,7 @@ class PostAJobDetailUser extends StatefulWidget {
     required this.description,
     required this.ticketId,
     required this.date,
+    required this.finalDate,
     required this.currentUserId,
     });
 
@@ -155,7 +157,9 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
                           Text(widget.company,style: TextStyle(fontSize: 18),),
                           const SizedBox(height: 10),
                           Text("Posted on: ${widget.date}", style: TextStyle(fontSize: 16)),
-                          const Spacer(), 
+                          const SizedBox(height: 4),
+                          Text("Deadline: ${widget.finalDate}", style: TextStyle(fontSize: 14, color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                          const Spacer(),
                           Text('\$ ${widget.price}', style: const TextStyle(fontWeight:FontWeight.bold, fontSize: 30)),
                         
                             

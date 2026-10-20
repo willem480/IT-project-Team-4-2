@@ -280,6 +280,7 @@ void fetchAssignTickets() async {
                           currentUserId: widget.currentUserId,
                           isManager: isManager,
                           managerOrgId: managerOrgId,
+                          finalDate: selection.dateCompleted?.toString()??"No deadline",
                         ),
                       ),
                     );
@@ -456,6 +457,7 @@ void fetchAssignTickets() async {
                           ticket.description ?? "No description",
                           ticket.idTicket ?? 0,
                           ticket.datePosted?.toString() ?? "no date",
+                          ticket.dateCompleted?.toString() ?? "No deadline",
                       );
                     }).toList(),
                   ),
@@ -530,55 +532,76 @@ void fetchAssignTickets() async {
 
     );
   }
+  Widget _buildJobCard(BuildContext context, String title, String companyName, String price, String description, int ticketId, String date, String finalDate){
+    return Padding(
+      // 让卡片距离屏幕左右有一点边距，保持呼吸感
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: InkWell(
+          onTap: (){
+            print('tap job ticket in find job page');
+            Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser(
+                ticketId: ticketId, title: title, company: companyName, price: price, description: description, date: date,
+                finalDate: finalDate,
+                currentUserId: widget.currentUserId, isManager: isManager, managerOrgId: managerOrgId
+            )),);
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
 
-  Widget _buildJobCard(BuildContext context, String title, String companyName, String price, String description, int ticketId, String date){
-      return InkWell(
-        onTap: (){
-          print('tap job ticket in find job page');
-          Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser(ticketId: ticketId, title: title, company: companyName, price: price, description: description, date: date, currentUserId: widget.currentUserId, isManager: isManager, managerOrgId: managerOrgId)),);
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          width: 500,
-          height: 250,
-          margin: const EdgeInsets.all(10),
-          padding: EdgeInsets.all(16),
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+              decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade300),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withValues(alpha: 0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    )
+                  ]
+              ),
+              child: Row(
 
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withValues(alpha: 0.1),
-                blurRadius: 2,
-                offset: const Offset(0, 1),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        const SizedBox(height: 6),
+
+                        Row(
+                          children: [
+                            const Icon(Icons.business, size: 14, color: Colors.grey),
+                            const SizedBox(width: 4),
+                            Expanded(child: Text(companyName, style: const TextStyle(fontSize: 13, color: Colors.grey), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text("Ticket #$ticketId", style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(width: 16),
+
+
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text('\$$price', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 18)),
+                      const SizedBox(height: 12),
+                      Text("DL: $finalDate", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.redAccent)),
+                    ],
+                  )
+                ],
               )
-            ]
-          ),           
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-              ),
-              
-                // alignment: Alignment.topLeft,
-              Text(
-                companyName,
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-              ),
-              
-              const Spacer(), 
-
-              Text(
-                '\$$price',
-                style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
-              //more item
-            ],
           )
-        )
-      );
+      ),
+    );
   }
 }

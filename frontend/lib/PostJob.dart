@@ -17,14 +17,39 @@ class _PostJobPageState extends State<PostJob> {
   String? selectedCompany;
   String? description = "No Description";
   String userName= "Loading";
+  String userEmail = "";
 
-  final TextEditingController nameController = TextEditingController();
+  final TextEditingController titleController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController addressController = TextEditingController();
   final TextEditingController payController = TextEditingController();
   final TextEditingController assigndateController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2030),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(primary: Colors.blueAccent),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() {
+        String day = picked.day.toString().padLeft(2, '0');
+        String month = picked.month.toString().padLeft(2, '0');
+        String year = picked.year.toString().substring(2);
+        assigndateController.text = "$day/$month/$year";
+      });
+    }
+  }
   Future<void> fetchUserData() async {
     final url = Uri.parse('http://127.0.0.1:8080/profilePage/getUser?userId=${widget.currentUserId}');
     final response = await http.post(url);
@@ -32,6 +57,10 @@ class _PostJobPageState extends State<PostJob> {
       final Map<String, dynamic> jsonData = jsonDecode(response.body);
       setState(() {
         userName = jsonData['name'] ?? 'User';
+        userEmail = jsonData['email'] ?? '';
+
+        emailController.text = userEmail;
+
       });
     }
   }
@@ -45,7 +74,7 @@ class _PostJobPageState extends State<PostJob> {
 
   @override
   void dispose(){
-    nameController.dispose();
+    titleController.dispose();
     emailController.dispose();
     addressController.dispose();
     payController.dispose();
@@ -54,13 +83,35 @@ class _PostJobPageState extends State<PostJob> {
     super.dispose();
   }
   Future<void> submitTicketData() async {
+
+    if (emailController.text.trim() != userEmail) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("❌ Email incorrect"), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    if (payController.text.trim().isEmpty || int.tryParse(payController.text) == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("❌ Money can't be empty and it has to be a valid number！"), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    if (titleController.text.trim().isEmpty || addressController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("❌ Please complete this ticket！"), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
     final url = Uri.parse('http://127.0.0.1:8080/ticket/createTicket');
     Map<String, dynamic> requestData = {
       'posterId': widget.currentUserId,
-      "title": nameController.text, 
+      "title": titleController.text,
       "email": emailController.text,
       "location": addressController.text, 
-      "pay": int.tryParse(payController.text) ?? 0, 
+      "pay": int.tryParse(payController.text),
       "company": selectedCompany ?? "Unknown",
       "description": descriptionController.text,
       "dateCompleted": assigndateController.text,
@@ -114,7 +165,7 @@ class _PostJobPageState extends State<PostJob> {
         // Center is a layout widget. It takes a single child and positions it
         // in the middle of the parent.
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 200, vertical: 24.0),
+          padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
 
@@ -130,9 +181,9 @@ class _PostJobPageState extends State<PostJob> {
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.black),
             ),
             TextField(
-              controller: nameController,
+              controller: titleController,
               decoration: InputDecoration(
-                hintText: 'Name',
+                hintText: 'Job title',
                 hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -226,24 +277,17 @@ class _PostJobPageState extends State<PostJob> {
           
             //Final date
 
-            const Text(
-              'Final date',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.black),
-            ),
-            
+            const Text('Final date', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.black)),
             TextField(
               controller: assigndateController,
+              readOnly: true,
+              onTap: () => _selectDate(context),
               decoration: InputDecoration(
-                hintText: 'Enter your final date in dd/mm/yy',
-                hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: Colors.black, width: 1.0)
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: Colors.blue, width: 1.0)
-                ),
+                hintText: 'Select final date (dd/mm/yy)',
+                prefixIcon: const Icon(Icons.calendar_month, color: Colors.grey),
+                hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Colors.black, width: 1.0)),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Colors.blue, width: 1.0)),
               ),
             ),
 
@@ -271,7 +315,7 @@ class _PostJobPageState extends State<PostJob> {
               ),
             ),
 
-            SizedBox(height: 45.0),
+            SizedBox(height: 100.0),
 
           ],
  
@@ -285,7 +329,7 @@ class _PostJobPageState extends State<PostJob> {
         padding: EdgeInsets.only(bottom: 20),
         child: SizedBox(
           width: 200,
-          height: 70,
+          height: 56,
         
           child: FloatingActionButton(
             onPressed: () {submitTicketData();},

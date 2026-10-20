@@ -17,6 +17,7 @@ class FindAJobDetailUser extends StatefulWidget {
   final int currentUserId;
   final bool isManager;
   final int? managerOrgId;
+  final String finalDate;
   
 
   const FindAJobDetailUser({
@@ -30,6 +31,7 @@ class FindAJobDetailUser extends StatefulWidget {
     required this.currentUserId,
     required this.isManager,
     required this.managerOrgId,
+    required this.finalDate,
     });
 
   @override
@@ -157,6 +159,7 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
                           const SizedBox(height: 12),
                           Text(widget.company,style: TextStyle(fontSize: 18),),
                           Text("Posted on: ${widget.date}", style: TextStyle(fontSize: 16)),
+                          Text("Deadline: ${widget.finalDate}", style: TextStyle(fontSize: 14, color: Colors.redAccent, fontWeight: FontWeight.bold)),
                           const Spacer(), 
                           Text('\$ ${widget.price}', style: const TextStyle(fontWeight:FontWeight.bold, fontSize: 30)),
                         
