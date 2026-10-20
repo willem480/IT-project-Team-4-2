@@ -794,6 +794,13 @@ class _AdminPageState extends State<AdminPage> {
               ),
               const SizedBox(height: 36),
               if (isOrganisationManagement) ...[
+                _OrganisationManagerActions(
+                  key: ValueKey((widget.userId, widget.organisationId)),
+                  actorUserId: widget.userId,
+                  organisationId: widget.organisationId,
+                  onSelfRemoval: () => Navigator.maybePop(context),
+                ),
+                const SizedBox(height: 30),
                 _AdminActionCard(
                   icon: Icons.group_add_outlined,
                   iconColor: const Color(0xFF2563EB),
@@ -857,6 +864,437 @@ class _AdminPageState extends State<AdminPage> {
       ),
     );
   }
+}
+
+/// Organisation roles are independent of team membership. Teams only help the
+/// manager locate a user; removal requires that user's manager record ID.
+class _OrganisationManagerActions extends StatefulWidget {
+  const _OrganisationManagerActions({
+    super.key,
+    required this.actorUserId,
+    required this.organisationId,
+    required this.onSelfRemoval,
+  });
+
+  final int actorUserId;
+  final int? organisationId;
+  final VoidCallback onSelfRemoval;
+
+  @override
+  State<_OrganisationManagerActions> createState() =>
+      _OrganisationManagerActionsState();
+}
+
+class _OrganisationManagerActionsState
+    extends State<_OrganisationManagerActions> {
+  final _addMenu = MenuController();
+  final _deleteMenu = MenuController();
+  List<Map<String, dynamic>> _teams = [];
+  Map<int, int> _managerIds = {};
+  final _members = <int, List<Map<String, dynamic>>>{};
+  final _loadingMembers = <int>{};
+  final _memberErrors = <int, String>{};
+  bool _loading = false;
+  bool _busy = false;
+  bool _deleting = false;
+  String? _error;
+  int _generation = 0;
+
+  static const _menuStyle = MenuStyle(
+    maximumSize: WidgetStatePropertyAll(Size(300, 360)),
+  );
+
+  void _message(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  String _requestError(http.Response response, String action) {
+    // Spring may omit the detailed reason from its default error response.
+    try {
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      if (data is Map<String, dynamic>) {
+        for (final key in ['detail', 'message']) {
+          final message = data[key];
+          if (message is String && message.trim().isNotEmpty) return message;
+        }
+      }
+    } on FormatException {
+      // Use the status-specific English message below.
+    }
+    return switch (response.statusCode) {
+      400 => 'Invalid manager request. Please refresh and try again.',
+      403 => 'Only an organisation manager can manage manager access.',
+      404 =>
+        'The organisation, member or manager no longer exists. Please refresh.',
+      409 when action == 'delete manager' =>
+        'This organisation must retain at least one manager.',
+      409 => 'This member is already a manager of this organisation.',
+      _ => 'Unable to $action (HTTP ${response.statusCode}). Please try again.',
+    };
+  }
+
+  Future<dynamic> _get(String path, Map<String, String> parameters) async {
+    final response = await http
+        .get(
+          Uri.parse('http://127.0.0.1:8080$path')
+              .replace(queryParameters: parameters),
+        )
+        .timeout(const Duration(seconds: 30));
+    if (response.statusCode != 200) {
+      throw FormatException(_requestError(response, 'load manager menu'));
+    }
+    return jsonDecode(utf8.decode(response.bodyBytes));
+  }
+
+  List<Map<String, dynamic>> _items(dynamic value, List<String> fields) {
+    if (value is! List ||
+        value.any(
+          (item) =>
+              item is! Map<String, dynamic> ||
+              fields.any(
+                (field) => field.endsWith('Id')
+                    ? item[field] is! int
+                    : item[field] is! String,
+              ),
+        )) {
+      throw const FormatException('The server returned invalid menu data.');
+    }
+    return value.cast<Map<String, dynamic>>();
+  }
+
+  Future<void> _loadMenu() async {
+    final generation = ++_generation;
+    setState(() {
+      _loading = true;
+      _error = null;
+      _teams = [];
+      _managerIds = {};
+      _members.clear();
+      _loadingMembers.clear();
+      _memberErrors.clear();
+    });
+    try {
+      final results = await Future.wait([
+        _get('/organization/getOrganizationTeams', {
+          'organizationId': '${widget.organisationId}',
+          'viewerUserId': '${widget.actorUserId}',
+        }),
+        _get('/organization/getOrganizationManagers', {
+          'organizationId': '${widget.organisationId}',
+        }),
+      ]);
+      if (!mounted || generation != _generation) return;
+      final teamData = results[0];
+      if (teamData is! Map<String, dynamic>) {
+        throw const FormatException('The server returned invalid team data.');
+      }
+      if (teamData['canManage'] != true) {
+        throw const FormatException(
+          'Only an organisation manager can manage manager access.',
+        );
+      }
+      final teams = _items(teamData['teams'], ['teamId', 'name']);
+      final managers = _items(results[1], ['userId', 'managerId']);
+      setState(() {
+        _teams = teams;
+        _managerIds = {
+          for (final manager in managers)
+            manager['userId'] as int: manager['managerId'] as int,
+        };
+      });
+    } on FormatException catch (error) {
+      if (mounted && generation == _generation) {
+        setState(() => _error = error.message);
+      }
+    } catch (_) {
+      if (mounted && generation == _generation) {
+        setState(
+          () => _error = 'Unable to load teams and managers. Please retry.',
+        );
+      }
+    } finally {
+      if (mounted && generation == _generation) {
+        setState(() => _loading = false);
+      }
+    }
+  }
+
+  Future<void> _loadMembers(int teamId) async {
+    if (_loadingMembers.contains(teamId) || _members.containsKey(teamId)) {
+      return;
+    }
+    final generation = _generation;
+    setState(() {
+      _loadingMembers.add(teamId);
+      _memberErrors.remove(teamId);
+    });
+    try {
+      final data = await _get('/team/getTeamMembers', {
+        'teamId': '$teamId',
+        'viewerUserId': '${widget.actorUserId}',
+      });
+      if (!mounted || generation != _generation) return;
+      if (data is! Map<String, dynamic> ||
+          data['organizationId'] != widget.organisationId) {
+        throw const FormatException('The server returned invalid team data.');
+      }
+      final members = _items(data['members'], ['userId', 'userName', 'email']);
+      setState(() => _members[teamId] = members);
+    } on FormatException catch (error) {
+      if (mounted && generation == _generation) {
+        setState(() => _memberErrors[teamId] = error.message);
+      }
+    } catch (_) {
+      if (mounted && generation == _generation) {
+        setState(
+          () => _memberErrors[teamId] = 'Unable to load members. Please retry.',
+        );
+      }
+    } finally {
+      if (mounted && generation == _generation) {
+        setState(() => _loadingMembers.remove(teamId));
+      }
+    }
+  }
+
+  Future<void> _changeManager(
+    Map<String, dynamic> member,
+    bool deleting,
+  ) async {
+    if (_busy) return;
+    final userId = member['userId'] as int;
+    final managerId = _managerIds[userId];
+    if (deleting && (managerId == null || _managerIds.length <= 1)) {
+      _message('This organisation must retain at least one manager.');
+      return;
+    }
+    _addMenu.close();
+    _deleteMenu.close();
+    setState(() {
+      _busy = true;
+      _deleting = deleting;
+    });
+    final name = member['userName'] as String;
+    final removingSelf = deleting && userId == widget.actorUserId;
+    try {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(deleting ? 'Delete Manager' : 'Add Manager'),
+          content: Text(
+            (deleting
+                    ? 'Are you sure you want to remove "$name"\'s manager access to this organisation?'
+                    : 'Are you sure you want to grant "$name" manager access to this organisation?') +
+                (removingSelf
+                    ? '\n\nYou will lose access to this admin page.'
+                    : ''),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              style: deleting
+                  ? FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFFDC2626),
+                    )
+                  : null,
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: Text(deleting ? 'Delete Manager' : 'Add Manager'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+      final response =
+          await (deleting
+                  ? http.delete(
+                      Uri.parse(
+                        'http://127.0.0.1:8080/organization/removeManager',
+                      ).replace(
+                        queryParameters: {
+                          'actorUserId': '${widget.actorUserId}',
+                          'organizationId': '${widget.organisationId}',
+                          'managerId': '$managerId',
+                        },
+                      ),
+                    )
+                  : http.post(
+                      Uri.parse(
+                        'http://127.0.0.1:8080/organization/addManager',
+                      ),
+                      headers: {'Content-Type': 'application/json'},
+                      body: jsonEncode({
+                        'actorUserId': widget.actorUserId,
+                        'organizationId': widget.organisationId,
+                        'userId': userId,
+                      }),
+                    ))
+              .timeout(const Duration(seconds: 30));
+      if (!mounted) return;
+      if (response.statusCode != (deleting ? 204 : 201)) {
+        _message(
+          _requestError(response, deleting ? 'delete manager' : 'add manager'),
+        );
+        return;
+      }
+      // Reopening either menu reloads roles from the server after every change.
+      _message(
+        deleting
+            ? 'Manager access removed successfully.'
+            : 'Manager added successfully.',
+      );
+      if (removingSelf) widget.onSelfRemoval();
+    } catch (_) {
+      if (mounted) {
+        _message(
+          'Unable to ${deleting ? 'delete' : 'add'} manager. Please refresh and try again.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Widget _menuText(String text) =>
+      MenuItemButton(child: SizedBox(width: 240, child: Text(text)));
+
+  List<Widget> _memberItems(int teamId, bool deleting) {
+    if (_memberErrors[teamId] case final String error) {
+      return [
+        _menuText(error),
+        MenuItemButton(
+          closeOnActivate: false,
+          onPressed: () => _loadMembers(teamId),
+          child: const Text('Retry'),
+        ),
+      ];
+    }
+    final members = _members[teamId];
+    if (members == null) return [_menuText('Loading members...')];
+    if (members.isEmpty) return [_menuText('No members in this team.')];
+    final eligible = members
+        .where(
+          (member) => _managerIds.containsKey(member['userId']) == deleting,
+        )
+        .toList();
+    if (eligible.isEmpty) {
+      return [
+        _menuText(
+          deleting
+              ? 'No managers in this team.'
+              : 'All members are already managers.',
+        ),
+      ];
+    }
+    return [
+      for (final member in eligible)
+        MenuItemButton(
+          onPressed: _busy || (deleting && _managerIds.length <= 1)
+              ? null
+              : () => _changeManager(member, deleting),
+          leadingIcon: Icon(
+            deleting
+                ? Icons.person_remove_outlined
+                : Icons.person_add_alt_1_outlined,
+          ),
+          child: SizedBox(
+            width: 210,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(member['userName'] as String),
+                Text(
+                  member['email'] as String,
+                  style: const TextStyle(fontSize: 12),
+                ),
+                if (deleting && _managerIds.length <= 1)
+                  const Text(
+                    'Last manager — cannot delete',
+                    style: TextStyle(fontSize: 12),
+                  ),
+              ],
+            ),
+          ),
+        ),
+    ];
+  }
+
+  Widget _button(bool deleting) {
+    final controller = deleting ? _deleteMenu : _addMenu;
+    return MenuAnchor(
+      controller: controller,
+      style: _menuStyle,
+      consumeOutsideTap: true,
+      onOpen: _loadMenu,
+      menuChildren: [
+        if (_loading)
+          _menuText('Loading teams...')
+        else if (_error != null) ...[
+          _menuText(_error!),
+          MenuItemButton(
+            closeOnActivate: false,
+            onPressed: _loadMenu,
+            child: const Text('Retry'),
+          ),
+        ] else if (_teams.isEmpty)
+          _menuText('No teams in this organisation.')
+        else
+          for (final team in _teams)
+            SubmenuButton(
+              key: ValueKey(team['teamId']),
+              menuStyle: _menuStyle,
+              leadingIcon: const Icon(Icons.groups_outlined),
+              onOpen: () => _loadMembers(team['teamId'] as int),
+              menuChildren: _memberItems(team['teamId'] as int, deleting),
+              child: SizedBox(width: 190, child: Text(team['name'] as String)),
+            ),
+      ],
+      builder: (context, menuController, child) => OutlinedButton.icon(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: deleting
+              ? const Color(0xFFDC2626)
+              : const Color(0xFF2563EB),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        ),
+        onPressed: _busy || widget.organisationId == null
+            ? null
+            : () {
+                if (menuController.isOpen) {
+                  menuController.close();
+                } else {
+                  (deleting ? _addMenu : _deleteMenu).close();
+                  menuController.open();
+                }
+              },
+        icon: Icon(
+          deleting
+              ? Icons.person_remove_outlined
+              : Icons.person_add_alt_1_outlined,
+        ),
+        label: Text(
+          _busy && _deleting == deleting
+              ? 'Please wait...'
+              : deleting
+              ? 'Delete Manager'
+              : 'Add Manager',
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 16),
+    child: Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: [_button(false), _button(true)],
+    ),
+  );
 }
 
 class _AdminActionCard extends StatelessWidget {
