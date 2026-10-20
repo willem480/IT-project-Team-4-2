@@ -3,7 +3,8 @@ import 'package:ticketing_app/main.dart';
 import 'package:ticketing_app/models/ticket_comment.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-
+import 'package:ticketing_app/TeamSelection.dart';
+import 'package:ticketing_app/OrganizationSelection.dart';
 
 
 class FindAJobDetailUser extends StatefulWidget {
@@ -14,6 +15,8 @@ class FindAJobDetailUser extends StatefulWidget {
   final int ticketId;
   final String date;
   final int currentUserId;
+  final bool isManager;
+  final int? managerOrgId;
   
 
   const FindAJobDetailUser({
@@ -25,6 +28,8 @@ class FindAJobDetailUser extends StatefulWidget {
     required this.ticketId,
     required this.date,
     required this.currentUserId,
+    required this.isManager,
+    required this.managerOrgId,
     });
 
   @override
@@ -195,53 +200,86 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
           ),
         ],
       ),
-      
-      floatingActionButton: Padding( 
-        padding: EdgeInsets.only(bottom: 20),
-        child: SizedBox(
-          width: 200,
-          height: 56,
-          child: FloatingActionButton(onPressed: () async {
-            print("🚀 正在点击 Accept 按钮...");
 
-            final url = Uri.parse("http://127.0.0.1:8080/ticketAssignment/delegateJobIndividual?ticketId=${widget.ticketId}&assigneeId=${widget.currentUserId}");
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 20),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center, // 按钮居中
+          children: [
+            // 1. 原本的 Accept 按钮 (根据身份自适应宽度)
+            SizedBox(
+                width: widget.isManager ? 160 : 200,
+                height: 56,
+                child: FloatingActionButton(
+                  heroTag: "btn_accept", // 💡 必须加 heroTag，防止页面有多个 FAB 冲突
+                  onPressed: () async {
+                    print("🚀 正在点击 Accept 按钮...");
 
-            try {
-              final response = await http.post(
-                url,
-                headers: {"Content-Type": "application/json"},
-                body: jsonEncode({}), // 💡 body
-              );
+                    final url = Uri.parse("http://127.0.0.1:8080/ticketAssignment/delegateJobIndividual?ticketId=${widget.ticketId}&assigneeId=${widget.currentUserId}");
 
-              print("📡 Accept 状态码: ${response.statusCode}");
-              print("📦 Accept 返回: ${response.body}");
+                    try {
+                      final response = await http.post(
+                        url,
+                        headers: {"Content-Type": "application/json"},
+                        body: jsonEncode({}),
+                      );
 
-              if (response.statusCode == 200) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("✅ 接受任务成功！")),
-                );
+                      print("📡 Accept 状态码: ${response.statusCode}");
+                      print("📦 Accept 返回: ${response.body}");
 
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => MyHomePage(title: 'Find a job', currentUserId: widget.currentUserId)),
-                      (Route<dynamic> route) => false,
-                );
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("接受任务失败，状态码: ${response.statusCode}")),
-                );
-              }
-            } catch (e) {
-              print("💥 接受任务网络异常: $e");
-            }
-          },
-          backgroundColor: Colors.lightGreen,
-          shape:  RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
-          child: Text('Accept', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),),
-          )
+                      if (response.statusCode == 200) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("✅ 接受任务成功！")),
+                        );
+
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (context) => MyHomePage(title: 'Find a job', currentUserId: widget.currentUserId)),
+                              (Route<dynamic> route) => false,
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text("接受任务失败，状态码: ${response.statusCode}")),
+                        );
+                      }
+                    } catch (e) {
+                      print("💥 接受任务网络异常: $e");
+                    }
+                  },
+                  backgroundColor: Colors.lightGreen,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
+                  child: const Text('Accept', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                )
+            ),
+
+            // 2. 💡 专属管理员的 Delegate 按钮
+            if (widget.isManager) ...[
+              const SizedBox(width: 16), // 两个按钮之间的间距
+              SizedBox(
+                width: 160,
+                height: 56,
+                child: FloatingActionButton(
+                  heroTag: "btn_delegate", // 💡 必须加 heroTag
+                  onPressed: () {
+
+                    // jump to organizationpage to select specific organization
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => OrganizationSelectionPage(ticketId: widget.ticketId, currentUserId: widget.currentUserId,),
+                      ),
+                    );
+                  },
+                  backgroundColor: Colors.blueAccent, // 用蓝色与 Accept 区分开
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
+                  child: const Text('Delegate', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ],
         ),
       ),
-      
+
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
 
     );

@@ -49,6 +49,36 @@ class _MyHomePageState extends State<MyHomePage> {
   String userName = 'Loading...';
   bool isPayAscending = true;
   bool isDateAscending = true;
+  bool isManager = false;
+  int? managerOrgId; //This is used to record company of a user managered
+  Future<void> checkManagerStatus() async{
+    final url = Uri.parse('http://127.0.0.1:8080/organization/getOrganizations?viewerUserId=${widget.currentUserId}');
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        print("org list raw data: ${response.body}");
+        List<dynamic> organizations = jsonDecode(response.body);
+
+        bool hasManagerPermission = false;
+        int? foundOrgId;
+
+        for (var org in organizations) {
+          if (org['canManage'] == true) {
+            hasManagerPermission = true;
+            foundOrgId = org['organizationId']; // 💡 获取他担任管理员的公司 ID
+            break;
+          }
+        }
+
+        setState(() {
+          isManager = hasManagerPermission;
+          managerOrgId = foundOrgId; // 💡 保存下来
+        });
+      }
+    } catch (e) {
+      print("💥 验证身份网络异常: $e");
+    }
+  }
 
   //search function
   void fetchTicketsByKeyword(String keyword) async{
@@ -171,6 +201,7 @@ void fetchAssignTickets() async {
       super.initState();
       fetchOpenTickets('');
       fetchUserData();
+      checkManagerStatus();
     }
 
   @override
@@ -247,6 +278,8 @@ void fetchAssignTickets() async {
                           description: selection.description ?? "No description",
                           date: selection.datePosted?.toString() ?? "no date",
                           currentUserId: widget.currentUserId,
+                          isManager: isManager,
+                          managerOrgId: managerOrgId,
                         ),
                       ),
                     );
@@ -502,7 +535,7 @@ void fetchAssignTickets() async {
       return InkWell(
         onTap: (){
           print('tap job ticket in find job page');
-          Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser(ticketId: ticketId, title: title, company: companyName, price: price, description: description, date: date, currentUserId: widget.currentUserId,)),);
+          Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser(ticketId: ticketId, title: title, company: companyName, price: price, description: description, date: date, currentUserId: widget.currentUserId, isManager: isManager, managerOrgId: managerOrgId)),);
         },
         borderRadius: BorderRadius.circular(12),
         child: Container(
