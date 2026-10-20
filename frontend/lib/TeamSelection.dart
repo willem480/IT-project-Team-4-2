@@ -26,27 +26,20 @@ class _TeamSelectionPageState extends State<TeamSelectionPage> {
   @override
   void initState() {
     super.initState();
-    print("===== 2. 成功进入 TeamSelectionPage 的 initState =====");
     fetchManagedTeams();
   }
 
   Future<void> fetchManagedTeams() async {
-    final url = Uri.parse("http://127.0.0.1:4523/m1/8806835-8598944-default/organization/getOrganizationTeams?organizationId=1&viewerUserI");
+    final url = Uri.parse("http://127.0.0.1:8080/organization/getOrganizationTeams?organizationId=${widget.orgId}&viewerUserId=${widget.currentUserId}");
 
-    print("===== 1. 开始请求: $url =====");
+    print("===== 开始请求团队列表: $url =====");
 
     try {
       final response = await http.get(url);
-      print("===== 2. 收到状态码: ${response.statusCode} =====");
-
-
-      print("===== 3. 后端返回的原始 JSON: ${response.body} =====");
-
       if (response.statusCode == 200) {
         var decodedData = json.decode(response.body);
 
         List<dynamic> targetList = [];
-
         if (decodedData['teams'] != null) {
           targetList = decodedData['teams'];
         }
@@ -55,6 +48,8 @@ class _TeamSelectionPageState extends State<TeamSelectionPage> {
           managedTeams = targetList;
           isLoading = false;
         });
+      } else {
+        setState(() => isLoading = false);
       }
     } catch (e) {
       setState(() => isLoading = false);
@@ -62,38 +57,51 @@ class _TeamSelectionPageState extends State<TeamSelectionPage> {
     }
   }
 
-
-  //rendering
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
-        title: const Text('Select a Team', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: const Color(0xFFF9FAFB),
+        elevation: 0,
+        title: const Text('Select a Team', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        iconTheme: const IconThemeData(color: Colors.black),
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : managedTeams.isEmpty
-          ? const Center(child: Text("No teams available for delegation."))
+          ? const Center(child: Text("No teams available for delegation.", style: TextStyle(color: Colors.grey)))
           : ListView.builder(
+        padding: const EdgeInsets.all(16),
         itemCount: managedTeams.length,
         itemBuilder: (context, index) {
           final team = managedTeams[index];
-          return ListTile(
-
-            title: Text(team['name'] ?? 'Unnamed Team'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => PersonnelSelectionPage(
-                    ticketId: widget.ticketId,
-                    teamId: team['teamId'],
+          // 💡 优化：直接用 ListTile 接管白色背景、圆角和边框，消除警告
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: ListTile(
+              tileColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: Colors.grey.shade300),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              title: Text(team['name'] ?? 'Unnamed Team', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              subtitle: Text('Members: ${team['memberCount'] ?? 0}', style: const TextStyle(color: Colors.grey)),
+              trailing: const Icon(Icons.chevron_right, color: Colors.blueAccent),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => PersonnelSelectionPage(
+                      ticketId: widget.ticketId,
+                      teamId: team['teamId'],
+                      currentUserId: widget.currentUserId,
+                    ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           );
         },
       ),

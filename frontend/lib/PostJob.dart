@@ -90,7 +90,7 @@ class _PostJobPageState extends State<PostJob> {
         elevation: 0,
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
-        title: Text('Good morning, $userName', style: TextStyle(color:Colors.black)),
+        title: Text('Hello, $userName', style: TextStyle(color:Colors.black)),
       ),
       body: SafeArea(
         // Center is a layout widget. It takes a single child and positions it

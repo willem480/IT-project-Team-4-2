@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'main.dart';
 
 class PersonnelSelectionPage extends StatefulWidget {
   final int ticketId;
   final int teamId;
+  final int currentUserId;
 
   const PersonnelSelectionPage({
     super.key,
     required this.ticketId,
     required this.teamId,
+    required this.currentUserId,
   });
 
   @override
@@ -28,8 +31,7 @@ class _PersonnelSelectionPageState extends State<PersonnelSelectionPage> {
   }
 
   Future<void> fetchTeamMembers() async {
-
-    final url = Uri.parse("http://127.0.0.1:4523/m1/8806835-8598944-default/team/getTeamMembers?teamId=${widget.teamId}&viewerUserId=1");
+    final url = Uri.parse("http://127.0.0.1:8080/team/getTeamMembers?teamId=${widget.teamId}&viewerUserId=${widget.currentUserId}");
 
     print("===== 准备获取小组成员: $url =====");
 
@@ -39,13 +41,14 @@ class _PersonnelSelectionPageState extends State<PersonnelSelectionPage> {
       if (response.statusCode == 200) {
         var decodedData = json.decode(response.body);
 
-
         if (decodedData != null && decodedData['members'] != null) {
           setState(() {
             teamMembers = decodedData['members'];
             isLoading = false;
           });
         }
+      } else {
+        setState(() => isLoading = false);
       }
     } catch (e) {
       setState(() => isLoading = false);
@@ -53,40 +56,50 @@ class _PersonnelSelectionPageState extends State<PersonnelSelectionPage> {
     }
   }
 
-  //rendering
   Future<void> _submitDelegation() async {
     if (selectedUserId == null) return;
 
-    final url = Uri.parse("http://127.0.0.1:4523/m1/8806835-8598944-default/ticketAssignment/delegateJobIndividual");
+    final url = Uri.parse("http://127.0.0.1:8080/ticketAssignment/delegateJobIndividual?ticketId=${widget.ticketId}&assigneeId=$selectedUserId&teamId=${widget.teamId}");
+
 
     try {
       final response = await http.post(
         url,
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "ticketId": widget.ticketId,
-          "assigneeId": selectedUserId,
-          "teamId": widget.teamId,
-        }),
+        body: jsonEncode({}),
       );
 
-      if (response.statusCode == 200) {
-        print("Delegation successful");
+      print("📡 委派接口返回状态码: ${response.statusCode}");
+      print("📦 委派接口返回内容: ${response.body}");
 
-        Navigator.popUntil(context, (route) => route.isFirst);
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("✅ 成功将任务委派给个人！")),
+        );
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => MyHomePage(title: 'Find a job', currentUserId: widget.currentUserId)),
+              (Route<dynamic> route) => false,
+        );
       } else {
-        print("Failed to delegate job");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("委派失败，状态码: ${response.statusCode}")),
+        );
       }
     } catch (e) {
-      print("Network request error");
+      print("💥 Network request error: $e");
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
-        title: const Text('Select Personnel', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: const Color(0xFFF9FAFB),
+        elevation: 0,
+        title: const Text('Select Personnel', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        iconTheme: const IconThemeData(color: Colors.black),
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -94,24 +107,32 @@ class _PersonnelSelectionPageState extends State<PersonnelSelectionPage> {
         children: [
           Expanded(
             child: teamMembers.isEmpty
-                ? const Center(child: Text("No members available in this team."))
+                ? const Center(child: Text("No members available in this team.", style: TextStyle(color: Colors.grey)))
                 : ListView.builder(
+              padding: const EdgeInsets.all(16),
               itemCount: teamMembers.length,
               itemBuilder: (context, index) {
                 final member = teamMembers[index];
-                return RadioListTile<int>(
-
-                  title: Text(member['userName'] ?? 'Unknown User', style: const TextStyle(fontWeight: FontWeight.w500)),
-                  subtitle: Text(member['email'] ?? '', style: const TextStyle(color: Colors.black54)),
-
-                  value: member['userId'],
-                  groupValue: selectedUserId,
-                  activeColor: Colors.blueAccent,
-                  onChanged: (int? value) {
-                    setState(() {
-                      selectedUserId = value;
-                    });
-                  },
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: RadioListTile<int>(
+                    tileColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    title: Text(member['userName'] ?? 'Unknown User', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text(member['email'] ?? '', style: const TextStyle(color: Colors.black54)),
+                    value: member['userId'],
+                    groupValue: selectedUserId,
+                    activeColor: Colors.blueAccent,
+                    onChanged: (int? value) {
+                      setState(() {
+                        selectedUserId = value;
+                      });
+                    },
+                  ),
                 );
               },
             ),
@@ -122,7 +143,6 @@ class _PersonnelSelectionPageState extends State<PersonnelSelectionPage> {
               width: double.infinity,
               height: 56,
               child: ElevatedButton(
-
                 onPressed: selectedUserId == null ? null : _submitDelegation,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.lightGreen,

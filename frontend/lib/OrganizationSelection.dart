@@ -2,15 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:ticketing_app/TeamSelection.dart';
+import 'package:ticketing_app/TeamSelectionForTeamDelegatePage.dart';
 
 class OrganizationSelectionPage extends StatefulWidget {
   final int ticketId;
   final int currentUserId;
+  final bool isForTeamDelegate;
 
   const OrganizationSelectionPage({
     super.key,
     required this.ticketId,
     required this.currentUserId,
+    this.isForTeamDelegate = false,
   });
 
   @override
@@ -35,7 +38,6 @@ class _OrganizationSelectionPageState extends State<OrganizationSelectionPage> {
       if (response.statusCode == 200) {
         List<dynamic> allOrgs = jsonDecode(response.body);
 
-
         List<dynamic> filteredOrgs = allOrgs.where((org) => org['canManage'] == true).toList();
 
         setState(() {
@@ -56,39 +58,57 @@ class _OrganizationSelectionPageState extends State<OrganizationSelectionPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
-        title: const Text('Select an Organization', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: const Color(0xFFF9FAFB),
+        elevation: 0,
+        title: const Text('Select an Organization', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        iconTheme: const IconThemeData(color: Colors.black),
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : managedOrgs.isEmpty
-          ? const Center(child: Text("No organizations available for delegation."))
+          ? const Center(child: Text("No organizations available for delegation.", style: TextStyle(color: Colors.grey)))
           : ListView.builder(
+        padding: const EdgeInsets.all(16),
         itemCount: managedOrgs.length,
         itemBuilder: (context, index) {
           final org = managedOrgs[index];
-          return Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade300),
-            ),
+          // 💡 优化：直接由 ListTile 接管背景和圆角
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
             child: ListTile(
-              title: Text(org['name'] ?? 'Unnamed Organization', style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text('Members: ${org['memberCount'] ?? 0}'),
-              trailing: const Icon(Icons.chevron_right),
+              tileColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: Colors.grey.shade300),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              title: Text(org['name'] ?? 'Unnamed Organization', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              subtitle: Text('Members: ${org['memberCount'] ?? 0}', style: const TextStyle(color: Colors.grey)),
+              trailing: const Icon(Icons.chevron_right, color: Colors.blueAccent),
               onTap: () {
-
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => TeamSelectionPage(
-                      ticketId: widget.ticketId,
-                      orgId: org['organizationId'],
-                      currentUserId: widget.currentUserId,
+                if (widget.isForTeamDelegate) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => TeamSelectionForTeamDelegatePage(
+                        ticketId: widget.ticketId,
+                        orgId: org['organizationId'],
+                        currentUserId: widget.currentUserId,
+                      ),
                     ),
-                  ),
-                );
+                  );
+                } else {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => TeamSelectionPage(
+                        ticketId: widget.ticketId,
+                        orgId: org['organizationId'],
+                        currentUserId: widget.currentUserId,
+                      ),
+                    ),
+                  );
+                }
               },
             ),
           );

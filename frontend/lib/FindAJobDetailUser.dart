@@ -3,8 +3,8 @@ import 'package:ticketing_app/main.dart';
 import 'package:ticketing_app/models/ticket_comment.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:ticketing_app/TeamSelection.dart';
 import 'package:ticketing_app/OrganizationSelection.dart';
+import 'package:ticketing_app/TeamSelectionForTeamDelegatePage.dart';
 
 
 class FindAJobDetailUser extends StatefulWidget {
@@ -211,7 +211,7 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
                 width: widget.isManager ? 160 : 200,
                 height: 56,
                 child: FloatingActionButton(
-                  heroTag: "btn_accept", // 💡 必须加 heroTag，防止页面有多个 FAB 冲突
+                  heroTag: "btn_accept", //
                   onPressed: () async {
                     print("🚀 正在点击 Accept 按钮...");
 
@@ -252,27 +252,83 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
                 )
             ),
 
-            // 2. 💡 专属管理员的 Delegate 按钮
+            // 2.
             if (widget.isManager) ...[
-              const SizedBox(width: 16), // 两个按钮之间的间距
+              const SizedBox(width: 16),
               SizedBox(
                 width: 160,
                 height: 56,
                 child: FloatingActionButton(
-                  heroTag: "btn_delegate", // 💡 必须加 heroTag
-                  onPressed: () {
-
-                    // jump to organizationpage to select specific organization
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => OrganizationSelectionPage(ticketId: widget.ticketId, currentUserId: widget.currentUserId,),
-                      ),
-                    );
-                  },
-                  backgroundColor: Colors.blueAccent, // 用蓝色与 Accept 区分开
+                  heroTag: "btn_delegate",
+                  backgroundColor: Colors.blueAccent,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
                   child: const Text('Delegate', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                  onPressed: () async {
+
+                    final RenderBox button = context.findRenderObject() as RenderBox;
+                    final RenderBox overlay = Navigator.of(context).overlay!.context.findRenderObject() as RenderBox;
+                    final RelativeRect position = RelativeRect.fromRect(
+                      Rect.fromPoints(
+                        button.localToGlobal(const Offset(0, -40), ancestor: overlay),
+                        button.localToGlobal(button.size.bottomRight(const Offset(0, -40)), ancestor: overlay),
+                      ),
+                      Offset.zero & overlay.size,
+                    );
+
+                    final String? choice = await showMenu<String>(
+                      context: context,
+                      position: position,
+                      items: const [
+                        PopupMenuItem<String>(
+                          value: 'individual',
+                          child: Row(
+                            children: [
+                              Icon(Icons.person, color: Colors.blueAccent),
+                              SizedBox(width: 8),
+                              Text('Delegate to Individual', style: TextStyle(fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem<String>(
+                          value: 'team',
+                          child: Row(
+                            children: [
+                              Icon(Icons.group, color: Colors.green),
+                              SizedBox(width: 8),
+                              Text('Delegate to Team', style: TextStyle(fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
+
+
+                    if (choice == 'individual') {
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => OrganizationSelectionPage(
+                            ticketId: widget.ticketId,
+                            currentUserId: widget.currentUserId,
+                            isForTeamDelegate: false, //personalseletion line
+                          ),
+                        ),
+                      );
+                    } else if (choice == 'team') {
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => OrganizationSelectionPage(
+                            ticketId: widget.ticketId,
+                            currentUserId: widget.currentUserId,
+                            isForTeamDelegate: true, // teamselection line
+                          ),
+                        ),
+                      );
+                    }
+                  },
                 ),
               ),
             ],
