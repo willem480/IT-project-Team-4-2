@@ -136,15 +136,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> {
             if (!StringUtils.isBlank(newEmail)) {
                 user.setEmail(newEmail);
             }
-            else if (!StringUtils.isBlank(newName)) {
+            if (!StringUtils.isBlank(newName)) {
                 user.setName(newName);
             }
 
-            else if (!StringUtils.isBlank(newDescription)) {
+            if (!StringUtils.isBlank(newDescription)) {
                 user.setDescription(newDescription);
             }
             saveOrUpdate(user);
         }
+        else throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "you are updating the information of a user that doesn't exist");
     }
 
     private UserReturn createBasicUserReturn(User user) {
