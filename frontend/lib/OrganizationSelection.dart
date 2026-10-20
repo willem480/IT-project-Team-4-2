@@ -35,7 +35,7 @@ class _OrganizationSelectionPageState extends State<OrganizationSelectionPage> {
       if (response.statusCode == 200) {
         List<dynamic> allOrgs = jsonDecode(response.body);
 
-        // 过滤出 canManage 为 true 的组织
+
         List<dynamic> filteredOrgs = allOrgs.where((org) => org['canManage'] == true).toList();
 
         setState(() {
@@ -78,13 +78,13 @@ class _OrganizationSelectionPageState extends State<OrganizationSelectionPage> {
               subtitle: Text('Members: ${org['memberCount'] ?? 0}'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
-                // 💡 关键接力：带着选中的 orgId 跳转到选团队页面
+
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => TeamSelectionPage(
                       ticketId: widget.ticketId,
-                      orgId: org['organizationId'], // 传给下一页
+                      orgId: org['organizationId'],
                       currentUserId: widget.currentUserId,
                     ),
                   ),

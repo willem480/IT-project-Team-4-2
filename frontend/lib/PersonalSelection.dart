@@ -100,13 +100,13 @@ class _PersonnelSelectionPageState extends State<PersonnelSelectionPage> {
               itemBuilder: (context, index) {
                 final member = teamMembers[index];
                 return RadioListTile<int>(
-                  // 根据截图提取 userName 和 email 字段
+
                   title: Text(member['userName'] ?? 'Unknown User', style: const TextStyle(fontWeight: FontWeight.w500)),
                   subtitle: Text(member['email'] ?? '', style: const TextStyle(color: Colors.black54)),
-                  // 提取 userId 作为选中时的值
+
                   value: member['userId'],
                   groupValue: selectedUserId,
-                  activeColor: Colors.blueAccent, // 选中时圆点的颜色
+                  activeColor: Colors.blueAccent,
                   onChanged: (int? value) {
                     setState(() {
                       selectedUserId = value;
@@ -122,11 +122,11 @@ class _PersonnelSelectionPageState extends State<PersonnelSelectionPage> {
               width: double.infinity,
               height: 56,
               child: ElevatedButton(
-                // 当未选中任何人时，禁用按钮 (onPressed 设为 null)
+
                 onPressed: selectedUserId == null ? null : _submitDelegation,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.lightGreen,
-                  disabledBackgroundColor: Colors.grey.shade300, // 禁用状态下的颜色
+                  disabledBackgroundColor: Colors.grey.shade300,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
                 ),
                 child: const Text('Confirm Delegation', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
