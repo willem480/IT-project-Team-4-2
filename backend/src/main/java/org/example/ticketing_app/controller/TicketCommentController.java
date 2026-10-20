@@ -28,7 +28,7 @@ public class TicketCommentController {
         return ticketCommentService.getTicketCommentByTicketID(operatorId, ticketId);
     }
 
-    @GetMapping("deleteComment")
+    @DeleteMapping("deleteComment")
     public boolean deleteComment(@RequestParam int operatorId, @RequestParam int ticketCommentId) {
         return ticketCommentService.deleteTicketComment(operatorId, ticketCommentId);
     }
