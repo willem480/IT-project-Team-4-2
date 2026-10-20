@@ -25,6 +25,24 @@ class _PostJobPageState extends State<PostJob> {
   final TextEditingController assigndateController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
+  Future<void> fetchUserData() async {
+    final url = Uri.parse('http://127.0.0.1:8080/profilePage/getUser?userId=${widget.currentUserId}');
+    final response = await http.post(url);
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> jsonData = jsonDecode(response.body);
+      setState(() {
+        userName = jsonData['name'] ?? 'User';
+      });
+    }
+  }
+
+  @override
+  void initState(){
+    super.initState();
+    fetchUserData();
+  }
+
+
   @override
   void dispose(){
     nameController.dispose();
@@ -37,8 +55,6 @@ class _PostJobPageState extends State<PostJob> {
   }
   Future<void> submitTicketData() async {
     final url = Uri.parse('http://127.0.0.1:8080/ticket/createTicket');
-
-   
     Map<String, dynamic> requestData = {
       'posterId': widget.currentUserId,
       "title": nameController.text, 
@@ -71,6 +87,8 @@ class _PostJobPageState extends State<PostJob> {
     } catch (e) {
       print("💥 请求发生错误: $e");
     }
+
+
   }
 
   @override

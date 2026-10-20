@@ -153,7 +153,6 @@
       fetchFirstUserData();
       fetchPostedTickets('');
       fetchCompletedTickets('');
-
     }
 
     void _showEditDescriptionDialog() {
