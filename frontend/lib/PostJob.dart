@@ -26,30 +26,6 @@ class _PostJobPageState extends State<PostJob> {
   final TextEditingController assigndateController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime(2030),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(primary: Colors.blueAccent),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null) {
-      setState(() {
-        String day = picked.day.toString().padLeft(2, '0');
-        String month = picked.month.toString().padLeft(2, '0');
-        String year = picked.year.toString().substring(2);
-        assigndateController.text = "$day/$month/$year";
-      });
-    }
-  }
   Future<void> fetchUserData() async {
     final url = Uri.parse('http://127.0.0.1:8080/profilePage/getUser?userId=${widget.currentUserId}');
     final response = await http.post(url);
@@ -274,24 +250,7 @@ class _PostJobPageState extends State<PostJob> {
             ),
 
             SizedBox(height: 32.0),
-          
-            //Final date
 
-            const Text('Final date', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.black)),
-            TextField(
-              controller: assigndateController,
-              readOnly: true,
-              onTap: () => _selectDate(context),
-              decoration: InputDecoration(
-                hintText: 'Select final date (dd/mm/yy)',
-                prefixIcon: const Icon(Icons.calendar_month, color: Colors.grey),
-                hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Colors.black, width: 1.0)),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Colors.blue, width: 1.0)),
-              ),
-            ),
-
-            SizedBox(height: 32.0),
             
             //description
             const Text(

@@ -502,7 +502,6 @@
             ticket.description ?? "No description",
             ticket.idTicket ?? 0,
             ticket.datePosted?.toString() ?? "No date",
-            ticket.dateCompleted?.toString() ?? "No deadline",
             widget.userId,
 
 
@@ -533,7 +532,6 @@
             ticket.description ?? "No description",
             ticket.idTicket ?? 0, 
             ticket.datePosted?.toString() ?? 'No date',
-            ticket.dateCompleted?.toString() ?? 'No deadline',
             widget.userId,
             );
             
@@ -561,11 +559,11 @@
       );
     }
 
-    Widget _buildTicket(BuildContext context, String title, String companyName, String price, String description, int ticketId, String datePosted, String finalDate ,int currentUserId){
+    Widget _buildTicket(BuildContext context, String title, String companyName, String price, String description, int ticketId, String datePosted, int currentUserId){
         return InkWell(
             onTap: (){
               print('check your posted jobs');
-              Navigator.push(context, MaterialPageRoute(builder: (context) => PostAJobDetailUser(ticketId: ticketId, title: title, company: companyName, price: price, description: description, date: datePosted, finalDate: finalDate, currentUserId: currentUserId,)));
+              Navigator.push(context, MaterialPageRoute(builder: (context) => PostAJobDetailUser(ticketId: ticketId, title: title, company: companyName, price: price, description: description, date: datePosted, currentUserId: currentUserId,)));
             },
             borderRadius: BorderRadius.circular(12),
             child: Container(

@@ -65,18 +65,18 @@ class _MyHomePageState extends State<MyHomePage> {
         for (var org in organizations) {
           if (org['canManage'] == true) {
             hasManagerPermission = true;
-            foundOrgId = org['organizationId']; // 💡 获取他担任管理员的公司 ID
+            foundOrgId = org['organizationId'];
             break;
           }
         }
 
         setState(() {
           isManager = hasManagerPermission;
-          managerOrgId = foundOrgId; // 💡 保存下来
+          managerOrgId = foundOrgId;
         });
       }
     } catch (e) {
-      print("💥 验证身份网络异常: $e");
+      print("identify error: $e");
     }
   }
 
@@ -105,10 +105,10 @@ class _MyHomePageState extends State<MyHomePage> {
           openTickets = parsedTickets;
 
         });
-        print("✅ 首页工单获取成功，共 ${openTickets.length} 条");
+        print("ticket get successfully ${openTickets.length} ");
       }
     } catch (e) {
-      print("💥 首页工单获取失败: $e");
+      print("get ticket error $e");
     }
 
   }
@@ -134,10 +134,10 @@ class _MyHomePageState extends State<MyHomePage> {
             openTickets = parsedTickets;
 
           });
-          print("✅ 首页工单获取成功，共 ${openTickets.length} 条");
+          print("get tickte successfully， ${openTickets.length} ");
         }
       } catch (e) {
-        print("💥 首页工单获取失败: $e");
+        print("get ticket error: $e");
       }
     }
 
@@ -162,10 +162,10 @@ void fetchAssignTickets() async {
             openTickets = parsedTickets;
 
           });
-          print("✅ 首页工单获取成功，共 ${openTickets.length} 条");
+          print(" get ticket successfully， ${openTickets.length} ");
         }
       } catch (e) {
-        print("💥 首页工单获取失败: $e");
+        print("💥 get ticket error: $e");
       }
     }
 
@@ -176,11 +176,9 @@ void fetchAssignTickets() async {
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({}), // 保持有 body
+        body: jsonEncode({}),
       );
 
-      print("📡 getUser 状态码: ${response.statusCode}");
-      print("📦 getUser 返回内容: ${response.body}");
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
@@ -188,12 +186,10 @@ void fetchAssignTickets() async {
         setState(() {
           userName = myUser.name ?? 'User';
         });
-        print("✅ 用户名成功更新为: $userName");
-      } else {
-        print("❌ 获取用户失败，状态码: ${response.statusCode}");
+        print("username changed to: $userName");
       }
     } catch (e) {
-      print("💥 解析用户数据时发生异常: $e"); // 👈 错误会精准打印在这里
+      print("parse user data error: $e");
     }
   }
     @override
@@ -280,7 +276,6 @@ void fetchAssignTickets() async {
                           currentUserId: widget.currentUserId,
                           isManager: isManager,
                           managerOrgId: managerOrgId,
-                          finalDate: selection.dateCompleted?.toString()??"No deadline",
                         ),
                       ),
                     );
@@ -457,7 +452,6 @@ void fetchAssignTickets() async {
                           ticket.description ?? "No description",
                           ticket.idTicket ?? 0,
                           ticket.datePosted?.toString() ?? "no date",
-                          ticket.dateCompleted?.toString() ?? "No deadline",
                       );
                     }).toList(),
                   ),
@@ -532,16 +526,15 @@ void fetchAssignTickets() async {
 
     );
   }
-  Widget _buildJobCard(BuildContext context, String title, String companyName, String price, String description, int ticketId, String date, String finalDate){
+  Widget _buildJobCard(BuildContext context, String title, String companyName, String price, String description, int ticketId, String date){
     return Padding(
-      // 让卡片距离屏幕左右有一点边距，保持呼吸感
+
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: InkWell(
           onTap: (){
             print('tap job ticket in find job page');
             Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser(
                 ticketId: ticketId, title: title, company: companyName, price: price, description: description, date: date,
-                finalDate: finalDate,
                 currentUserId: widget.currentUserId, isManager: isManager, managerOrgId: managerOrgId
             )),);
           },
@@ -582,7 +575,8 @@ void fetchAssignTickets() async {
                           ],
                         ),
                         const SizedBox(height: 6),
-                        Text("Ticket #$ticketId", style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                        Text("Poster Name: $userName", style: const TextStyle(fontSize: 12, color: Colors.black54)),
+
                       ],
                     ),
                   ),
@@ -595,7 +589,8 @@ void fetchAssignTickets() async {
                     children: [
                       Text('\$$price', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 18)),
                       const SizedBox(height: 12),
-                      Text("DL: $finalDate", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.redAccent)),
+                      Text(date, style: TextStyle(fontSize: 12, color: Colors.grey)),
+
                     ],
                   )
                 ],

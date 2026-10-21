@@ -343,7 +343,7 @@ class _AcceptedJobDetailState extends State<AcceptedJobDetail> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'User ID: ${comment.userIduser}',
+                              'User ID: ${comment.posterId}',
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,

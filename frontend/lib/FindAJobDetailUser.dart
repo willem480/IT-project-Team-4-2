@@ -17,7 +17,6 @@ class FindAJobDetailUser extends StatefulWidget {
   final int currentUserId;
   final bool isManager;
   final int? managerOrgId;
-  final String finalDate;
   
 
   const FindAJobDetailUser({
@@ -31,7 +30,6 @@ class FindAJobDetailUser extends StatefulWidget {
     required this.currentUserId,
     required this.isManager,
     required this.managerOrgId,
-    required this.finalDate,
     });
 
   @override
@@ -44,8 +42,33 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
   List<ticketComment> commentList = [];
   TextEditingController commentController = TextEditingController();
 
+  Future<void> _deleteComment(int commentId) async {
+
+    final url = Uri.parse("http://127.0.0.1:8080/ticketComment/deleteComment?operatorId=${widget.currentUserId}&ticketCommentId=$commentId");
+
+    try {
+      final response = await http.delete(
+        url,
+        headers: {"Content-Type": "application/json"},
+      );
+
+      if (response.statusCode == 200) {
+
+        fetchComment();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("✅ Comment deleted successfully!")),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("❌ Failed to delete, status: ${response.statusCode}")),
+        );
+      }
+    } catch (e) {
+      print("💥 Delete comment error: $e");
+    }
+  }
   Future<void> fetchComment() async {
-    final url = Uri.parse("http://127.0.0.1:8080/ticketComment/getTicketComments?ticketId=${widget.ticketId}");
+    final url = Uri.parse("http://127.0.0.1:8080/ticketComment/getTicketComments?ticketId=${widget.ticketId}&operatorId=${widget.currentUserId}");
 
     try {
       final response = await http.post(
@@ -69,13 +92,12 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
         });
       }
     } catch(e) {
-      print("💥 fail to get a comment: $e");
+      print("fail to get a comment: $e");
     }
   }
 
   Future<void> postNewComment() async {
     if (commentController.text.trim().isEmpty) return;
-    print("🚀 正在发送评论...");
 
 
     final url = Uri.parse("http://127.0.0.1:8080/ticketComment/postComment?userId=${widget.currentUserId}&ticketId=${widget.ticketId}&comment=${commentController.text}");
@@ -87,21 +109,16 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
         body: jsonEncode({}), // 💡
       );
 
-      print("📡 Post comment 状态码: ${response.statusCode}");
 
       if (response.statusCode == 200) {
         commentController.clear();
         fetchComment();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("✅ 评论发表成功！")),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("发表失败，状态码: ${response.statusCode}")),
+          const SnackBar(content: Text("Comment sent successfully！")),
         );
       }
     } catch (e) {
-      print("💥 发送评论异常: $e");
+      print("💥 comment send error: $e");
     }
   }
 
@@ -159,7 +176,6 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
                           const SizedBox(height: 12),
                           Text(widget.company,style: TextStyle(fontSize: 18),),
                           Text("Posted on: ${widget.date}", style: TextStyle(fontSize: 16)),
-                          Text("Deadline: ${widget.finalDate}", style: TextStyle(fontSize: 14, color: Colors.redAccent, fontWeight: FontWeight.bold)),
                           const Spacer(), 
                           Text('\$ ${widget.price}', style: const TextStyle(fontWeight:FontWeight.bold, fontSize: 30)),
                         
@@ -207,16 +223,15 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 20),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.center, // 按钮居中
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // 1. 原本的 Accept 按钮 (根据身份自适应宽度)
+
             SizedBox(
                 width: widget.isManager ? 160 : 200,
                 height: 56,
                 child: FloatingActionButton(
                   heroTag: "btn_accept", //
                   onPressed: () async {
-                    print("🚀 正在点击 Accept 按钮...");
 
                     final url = Uri.parse("http://127.0.0.1:8080/ticketAssignment/delegateJobIndividual?ticketId=${widget.ticketId}&assigneeId=${widget.currentUserId}");
 
@@ -227,12 +242,10 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
                         body: jsonEncode({}),
                       );
 
-                      print("📡 Accept 状态码: ${response.statusCode}");
-                      print("📦 Accept 返回: ${response.body}");
 
                       if (response.statusCode == 200) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("✅ 接受任务成功！")),
+                          const SnackBar(content: Text("job accept！")),
                         );
 
                         Navigator.pushAndRemoveUntil(
@@ -240,13 +253,9 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
                           MaterialPageRoute(builder: (context) => MyHomePage(title: 'Find a job', currentUserId: widget.currentUserId)),
                               (Route<dynamic> route) => false,
                         );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text("接受任务失败，状态码: ${response.statusCode}")),
-                        );
                       }
                     } catch (e) {
-                      print("💥 接受任务网络异常: $e");
+                      print("network job error: $e");
                     }
                   },
                   backgroundColor: Colors.lightGreen,
@@ -364,72 +373,177 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Comments', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-        const SizedBox(height: 12),
-        TextField(
-          controller: commentController,
-          maxLines: 4,
-          decoration: InputDecoration(
-            hintText: 'Add a comment...',
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade300),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade300),
-            ),
-          ),
+        const Text('Comments', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        const SizedBox(height: 16),
+
+        // 评论列表（聊天流）
+        commentList.isEmpty
+            ? const Padding(
+          padding: EdgeInsets.symmetric(vertical: 20.0),
+          child: Center(child: Text("No comments yet. Start the conversation!", style: TextStyle(color: Colors.grey))),
+        )
+            : Column(
+          children: commentList.map((comment) {
+            bool isMe = comment.ownedByCurUser;
+            String initial = comment.userName.isNotEmpty ? comment.userName.substring(0, 1).toUpperCase() : 'U';
+            String dateStr = comment.date.toString();
+            String displayDate = dateStr.length >= 10 ? dateStr.substring(0, 10) : dateStr;
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: Row(
+                mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (!isMe) ...[
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundColor: Colors.grey.shade300,
+                      child: Text(initial, style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+
+                  // 消息体
+                  Flexible(
+                    child: Column(
+                      crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                      children: [
+                        // 名字和时间标签
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 4.0, left: 4.0, right: 4.0),
+                          child: Text(
+                            '${comment.userName} (ID: ${comment.posterId}) • $displayDate',
+                            style: const TextStyle(fontSize: 11, color: Colors.grey),
+                          ),
+                        ),
+
+                        // 💡 核心修改：用 Builder 获取当前气泡的位置，并用 GestureDetector 监听双击
+                        Builder(
+                          builder: (BuildContext bubbleContext) {
+                            return GestureDetector(
+                              onDoubleTap: () async {
+                                // 如果不是自己发的评论，不允许删除（可根据业务需求修改）
+                                if (!isMe) return;
+
+                                // 获取当前气泡的渲染位置
+                                final RenderBox button = bubbleContext.findRenderObject() as RenderBox;
+                                final RenderBox overlay = Navigator.of(context).overlay!.context.findRenderObject() as RenderBox;
+
+                                // 计算菜单显示的位置（在气泡的正下方）
+                                final RelativeRect position = RelativeRect.fromRect(
+                                  Rect.fromPoints(
+                                    button.localToGlobal(button.size.bottomLeft(Offset.zero), ancestor: overlay),
+                                    button.localToGlobal(button.size.bottomRight(Offset.zero), ancestor: overlay),
+                                  ),
+                                  Offset.zero & overlay.size,
+                                );
+
+                                // 弹出下拉框
+                                final String? choice = await showMenu<String>(
+                                  context: context,
+                                  position: position,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  items: const [
+                                    PopupMenuItem<String>(
+                                      value: 'delete',
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.delete_outline, color: Colors.redAccent),
+                                          SizedBox(width: 8),
+                                          Text('Delete Comment', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                );
+
+                                //if user right click delete
+                                if (choice == 'delete') {
+                                  _deleteComment(comment.idticketComment);
+                                }
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: isMe ? Colors.blueAccent : Colors.white,
+                                  borderRadius: BorderRadius.only(
+                                    topLeft: const Radius.circular(16),
+                                    topRight: const Radius.circular(16),
+                                    bottomLeft: isMe ? const Radius.circular(16) : const Radius.circular(4),
+                                    bottomRight: isMe ? const Radius.circular(4) : const Radius.circular(16),
+                                  ),
+                                  border: isMe ? null : Border.all(color: Colors.grey.shade300),
+                                ),
+                                child: Text(
+                                  comment.content,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: isMe ? Colors.white : Colors.black87,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  if (isMe) ...[
+                    const SizedBox(width: 8),
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundColor: Colors.blueAccent,
+                      child: Text(initial, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ],
+              ),
+            );
+          }).toList(),
         ),
 
-        const SizedBox(height: 10),
-        Align(
-          alignment: Alignment.centerRight,
-          child: ElevatedButton(
-            onPressed: postNewComment,
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-            child: const Text("Post comment", style: TextStyle(color: Colors.white)),
-          )
-        ),
         const SizedBox(height: 20),
-        commentList.isEmpty ? 
-        const Padding(
-          padding: EdgeInsets.all(20.0),
-          child: Text("No comment yet", style: TextStyle(color: Colors.grey)),
-           ) 
-          ////////////////////////////////////////////////////////////
-        : Column(
-              children: commentList.map((comment) {
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey.shade200),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('User ID: ${comment.userIduser}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                          Text('${comment.date.year}-${comment.date.month}-${comment.date.day}', style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(comment.content, style: const TextStyle(fontSize: 14)),
-                    ],
-                  ),
-                );
-              }).toList(),
 
-              
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: commentController,
+                decoration: InputDecoration(
+                  hintText: 'Type a message...',
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: const BorderSide(color: Colors.blueAccent),
+                  ),
+                ),
+              ),
             ),
-            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            const SizedBox(width: 8),
+            Container(
+              decoration: const BoxDecoration(
+                color: Colors.blueAccent,
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.send, color: Colors.white, size: 20),
+                onPressed: postNewComment,
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }
