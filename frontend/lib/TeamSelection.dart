@@ -32,7 +32,7 @@ class _TeamSelectionPageState extends State<TeamSelectionPage> {
   Future<void> fetchManagedTeams() async {
     final url = Uri.parse("http://127.0.0.1:8080/organization/getOrganizationTeams?organizationId=${widget.orgId}&viewerUserId=${widget.currentUserId}");
 
-    print("===== 开始请求团队列表: $url =====");
+    print("request team list $url =====");
 
     try {
       final response = await http.get(url);
@@ -53,7 +53,7 @@ class _TeamSelectionPageState extends State<TeamSelectionPage> {
       }
     } catch (e) {
       setState(() => isLoading = false);
-      print("===== 网络报错: $e =====");
+      print("network error");
     }
   }
 
@@ -76,7 +76,6 @@ class _TeamSelectionPageState extends State<TeamSelectionPage> {
         itemCount: managedTeams.length,
         itemBuilder: (context, index) {
           final team = managedTeams[index];
-          // 💡 优化：直接用 ListTile 接管白色背景、圆角和边框，消除警告
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: ListTile(

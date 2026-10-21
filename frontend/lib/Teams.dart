@@ -315,6 +315,7 @@ class _TeamsPageState extends State<TeamsPage> {
   }
 
   void _openAdmin(BuildContext context, int teamId) {
+    if (!canManage) return;
     Navigator.push<void>(
       context,
       MaterialPageRoute<void>(
@@ -638,10 +639,11 @@ class _TeamCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   GestureDetector(
                     // Keep disabled button taps from opening the parent card.
-                    onTap: isManager && isTeamMember ? null : () {},
+                    behavior: HitTestBehavior.opaque,
+                    onTap: isManager ? null : () {},
                     excludeFromSemantics: true,
                     child: TextButton(
-                      onPressed: isManager && isTeamMember ? onManage : null,
+                      onPressed: isManager ? onManage : null,
                       style: TextButton.styleFrom(
                         foregroundColor: const Color(0xFF065F46),
                         backgroundColor: const Color(0xFFD1FAE5),
@@ -649,9 +651,9 @@ class _TeamCard extends StatelessWidget {
                         disabledBackgroundColor: const Color(0xFFF3F4F6),
                         shape: const StadiumBorder(),
                       ),
-                      child: Text(
-                        isTeamMember ? 'Manage' : 'You are not in this team',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      child: const Text(
+                        'Manage',
+                        style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
@@ -699,6 +701,20 @@ class _TeamCard extends StatelessWidget {
                       ),
                     ),
                   ),
+                  if (!isManager && !isTeamMember) ...[
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      flex: 2,
+                      child: Text(
+                        'You are not in this team.',
+                        textAlign: TextAlign.right,
+                        style: TextStyle(
+                          color: Color(0xFF6B7280),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ],

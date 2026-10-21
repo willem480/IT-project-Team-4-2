@@ -32,11 +32,92 @@ class PostAJobDetailUser extends StatefulWidget {
 
 class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
   bool is_Detail_Tab = true;
-
   List<ticketComment> commentList = [];
   TextEditingController commentController = TextEditingController();
+  late String currentTitle;
+  late String currentCompany;
+  late String currentPrice;
+  late String currentDescription;
 
-  // 获取评论
+  Future<void> _updateTicketData(String newTitle, String newCompany, String newPrice, String newDesc) async {
+    final url = Uri.parse(
+        'http://127.0.0.1:8080/ticket/updatePostedTicket'
+            '?ticketId=${widget.ticketId}'
+            '&title=${Uri.encodeComponent(newTitle)}'
+            '&location=${Uri.encodeComponent(newCompany)}'
+            '&pay=${Uri.encodeComponent(newPrice)}'
+            '&description=${Uri.encodeComponent(newDesc)}'
+    );
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({}),
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          currentTitle = newTitle;
+          currentCompany = newCompany;
+          currentPrice = newPrice;
+          currentDescription = newDesc;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Job updated successfully!")));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Failed to update: ${response.statusCode}")));
+      }
+    } catch (e) {
+      print("Update error: $e");
+    }
+  }
+
+  void _showEditDialog() {
+    TextEditingController titleController = TextEditingController(text: currentTitle);
+    TextEditingController companyController = TextEditingController(text: currentCompany);
+    TextEditingController priceController = TextEditingController(text: currentPrice);
+    TextEditingController descController = TextEditingController(text: currentDescription);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Edit Job Details"),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(controller: titleController, decoration: const InputDecoration(labelText: "Title")),
+                const SizedBox(height: 8),
+                TextField(controller: companyController, decoration: const InputDecoration(labelText: "Location / Company")),
+                const SizedBox(height: 8),
+                TextField(controller: priceController, decoration: const InputDecoration(labelText: "Pay (\$)"), keyboardType: TextInputType.number),
+                const SizedBox(height: 8),
+                TextField(controller: descController, decoration: const InputDecoration(labelText: "Description"), maxLines: 3),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _updateTicketData(
+                  titleController.text,
+                  companyController.text,
+                  priceController.text,
+                  descController.text,
+                );
+              },
+              child: const Text("Save"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
   Future<void> fetchComment() async {
     final url = Uri.parse("http://127.0.0.1:8080/ticketComment/getTicketComments?ticketId=${widget.ticketId}&operatorId=${widget.currentUserId}");
 
@@ -62,11 +143,10 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
         });
       }
     } catch(e) {
-      print("💥 fail to get a comment: $e");
+      print("fail to get a comment: $e");
     }
   }
 
-  // 发送评论
   Future<void> postNewComment() async {
     if (commentController.text.trim().isEmpty) return;
 
@@ -83,7 +163,7 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
         commentController.clear();
         fetchComment();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("✅ Comment sent successfully!")),
+          const SnackBar(content: Text("Comment sent successfully!")),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -91,11 +171,10 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
         );
       }
     } catch (e) {
-      print("💥 发送评论异常: $e");
+      print("comment error: $e");
     }
   }
 
-  // 删除评论
   Future<void> _deleteComment(int commentId) async {
     final url = Uri.parse("http://127.0.0.1:8080/ticketComment/deleteComment?operatorId=${widget.currentUserId}&ticketCommentId=$commentId");
 
@@ -106,23 +185,27 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
       );
 
       if (response.statusCode == 200) {
-        fetchComment(); // 删除成功后刷新列表
+        fetchComment();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("✅ Comment deleted successfully!")),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("❌ Failed to delete, status: ${response.statusCode}")),
+          SnackBar(content: Text("Failed to delete, status: ${response.statusCode}")),
         );
       }
     } catch (e) {
-      print("💥 Delete comment error: $e");
+      print("Delete comment error: $e");
     }
   }
 
   @override
   void initState(){
     super.initState();
+    currentTitle = widget.title;
+    currentCompany = widget.company;
+    currentPrice = widget.price;
+    currentDescription = widget.description;
     fetchComment();
   }
 
@@ -141,6 +224,13 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
         backgroundColor: const Color(0xFFF9FAFB),
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
+        actions: [
+          if (!widget.isReadOnly)
+            IconButton(
+              icon: const Icon(Icons.edit, color: Colors.blueAccent),
+              onPressed: _showEditDialog,
+            ),
+        ],
       ),
       body: Column(
         children: [
@@ -150,7 +240,6 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 顶部工单卡片
                     Container(
                         height: 300,
                         width: double.infinity,
@@ -163,19 +252,19 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(widget.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 30)),
+                            Text(currentTitle, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 30)),
                             const SizedBox(height: 12),
-                            Text(widget.company, style: const TextStyle(fontSize: 18, color: Colors.grey)),
+                            Text(currentCompany, style: const TextStyle(fontSize: 18, color: Colors.grey)),
                             const SizedBox(height: 16),
-                            Text("Posted on: ${widget.date}", style: const TextStyle(fontSize: 16)),
+                            Text("Posted on: ${widget.date.length >= 10 ? widget.date.substring(0, 10) : widget.date}", style: const TextStyle(fontSize: 16)),
                             const Spacer(),
-                            Text('\$ ${widget.price}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 32, color: Colors.green)),
+                            Text('\$ $currentPrice', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 32, color: Colors.green)),
                           ],
                         )
                     ),
+
                     const SizedBox(height: 20),
 
-                    // 按钮区
                     Row(
                       children: [
                         _buildTabButton('Details', is_Detail_Tab, (){
@@ -220,24 +309,23 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
                   print("network request error");
                 }
               },
-              backgroundColor: Colors.lightGreen,
+              backgroundColor: Colors.red,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
-              child: const Text('Completed', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+              child: const Text('Close', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
             )
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
-
   Widget _buildDetailsSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text('Description', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         const SizedBox(height: 8),
-        Text(widget.description, style: const TextStyle(color: Colors.black54)),
-        const SizedBox(height: 80), // 留出底部按钮的空间
+        Text(currentDescription, style: const TextStyle(color: Colors.black54)),
+        const SizedBox(height: 80),
       ],
     );
   }
@@ -252,7 +340,7 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
         commentList.isEmpty
             ? const Padding(
           padding: EdgeInsets.symmetric(vertical: 20.0),
-          child: Center(child: Text("No comments yet. Start the conversation!", style: TextStyle(color: Colors.grey))),
+          child: Center(child: Text("No comments yet.", style: TextStyle(color: Colors.grey))),
         )
             : Column(
           children: commentList.map((comment) {

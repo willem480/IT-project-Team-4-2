@@ -57,15 +57,15 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
 
         fetchComment();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("✅ Comment deleted successfully!")),
+          const SnackBar(content: Text("Comment deleted successfully!")),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("❌ Failed to delete, status: ${response.statusCode}")),
+          SnackBar(content: Text("Failed to delete, status: ${response.statusCode}")),
         );
       }
     } catch (e) {
-      print("💥 Delete comment error: $e");
+      print(" Delete comment error: $e");
     }
   }
   Future<void> fetchComment() async {
@@ -107,7 +107,7 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
       final response = await http.post(
         url,
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode({}), // 💡
+        body: jsonEncode({}),
       );
 
 
@@ -119,7 +119,7 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
         );
       }
     } catch (e) {
-      print("💥 comment send error: $e");
+      print("comment send error: $e");
     }
   }
 
@@ -159,8 +159,8 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
                 children: [
                   //intro
                   Container(
-                    height: 300,
-                    width: 500,
+                    height: 250,
+                    width: 800,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -176,7 +176,7 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
                           Text(widget.title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 30)), 
                           const SizedBox(height: 12),
                           Text(widget.company,style: TextStyle(fontSize: 18),),
-                          Text("Posted on: ${widget.date}", style: TextStyle(fontSize: 16)),
+                          Text("Posted on: ${widget.date.length >= 10 ? widget.date.substring(0,10) : widget.date}", style: TextStyle(fontSize: 16)),
                           const Spacer(), 
                           Text('\$ ${widget.price}', style: const TextStyle(fontWeight:FontWeight.bold, fontSize: 30)),
                         
@@ -265,86 +265,90 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
                 )
             ),
 
-            // 2.
             if (widget.isManager) ...[
               const SizedBox(width: 16),
               SizedBox(
                 width: 160,
                 height: 56,
-                child: FloatingActionButton(
-                  heroTag: "btn_delegate",
-                  backgroundColor: Colors.blueAccent,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
-                  child: const Text('Delegate', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-                  onPressed: () async {
+                child: Builder(
+                    builder: (BuildContext buttonContext) {
+                      return FloatingActionButton(
+                        heroTag: "btn_delegate",
+                        backgroundColor: Colors.blueAccent,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
+                        child: const Text('Delegate', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                        onPressed: () async {
+                          final RenderBox button = buttonContext.findRenderObject() as RenderBox;
+                          final RenderBox overlay = Navigator.of(context).overlay!.context.findRenderObject() as RenderBox;
 
-                    final RenderBox button = context.findRenderObject() as RenderBox;
-                    final RenderBox overlay = Navigator.of(context).overlay!.context.findRenderObject() as RenderBox;
-                    final RelativeRect position = RelativeRect.fromRect(
-                      Rect.fromPoints(
-                        button.localToGlobal(const Offset(0, -40), ancestor: overlay),
-                        button.localToGlobal(button.size.bottomRight(const Offset(0, -40)), ancestor: overlay),
-                      ),
-                      Offset.zero & overlay.size,
-                    );
 
-                    final String? choice = await showMenu<String>(
-                      context: context,
-                      position: position,
-                      items: const [
-                        PopupMenuItem<String>(
-                          value: 'individual',
-                          child: Row(
-                            children: [
-                              Icon(Icons.person, color: Colors.blueAccent),
-                              SizedBox(width: 8),
-                              Text('Delegate to Individual', style: TextStyle(fontWeight: FontWeight.bold)),
+                          final RelativeRect position = RelativeRect.fromRect(
+                            Rect.fromPoints(
+                              button.localToGlobal(const Offset(0, -100), ancestor: overlay),
+                              button.localToGlobal(button.size.bottomRight(Offset.zero), ancestor: overlay),
+                            ),
+                            Offset.zero & overlay.size,
+                          );
+
+                          final String? choice = await showMenu<String>(
+                            context: context,
+                            position: position,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            items: const [
+                              PopupMenuItem<String>(
+                                value: 'individual',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.person, color: Colors.blueAccent),
+                                    SizedBox(width: 8),
+                                    Text('Delegate to Individual', style: TextStyle(fontWeight: FontWeight.bold)),
+                                  ],
+                                ),
+                              ),
+                              PopupMenuItem<String>(
+                                value: 'team',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.group, color: Colors.green),
+                                    SizedBox(width: 8),
+                                    Text('Delegate to Team', style: TextStyle(fontWeight: FontWeight.bold)),
+                                  ],
+                                ),
+                              ),
                             ],
-                          ),
-                        ),
-                        PopupMenuItem<String>(
-                          value: 'team',
-                          child: Row(
-                            children: [
-                              Icon(Icons.group, color: Colors.green),
-                              SizedBox(width: 8),
-                              Text('Delegate to Team', style: TextStyle(fontWeight: FontWeight.bold)),
-                            ],
-                          ),
-                        ),
-                      ],
-                    );
+                          );
 
-
-                    if (choice == 'individual') {
-
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => OrganizationSelectionPage(
-                            ticketId: widget.ticketId,
-                            currentUserId: widget.currentUserId,
-                            isForTeamDelegate: false, //personalseletion line
-                          ),
-                        ),
-                      );
-                    } else if (choice == 'team') {
-
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => OrganizationSelectionPage(
-                            ticketId: widget.ticketId,
-                            currentUserId: widget.currentUserId,
-                            isForTeamDelegate: true, // teamselection line
-                          ),
-                        ),
+                          if (choice == 'individual') {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => OrganizationSelectionPage(
+                                  ticketId: widget.ticketId,
+                                  currentUserId: widget.currentUserId,
+                                  isForTeamDelegate: false, //personalseletion line
+                                ),
+                              ),
+                            );
+                          } else if (choice == 'team') {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => OrganizationSelectionPage(
+                                  ticketId: widget.ticketId,
+                                  currentUserId: widget.currentUserId,
+                                  isForTeamDelegate: true, // teamselection line
+                                ),
+                              ),
+                            );
+                          }
+                        },
                       );
                     }
-                  },
                 ),
               ),
             ],
+
+
           ],
         ),
       ),
@@ -359,9 +363,9 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Description', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        const Text('Description', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 25)),
         const SizedBox(height: 8),
-        Text(widget.description, style: TextStyle(color: Colors.black54)),
+        Text(widget.description, style: TextStyle(fontSize: 20, color: Colors.black54)),
         const SizedBox(height: 20),
         // Placeholder for Map Integration
 
@@ -377,11 +381,10 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
         const Text('Comments', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         const SizedBox(height: 16),
 
-        // 评论列表（聊天流）
         commentList.isEmpty
             ? const Padding(
           padding: EdgeInsets.symmetric(vertical: 20.0),
-          child: Center(child: Text("No comments yet. Start the conversation!", style: TextStyle(color: Colors.grey))),
+          child: Center(child: Text("No comments yet.", style: TextStyle(color: Colors.grey))),
         )
             : Column(
           children: commentList.map((comment) {
@@ -428,19 +431,16 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
                           ),
                         ),
 
-                        // 💡 核心修改：用 Builder 获取当前气泡的位置，并用 GestureDetector 监听双击
                         Builder(
                           builder: (BuildContext bubbleContext) {
                             return GestureDetector(
                               onDoubleTap: () async {
-                                // 如果不是自己发的评论，不允许删除（可根据业务需求修改）
                                 if (!isMe) return;
 
-                                // 获取当前气泡的渲染位置
+
                                 final RenderBox button = bubbleContext.findRenderObject() as RenderBox;
                                 final RenderBox overlay = Navigator.of(context).overlay!.context.findRenderObject() as RenderBox;
 
-                                // 计算菜单显示的位置（在气泡的正下方）
                                 final RelativeRect position = RelativeRect.fromRect(
                                   Rect.fromPoints(
                                     button.localToGlobal(button.size.bottomLeft(Offset.zero), ancestor: overlay),
@@ -449,7 +449,7 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
                                   Offset.zero & overlay.size,
                                 );
 
-                                // 弹出下拉框
+
                                 final String? choice = await showMenu<String>(
                                   context: context,
                                   position: position,

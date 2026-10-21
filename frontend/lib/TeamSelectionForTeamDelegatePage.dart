@@ -42,7 +42,7 @@ class _TeamSelectionForTeamDelegatePageState extends State<TeamSelectionForTeamD
 
       if (response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("✅ 成功把任务委派给整个团队！")),
+          const SnackBar(content: Text("✅delegate team successfully")),
         );
         Navigator.pushAndRemoveUntil(
           context,
@@ -51,18 +51,18 @@ class _TeamSelectionForTeamDelegatePageState extends State<TeamSelectionForTeamD
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("委派失败，状态码: ${response.statusCode}")),
+          SnackBar(content: Text("delegate error${response.statusCode}")),
         );
       }
     } catch (e) {
-      print("💥 网络请求异常: $e");
+      print("network request error: $e");
     }
   }
 
   Future<void> fetchManagedTeams() async {
     final url = Uri.parse("http://127.0.0.1:8080/organization/getOrganizationTeams?organizationId=${widget.orgId}&viewerUserId=${widget.currentUserId}");
 
-    print("===== 开始请求团队列表: $url =====");
+    print("===== team list: $url =====");
 
     try {
       final response = await http.get(url);
@@ -83,7 +83,7 @@ class _TeamSelectionForTeamDelegatePageState extends State<TeamSelectionForTeamD
       }
     } catch (e) {
       setState(() => isLoading = false);
-      print("===== 网络报错: $e =====");
+      print("network error: $e =====");
     }
   }
 

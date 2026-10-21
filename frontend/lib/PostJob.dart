@@ -58,14 +58,14 @@ class _PostJobPageState extends State<PostJob> {
 
     if (payController.text.trim().isEmpty || int.tryParse(payController.text) == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("❌ Money can't be empty and it has to be a valid number！"), backgroundColor: Colors.red),
+        const SnackBar(content: Text("Money can't be empty and it has to be a valid number！"), backgroundColor: Colors.red),
       );
       return;
     }
 
     if (titleController.text.trim().isEmpty || addressController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("❌ Please complete this ticket！"), backgroundColor: Colors.red),
+        const SnackBar(content: Text("Please complete this ticket！"), backgroundColor: Colors.red),
       );
       return;
     }
@@ -89,18 +89,18 @@ class _PostJobPageState extends State<PostJob> {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        print("✅ 工单创建成功！");
+        print("ticket created successfully！");
    
         Navigator.pushReplacement(
           context, 
           MaterialPageRoute(builder: (context) =>  SuccessPage(currentUserId: widget.currentUserId,)),
         );
       } else {
-        print("❌ 提交失败，状态码: ${response.statusCode}");
-        print("📦 后端返回的错误详情: ${response.body}");
+        print("submit error ${response.statusCode}");
+        print("feedback detail from backend : ${response.body}");
       }
     } catch (e) {
-      print("💥 请求发生错误: $e");
+      print("network request error: $e");
     }
 
 

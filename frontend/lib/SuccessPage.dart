@@ -33,7 +33,7 @@ class SuccessPage extends StatelessWidget {
             ),
 
             SizedBox(height: 24),
-            Text('You have successully make it!', style: TextStyle(color: Colors.black, fontSize: 16)),
+            Text('You have successully post a ticket!', style: TextStyle(color: Colors.black, fontSize: 16)),
 
           ],
         ),
