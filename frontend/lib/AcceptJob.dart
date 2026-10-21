@@ -578,7 +578,7 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
                                           ? const Icon(Icons.check, size: 18)
                                           : null,
                                       child: Text(
-                                        team.name,
+                                        '${team.name} of ${team.organizationName}',
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
