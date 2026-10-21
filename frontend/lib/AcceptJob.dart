@@ -84,6 +84,7 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
   bool _isLoading = true;
   String? _error;
   final _searchController = TextEditingController();
+  final _searchFocusNode = FocusNode();
   String _keyword = '';
   _JobSort? _sortBy;
   bool _isAscending = true;
@@ -259,6 +260,7 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
   @override
   void dispose() {
     _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -487,6 +489,9 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
                         const SizedBox(height: 16),
                         _SearchField(
                           controller: _searchController,
+                          focusNode: _searchFocusNode,
+                          tickets: _tickets,
+                          onSelected: _openAcceptedJob,
                           onSubmitted: _submitSearch,
                           onCleared: _resetQuery,
                           onChanged: (value) {
@@ -841,56 +846,130 @@ class JobCard extends StatelessWidget {
 class _SearchField extends StatelessWidget {
   const _SearchField({
     required this.controller,
+    required this.focusNode,
+    required this.tickets,
+    required this.onSelected,
     required this.onSubmitted,
     required this.onCleared,
     required this.onChanged,
   });
 
   final TextEditingController controller;
+  final FocusNode focusNode;
+  final List<TicketModel> tickets;
+  final ValueChanged<TicketModel> onSelected;
   final ValueChanged<String> onSubmitted;
   final VoidCallback onCleared;
   final ValueChanged<String> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<TextEditingValue>(
-      valueListenable: controller,
-      builder: (context, value, child) => TextField(
-        controller: controller,
-        textInputAction: TextInputAction.search,
-        onSubmitted: onSubmitted,
-        onChanged: onChanged,
-        style: const TextStyle(color: _ink, fontSize: 14),
-        decoration: InputDecoration(
-          hintText: 'Search ticket titles or descriptions...',
-          hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
-          prefixIcon: IconButton(
-            tooltip: 'Search accepted jobs',
-            onPressed: () => onSubmitted(controller.text),
-            icon: const Icon(Icons.search, color: Color(0xFF9CA3AF)),
-          ),
-          suffixIcon: value.text.isEmpty
-              ? null
-              : IconButton(
-                  tooltip: 'Clear search',
-                  onPressed: onCleared,
-                  icon: const Icon(Icons.close),
+    return LayoutBuilder(
+      builder: (context, constraints) => RawAutocomplete<TicketModel>(
+        textEditingController: controller,
+        focusNode: focusNode,
+        displayStringForOption: (ticket) => ticket.title ?? '',
+        optionsBuilder: (value) {
+          if (value.text.trim().isEmpty) {
+            return const Iterable<TicketModel>.empty();
+          }
+          final keyword = value.text.toLowerCase();
+          return tickets.where(
+            (ticket) => (ticket.title ?? '').toLowerCase().contains(keyword),
+          );
+        },
+        onSelected: (ticket) {
+          focusNode.unfocus();
+          onSelected(ticket);
+        },
+        optionsViewBuilder: (context, selectOption, options) => Align(
+          alignment: Alignment.topLeft,
+          child: Material(
+            elevation: 4,
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            clipBehavior: Clip.antiAlias,
+            child: SizedBox(
+              width: constraints.maxWidth,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 250),
+                child: ListView.builder(
+                  padding: EdgeInsets.zero,
+                  shrinkWrap: true,
+                  itemCount: options.length,
+                  itemBuilder: (context, index) {
+                    final ticket = options.elementAt(index);
+                    return ListTile(
+                      selected:
+                          AutocompleteHighlightedOption.of(context) == index,
+                      title: Text(
+                        ticket.title ?? '',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(
+                        '\$${ticket.pay ?? 0} - ${ticket.location ?? ticket.posterName ?? ''}',
+                        style: const TextStyle(color: _muted),
+                      ),
+                      onTap: () => selectOption(ticket),
+                    );
+                  },
                 ),
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 14,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(32),
-            borderSide: const BorderSide(color: _border),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(32),
-            borderSide: const BorderSide(color: Colors.blue),
+              ),
+            ),
           ),
         ),
+        fieldViewBuilder:
+            (context, fieldController, fieldFocusNode, onFieldSubmitted) =>
+                ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: controller,
+                  builder: (context, value, child) => TextField(
+                    controller: fieldController,
+                    focusNode: fieldFocusNode,
+                    textInputAction: TextInputAction.search,
+                    onSubmitted: (value) {
+                      onFieldSubmitted();
+                      onSubmitted(value);
+                    },
+                    onChanged: onChanged,
+                    style: const TextStyle(color: _ink, fontSize: 14),
+                    decoration: InputDecoration(
+                      hintText: 'Search ticket titles or descriptions...',
+                      hintStyle: const TextStyle(
+                        color: Color(0xFF9CA3AF),
+                        fontSize: 14,
+                      ),
+                      prefixIcon: IconButton(
+                        tooltip: 'Search accepted jobs',
+                        onPressed: () => onSubmitted(controller.text),
+                        icon: const Icon(
+                          Icons.search,
+                          color: Color(0xFF9CA3AF),
+                        ),
+                      ),
+                      suffixIcon: value.text.isEmpty
+                          ? null
+                          : IconButton(
+                              tooltip: 'Clear search',
+                              onPressed: onCleared,
+                              icon: const Icon(Icons.close),
+                            ),
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(32),
+                        borderSide: const BorderSide(color: _border),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(32),
+                        borderSide: const BorderSide(color: Colors.blue),
+                      ),
+                    ),
+                  ),
+                ),
       ),
     );
   }
