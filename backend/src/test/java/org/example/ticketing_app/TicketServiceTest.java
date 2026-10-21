@@ -495,7 +495,10 @@ public class TicketServiceTest {
         System.out.println("Test 4.2 Passed - Ticket History Count: " + posted.size());
     }
 
-
+    @Test
+    void deallocateTicketTest() {
+        ticketAssignmentService.deallocateJob(2, 2001);
+    }
 
     @Test
     void ticketManagementTest() {

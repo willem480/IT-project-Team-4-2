@@ -18,6 +18,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
+
 /**
  * <p>
  *  服务实现类
@@ -34,6 +36,7 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
     private final OrganizationMapper organizationMapper;
     private final TeamMapper teamMapper;
     private final TeamMemberMapper teamMemberMapper;
+    private final TicketAssignmentMapper ticketAssignmentMapper;
 
     public List<TicketAssignmentReturn> getTicketAssignment(Integer assigneeID, Filter filter) {
         List<TicketAssignment> ticketAssignments = getAssignmentHelper(assigneeID);
@@ -289,6 +292,25 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
                         String.format("Ticket with id: %d is already assigned to user with id: %d", ticketID, assigneeID));
             }
 
+        }
+    }
+
+    @Transactional
+    public void deallocateJob(int ticketId, int operatorId){
+        TicketAssignment ticketAssignment = lambdaQuery().eq(TicketAssignment::getTicketId, ticketId).eq(TicketAssignment::getAssigneeId, operatorId).one();
+        if (ticketAssignment == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "no ticket assignment found for this ticketId " + ticketId + " and operatorId " + operatorId);
+        }
+        Ticket ticket = ticketMapper.selectById(ticketAssignment.getTicketId());
+        if (ticket == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "no ticket found for this ticketId " + ticketId);
+        }
+        ticketAssignmentMapper.deleteById(ticketAssignment.getIdTicketAssignment());
+        if (Objects.equals(ticket.getStatus(), TicketStatus.CLOSED.name())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "you cannot deallocate a closed ticket");
+        }
+        else if (Objects.equals(ticket.getStatus(), TicketStatus.IN_PROGRESS.name())) {
+            ticket.setStatus(TicketStatus.OPEN.name());
         }
     }
 }
