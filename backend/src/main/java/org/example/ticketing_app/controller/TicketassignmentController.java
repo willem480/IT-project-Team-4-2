@@ -57,8 +57,8 @@ public class TicketassignmentController {
     public void delegateJobTeam(@RequestParam int ticketId, @RequestParam int teamId) {
         ticketAssignmentService.delegationJobTeam(ticketId, teamId);
     }
-
-    public void deallocateTicket(int ticketId) {
-
+    @PostMapping("deallocateTicket")
+    public void deallocateTicket(int ticketId, int operatorId) {
+        ticketAssignmentService.deallocateJob(ticketId, operatorId);
     }
 }
