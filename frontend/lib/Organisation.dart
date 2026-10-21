@@ -57,6 +57,7 @@ class _OrganisationPageState extends State<OrganisationPage> {
   String _query = '';
   bool _isCreating = false;
   bool _isSubmitting = false;
+  int? _renamingOrganisationId;
 
   @override
   void initState() {
@@ -101,59 +102,67 @@ class _OrganisationPageState extends State<OrganisationPage> {
     }
   }
 
+  Future<String?> _showOrganisationNameDialog({String? initialName}) {
+    final formKey = GlobalKey<FormState>();
+    var organisationName = '';
+    var submitted = false;
+    return showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        void submit() {
+          if (submitted || !formKey.currentState!.validate()) return;
+          formKey.currentState!.save();
+          submitted = true;
+          Navigator.pop(dialogContext, organisationName);
+        }
+
+        return AlertDialog(
+          title: Text(
+            initialName == null ? 'Create Organisation' : 'Rename Organisation',
+          ),
+          content: Form(
+            key: formKey,
+            child: TextFormField(
+              initialValue: initialName,
+              autofocus: true,
+              maxLength: 200,
+              textCapitalization: TextCapitalization.words,
+              textInputAction: TextInputAction.done,
+              decoration: const InputDecoration(labelText: 'Organisation name'),
+              validator: (value) {
+                final trimmedName = value?.trim() ?? '';
+                if (trimmedName.isEmpty) {
+                  return 'Please enter an organisation name.';
+                }
+                if (trimmedName.length > 200) {
+                  return 'Name must be 200 characters or fewer.';
+                }
+                return null;
+              },
+              onSaved: (value) => organisationName = value!.trim(),
+              onFieldSubmitted: (_) => submit(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: submit,
+              child: Text(initialName == null ? 'Create' : 'Save'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Future<void> _createOrganisation() async {
     if (_isCreating) return;
     setState(() => _isCreating = true);
     try {
-      final formKey = GlobalKey<FormState>();
-      var organisationName = '';
-      var submitted = false;
-      final name = await showDialog<String>(
-        context: context,
-        builder: (dialogContext) {
-          void submit() {
-            if (submitted || !formKey.currentState!.validate()) return;
-            formKey.currentState!.save();
-            submitted = true;
-            Navigator.pop(dialogContext, organisationName);
-          }
-
-          return AlertDialog(
-            title: const Text('Create Organisation'),
-            content: Form(
-              key: formKey,
-              child: TextFormField(
-                autofocus: true,
-                maxLength: 200,
-                textCapitalization: TextCapitalization.words,
-                textInputAction: TextInputAction.done,
-                decoration: const InputDecoration(
-                  labelText: 'Organisation name',
-                ),
-                validator: (value) {
-                  final trimmedName = value?.trim() ?? '';
-                  if (trimmedName.isEmpty) {
-                    return 'Please enter an organisation name.';
-                  }
-                  if (trimmedName.length > 200) {
-                    return 'Name must be 200 characters or fewer.';
-                  }
-                  return null;
-                },
-                onSaved: (value) => organisationName = value!.trim(),
-                onFieldSubmitted: (_) => submit(),
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: const Text('Cancel'),
-              ),
-              FilledButton(onPressed: submit, child: const Text('Create')),
-            ],
-          );
-        },
-      );
+      final name = await _showOrganisationNameDialog();
       if (name == null || !mounted) return;
 
       setState(() => _isSubmitting = true);
@@ -182,7 +191,7 @@ class _OrganisationPageState extends State<OrganisationPage> {
             content: Text(
               response.statusCode == 201
                   ? 'Organisation created successfully.'
-                  : _createOrganisationError(response),
+                  : _organisationError(response, action: 'create'),
             ),
           ),
         );
@@ -205,7 +214,74 @@ class _OrganisationPageState extends State<OrganisationPage> {
     }
   }
 
-  String _createOrganisationError(http.Response response) {
+  Future<void> _renameOrganisation(OrganisationModel organisation) async {
+    if (!organisation.canManage || _renamingOrganisationId != null) return;
+    setState(() => _renamingOrganisationId = organisation.organizationId);
+    try {
+      final name = await _showOrganisationNameDialog(
+        initialName: organisation.name,
+      );
+      if (!mounted || name == null || name == organisation.name) return;
+
+      final response = await http
+          .patch(
+            Uri.parse('http://127.0.0.1:8080/organization/updateOrganization'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'actorUserId': widget.userId,
+              'organizationId': organisation.organizationId,
+              'name': name,
+            }),
+          )
+          .timeout(const Duration(seconds: 30));
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final updated = OrganisationModel.fromJson(
+          jsonDecode(response.body) as Map<String, dynamic>,
+        );
+        setState(() {
+          organisations = organisations
+              .map(
+                (item) => item.organizationId == updated.organizationId
+                    ? updated
+                    : item,
+              )
+              .toList();
+        });
+      }
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              response.statusCode == 200
+                  ? 'Organisation renamed successfully.'
+                  : _organisationError(response, action: 'rename'),
+            ),
+          ),
+        );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Unable to rename organisation. Please try again.'),
+          ),
+        );
+    } finally {
+      if (mounted) setState(() => _renamingOrganisationId = null);
+    }
+  }
+
+  String _organisationError(http.Response response, {required String action}) {
+    if (response.statusCode == 403) {
+      return 'Only an organisation manager can $action this organisation.';
+    }
+    if (response.statusCode == 404) {
+      return 'The organisation no longer exists. Please refresh.';
+    }
     try {
       final decoded = jsonDecode(response.body);
       if (decoded is Map<String, dynamic>) {
@@ -220,7 +296,7 @@ class _OrganisationPageState extends State<OrganisationPage> {
     if (response.statusCode == 400 || response.statusCode == 409) {
       return 'Check the organisation name. It may already exist.';
     }
-    return 'Unable to create organisation (HTTP ${response.statusCode}). Please try again.';
+    return 'Unable to $action organisation (HTTP ${response.statusCode}). Please try again.';
   }
 
   void _openTeams(
@@ -375,6 +451,9 @@ class _OrganisationPageState extends State<OrganisationPage> {
                         _avatarColors[organisations.indexOf(organisation) %
                             _avatarColors.length],
                     onManage: () => _openAdmin(context, organisation),
+                    onRename: _renamingOrganisationId == null
+                        ? () => _renameOrganisation(organisation)
+                        : null,
                     onOpenTeams: (id, name) => _openTeams(context, id, name),
                   );
                 },
@@ -445,6 +524,7 @@ class OrganizationCard extends StatelessWidget {
     required this.onManage,
     required this.onOpenTeams,
     required this.isManager,
+    this.onRename,
   });
 
   final int organizationId;
@@ -453,6 +533,7 @@ class OrganizationCard extends StatelessWidget {
   final int members;
   final Color avatarColor;
   final VoidCallback onManage;
+  final VoidCallback? onRename;
   final void Function(int organisationId, String organisationName) onOpenTeams;
 
   @override
@@ -486,13 +567,26 @@ class OrganizationCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        color: Color(0xFF111827),
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            name,
+                            style: const TextStyle(
+                              color: Color(0xFF111827),
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        if (isManager)
+                          IconButton(
+                            tooltip: 'Rename organisation',
+                            onPressed: onRename,
+                            icon: const Icon(Icons.edit, size: 18),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 4),
                     // Preserve the subtitle line's spacing without a mock link.
