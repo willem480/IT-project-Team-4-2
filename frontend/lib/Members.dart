@@ -351,26 +351,43 @@ class _MembersPageState extends State<MembersPage> {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             Flexible(
-              child: TextButton.icon(
-                onPressed: () {
-                  // Team entry has an extra TeamsPage above Organisation.
-                  const routesToPop = 2;
-                  var poppedRoutes = 0;
-                  Navigator.popUntil(
-                    context,
-                    (route) => route.isFirst || poppedRoutes++ == routesToPop,
-                  );
-                },
-                icon: const Icon(
-                  Icons.bookmark_border,
-                  size: 25,
-                  color: Colors.black,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
                 ),
-                label: const Text(
-                  'Organization',
-                  style: TextStyle(
-                    color: Colors.blueGrey,
-                    fontWeight: FontWeight.bold,
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.blue.withValues(alpha: 0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: TextButton.icon(
+                  onPressed: () {
+                    // Team entry has an extra TeamsPage above Organisation.
+                    const routesToPop = 2;
+                    var poppedRoutes = 0;
+                    Navigator.popUntil(
+                      context,
+                      (route) => route.isFirst || poppedRoutes++ == routesToPop,
+                    );
+                  },
+                  icon: const Icon(
+                    Icons.bookmark_border,
+                    size: 25,
+                    color: Colors.blue,
+                  ),
+                  label: const Text(
+                    'Organization',
+                    style: TextStyle(
+                      color: Colors.blue,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
@@ -390,13 +407,13 @@ class _MembersPageState extends State<MembersPage> {
                 icon: const Icon(
                   Icons.person_2_outlined,
                   size: 25,
-                  color: Colors.black,
+                  color: Colors.grey,
                 ),
                 label: const Text(
                   'My Profile',
                   style: TextStyle(
-                    color: Colors.blueGrey,
-                    fontWeight: FontWeight.bold,
+                    color: Colors.grey,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),

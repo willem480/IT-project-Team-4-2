@@ -45,6 +45,8 @@
     List<TicketModel> completedTickets = [];
     bool isPayAscending = true;
     bool isDateAscending = true;
+    bool isDateActive = false;
+    bool isPayActive = false;
 
 
     void fetchFirstUserData() async {
@@ -314,98 +316,117 @@
                         }),
 
                         SizedBox(width: 20),
+                        // 1. Date 筛选按钮
                         OutlinedButton.icon(
-                        
-                        onPressed:(){
-                          setState(() {
-                            isDateAscending = !isDateAscending;
-                          }); 
+                          onPressed: (){
+                            setState(() {
+                              isDateActive = true;   // 💡 激活 Date 高光
+                              isPayActive = false;   // 取消 Pay 高光
+                              isDateAscending = !isDateAscending;
+                            });
 
-                          String filterValue = isDateAscending ? 'timeAscending' : 'timeDescending';
-                          print("User toggled filter: $filterValue");
-                          if(is_Detail_Tab){
-                            fetchPostedTickets(filterValue);
-                          }
-                          else{
-                            fetchCompletedTickets(filterValue);
-                          }
-                          
-                        },
+                            String filterValue = isDateAscending ? 'timeAscending' : 'timeDescending';
+                            print("User toggled filter: $filterValue");
+                            if(is_Detail_Tab){
+                              fetchPostedTickets(filterValue);
+                            }
+                            else{
+                              fetchCompletedTickets(filterValue);
+                            }
+                          },
 
-                        icon: Icon(
-                          isDateAscending ? Icons.arrow_upward : Icons.arrow_downward,
-                          size:  16,
-                          color: Colors.black87,
-                        ),
+                          icon: Icon(
+                            isDateAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                            size: 16,
+                            // 💡 激活时变深蓝，平时变黑
+                            color: isDateActive ? Colors.blue.shade800 : Colors.black87,
+                          ),
 
-                        label: Text(
+                          label: Text(
                             isDateAscending ? "Date: New to Last" : "Date : Last to New",
-                          style: const TextStyle(
-                            color : Colors.black87,
-                            fontWeight: FontWeight.w500,
-                          )
+                            style: TextStyle(
+                              // 💡 激活时字变蓝且加粗
+                              color: isDateActive ? Colors.blue.shade800 : Colors.black87,
+                              fontWeight: isDateActive ? FontWeight.bold : FontWeight.w500,
+                            ),
+                          ),
+
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            // 💡 激活时变浅蓝底色，平时为白色
+                            backgroundColor: isDateActive ? Colors.blue.shade50 : Colors.white,
+                            // 💡 激活时变粗蓝边框，平时为灰色
+                            side: BorderSide(color: isDateActive ? Colors.blue : Colors.grey, width: isDateActive ? 1.5 : 1),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
                         ),
 
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          backgroundColor:  Colors.white,
-                          side: BorderSide(color: Colors.grey),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          )
-                        )
-
-                      
-                        //visual button
-                        
-                      ),
                         const SizedBox(width: 20),
 
+// 2. Pay 筛选按钮
                         OutlinedButton.icon(
+                          onPressed: (){
+                            setState(() {
+                              isPayActive = true;    // 💡 激活 Pay 高光
+                              isDateActive = false;  // 取消 Date 高光
+                              isPayAscending = !isPayAscending;
+                            });
 
-                            onPressed:(){
+                            String filterValue = isPayAscending ? 'payDescending' : 'payAscending';
+                            print("User toggled filter: $filterValue");
+                            if(is_Detail_Tab){
+                              fetchPostedTickets(filterValue);
+                            }
+                            else{
+                              fetchCompletedTickets(filterValue);
+                            }
+                          },
+
+                          icon: Icon(
+                            isPayAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                            size: 16,
+                            color: isPayActive ? Colors.blue.shade800 : Colors.black87,
+                          ),
+
+                          label: Text(
+                            isPayAscending ? "Pay: High to Low" : "Pay : Low to High",
+                            style: TextStyle(
+                              color: isPayActive ? Colors.blue.shade800 : Colors.black87,
+                              fontWeight: isPayActive ? FontWeight.bold : FontWeight.w500,
+                            ),
+                          ),
+
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            backgroundColor: isPayActive ? Colors.blue.shade50 : Colors.white,
+                            side: BorderSide(color: isPayActive ? Colors.blue : Colors.grey, width: isPayActive ? 1.5 : 1),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+
+
+                        if (isDateActive || isPayActive) ...[
+                          const SizedBox(width: 12),
+                          TextButton(
+                            onPressed: () {
                               setState(() {
-                                isPayAscending = !isPayAscending;
+                                isDateActive = false;
+                                isPayActive = false;
                               });
 
-                              String filterValue = isPayAscending ? 'payDescending' : 'payAscending';
-                              print("User toggled filter: $filterValue");
-                              if(is_Detail_Tab){
-                                fetchPostedTickets(filterValue);
+                              if (is_Detail_Tab) {
+                                fetchPostedTickets('');
+                              } else {
+                                fetchCompletedTickets('');
                               }
-                              else{
-                                fetchCompletedTickets(filterValue);
-                              }
-
                             },
-
-                            icon: Icon(
-                              isPayAscending ? Icons.arrow_upward : Icons.arrow_downward,
-                              size:  16,
-                              color: Colors.black87,
-                            ),
-
-                            label: Text(
-                                isPayAscending ? "Pay: High to Low" : "Pay : Low to High",
-                                style: const TextStyle(
-                                  color : Colors.black87,
-                                  fontWeight: FontWeight.w500,
-                                )
-                            ),
-
-                            style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                backgroundColor:  Colors.white,
-                                side: BorderSide(color: Colors.grey),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                )
-                            )
-
-
-                          //visual button
-
-                        ),
+                            child: const Text("Reset", style: TextStyle(color: Colors.teal, fontWeight: FontWeight.bold)),
+                          ),
+                        ],
 
                       
 
@@ -497,7 +518,7 @@
           return _buildTicket(
             context, 
             ticket.title.toString() ?? 'No title', 
-            ticket.organizationName ?? 'Unknown Location', 
+            ticket.location ?? 'Unknown Location',
             ticket.pay?.toString() ?? '0',
             ticket.description ?? "No description",
             ticket.idTicket ?? 0,
@@ -527,7 +548,7 @@
           return _buildTicket(
             context, 
             ticket.title.toString() ?? 'No title', 
-            ticket.organizationName ?? 'Unknown Location', 
+            ticket.location ?? 'Unknown Location',
             ticket.pay?.toString() ?? '0',
             ticket.description ?? "No description",
             ticket.idTicket ?? 0, 
@@ -560,56 +581,85 @@
     }
 
     Widget _buildTicket(BuildContext context, String title, String companyName, String price, String description, int ticketId, String datePosted, int currentUserId){
-        return InkWell(
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+        child: InkWell(
             onTap: (){
               print('check your posted jobs');
-              Navigator.push(context, MaterialPageRoute(builder: (context) => PostAJobDetailUser(ticketId: ticketId, title: title, company: companyName, price: price, description: description, date: datePosted, currentUserId: currentUserId,)));
+              Navigator.push(context, MaterialPageRoute(builder: (context) => PostAJobDetailUser(
+                ticketId: ticketId,
+                title: title,
+                company: companyName,
+                price: price,
+                description: description,
+                date: datePosted,
+                currentUserId: currentUserId,
+              )));
             },
             borderRadius: BorderRadius.circular(12),
             child: Container(
-              width: 800,
-              height: 225,
-              margin: const EdgeInsets.all(50),
-              padding: EdgeInsets.all(16),
-
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withValues(alpha: 0.1),
-                    
-                    blurRadius: 2,
-                    offset: const Offset(0, 1),
-                  )
-                ]
-              ),           
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                    // alignment: Alignment.topLeft,
-                  Text(
-                  title,
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+                decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade300),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withValues(alpha: 0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      )
+                    ]
                 ),
-                  // alignment: Alignment.topLeft,
-                Text(
-                  companyName,
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                ),
-                
-                const Spacer(),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
 
-                Text(
-                  '\$$price',
-                  style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
-                //more item
-                  //more item
-                ],
-              )
+                          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18), maxLines: 1, overflow: TextOverflow.ellipsis),
+                          const SizedBox(height: 8),
+
+
+                          Row(
+                            children: [
+                              const Icon(Icons.business, size: 14, color: Colors.grey),
+                              const SizedBox(width: 6),
+                              Expanded(child: Text(companyName, style: const TextStyle(fontSize: 14, color: Colors.grey), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+
+
+                          Text("Poster Name: $userName", style: const TextStyle(fontSize: 13, color: Colors.grey)),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(width: 16),
+
+
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        // 绿色的价格
+                        Text('\$$price', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 18)),
+
+                        const SizedBox(height: 24),
+
+
+                        Text(datePosted, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                      ],
+                    )
+                  ],
+                )
             )
-          );
+        ),
+      );
     }
 
   }

@@ -325,18 +325,32 @@ class _TeamsPageState extends State<TeamsPage> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            TextButton.icon(
-              onPressed: () => Navigator.maybePop(context),
-              icon: const Icon(
-                Icons.bookmark_border,
-                size: 25,
-                color: Colors.black,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.blue.withValues(alpha: 0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-              label: const Text(
-                'Organization',
-                style: TextStyle(
-                  color: Colors.blueGrey,
-                  fontWeight: FontWeight.bold,
+              child: TextButton.icon(
+                onPressed: () => Navigator.maybePop(context),
+                icon: const Icon(
+                  Icons.bookmark_border,
+                  size: 25,
+                  color: Colors.blue,
+                ),
+                label: const Text(
+                  'Organization',
+                  style: TextStyle(
+                    color: Colors.blue,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
@@ -354,13 +368,13 @@ class _TeamsPageState extends State<TeamsPage> {
               icon: const Icon(
                 Icons.person_2_outlined,
                 size: 25,
-                color: Colors.black,
+                color: Colors.grey,
               ),
               label: const Text(
                 'My Profile',
                 style: TextStyle(
-                  color: Colors.blueGrey,
-                  fontWeight: FontWeight.bold,
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),

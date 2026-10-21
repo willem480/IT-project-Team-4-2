@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:ticketing_app/Signup.dart';
 import 'package:ticketing_app/main.dart';
+import 'dart:html' as html;
 
 class SignIn extends StatelessWidget {
   const SignIn({super.key});
@@ -52,7 +53,7 @@ class _SignInPageState extends State<SignInPage> {
       isLoading = true;
     });
 
-  
+
     final url = Uri.parse('http://127.0.0.1:8080/user/signin');
 
     try {
@@ -70,24 +71,25 @@ class _SignInPageState extends State<SignInPage> {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
-        
-  
+
         final int userId = responseData['idUser'] ?? 1;
         final String userName = responseData['name'] ?? 'User';
 
         print("✅ 登录成功！当前用户 ID: $userId, 用户名: $userName");
+
+        // 💡 关键：登录成功时，将用户 ID 存入浏览器本地缓存
+        html.window.localStorage['currentUserId'] = userId.toString();
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) => MyHomePage(
-              title: 'Find a job', 
-              currentUserId: userId, // 🚨 这里把登录接口返回的真实 ID 传给下一页
+              title: 'Find a job',
+              currentUserId: userId,
             ),
           ),
         );
-
-  
-      } else {
+      }else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Sign in failed: Invalid credentials')),
         );
@@ -129,12 +131,12 @@ class _SignInPageState extends State<SignInPage> {
                 const Text('Sign in to your account', style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold)),
                 const Text('Welcome back, enter your credential to access your ticket', style: TextStyle(fontSize: 12, color: Colors.grey)),
                 const SizedBox(height: 24),
-                
-              
+
+
                 const Text('Email address', style: TextStyle(fontSize: 12)),
                 const SizedBox(height: 8),
                 TextField(
-                  controller: _emailController, 
+                  controller: _emailController,
                   decoration: InputDecoration(
                     hintText: 'ABC@gmail.com',
                     hintStyle: const TextStyle(color: Colors.grey, fontSize: 12),
@@ -148,10 +150,10 @@ class _SignInPageState extends State<SignInPage> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 24),
 
-                
+
                 Align(
                   alignment: Alignment.center,
                   child: TextButton(
@@ -168,18 +170,18 @@ class _SignInPageState extends State<SignInPage> {
         ),
       ),
 
-  
+
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 50),
         child: SizedBox(
           width: 200,
           height: 50,
           child: FloatingActionButton(
-            onPressed: isLoading ? null : handleSignIn, 
+            onPressed: isLoading ? null : handleSignIn,
             backgroundColor: Colors.green,
             tooltip: 'Log in',
-            child: isLoading 
-              ? const CircularProgressIndicator(color: Colors.white) 
+            child: isLoading
+              ? const CircularProgressIndicator(color: Colors.white)
               : const Text('Sign in', style: TextStyle(color: Colors.white, fontSize: 16)),
           ),
         ),
