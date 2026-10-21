@@ -29,8 +29,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * <p>
@@ -70,11 +72,30 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
     }
 
     /**
-     * Returns the organization cards needed by the organization-list page.
+     * Returns only organizations where the viewer is a team member or manager.
      * viewerUserId is temporary request context until authentication supplies the current user.
      */
     public List<OrganizationSummary> getOrganizations(Integer viewerUserId) {
+        requireUser(viewerUserId);
+
+        Set<Integer> visibleOrganizationIds = new HashSet<>();
+        teamMemberMapper.selectList(
+                        new LambdaQueryWrapper<TeamMember>()
+                                .eq(TeamMember::getUserId, viewerUserId)
+                ).stream()
+                .map(TeamMember::getOrganizationId)
+                .filter(Objects::nonNull)
+                .forEach(visibleOrganizationIds::add);
+        managerMapper.selectList(
+                        new LambdaQueryWrapper<Manager>()
+                                .eq(Manager::getUserId, viewerUserId)
+                ).stream()
+                .map(Manager::getOrganizationId)
+                .filter(Objects::nonNull)
+                .forEach(visibleOrganizationIds::add);
+
         return list().stream()
+                .filter(organization -> visibleOrganizationIds.contains(organization.getIdOrganization()))
                 .map(organization -> toOrganizationSummary(organization, viewerUserId))
                 .toList();
     }

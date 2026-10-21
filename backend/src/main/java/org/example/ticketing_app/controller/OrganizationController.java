@@ -51,7 +51,7 @@ public class OrganizationController {
     /** Lists every organization with its member count and the viewer's manager permission. */
     @GetMapping("getOrganizations")
     public List<OrganizationSummary> getOrganizations(
-            @RequestParam(required = false) Integer viewerUserId
+            @RequestParam Integer viewerUserId
     ) {
         return organizationService.getOrganizations(viewerUserId);
     }
