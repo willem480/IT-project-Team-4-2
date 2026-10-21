@@ -196,10 +196,10 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
         requireOrganizationViewer(viewerUserId, organizationId);
 
         List<OrganizationTeamSummary> teams = teamMapper.selectList(
-                        new LambdaQueryWrapper<Team>()
+                new LambdaQueryWrapper<Team>()
                                 .eq(Team::getOrganizationId, organizationId)
                 ).stream()
-                .map(this::toTeamSummary)
+                .map(team -> toTeamSummary(team, viewerUserId))
                 .toList();
 
         return new OrganizationTeamListResponse(
@@ -247,7 +247,7 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
             teamMemberMapper.insert(membership);
         }
 
-        return toTeamSummary(team);
+        return toTeamSummary(team, request.getActorUserId());
     }
 
     /**
@@ -427,11 +427,25 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
         );
     }
 
-    private OrganizationTeamSummary toTeamSummary(Team team) {
+    /** Builds one team response including whether the current viewer belongs to that team. */
+    private OrganizationTeamSummary toTeamSummary(Team team, Integer viewerUserId) {
         return new OrganizationTeamSummary(
                 team.getIdTeam(),
                 team.getName(),
-                countTeamMembers(team.getIdTeam())
+                countTeamMembers(team.getIdTeam()),
+                isTeamMember(team.getIdTeam(), viewerUserId)
         );
+    }
+
+    private boolean isTeamMember(Integer teamId, Integer userId) {
+        if (userId == null) {
+            return false;
+        }
+        Long membershipCount = teamMemberMapper.selectCount(
+                new LambdaQueryWrapper<TeamMember>()
+                        .eq(TeamMember::getTeamId, teamId)
+                        .eq(TeamMember::getUserId, userId)
+        );
+        return membershipCount != null && membershipCount > 0;
     }
 }

@@ -111,7 +111,8 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team> {
         return new OrganizationTeamSummary(
                 team.getIdTeam(),
                 team.getName(),
-                countTeamMembers(team.getIdTeam())
+                countTeamMembers(team.getIdTeam()),
+                isTeamMember(team.getIdTeam(), request.getActorUserId())
         );
     }
 
@@ -182,6 +183,15 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team> {
                         .eq(TeamMember::getTeamId, teamId)
         );
         return memberCount == null ? 0 : memberCount;
+    }
+
+    private boolean isTeamMember(Integer teamId, Integer userId) {
+        Long membershipCount = teamMemberMapper.selectCount(
+                new LambdaQueryWrapper<TeamMember>()
+                        .eq(TeamMember::getTeamId, teamId)
+                        .eq(TeamMember::getUserId, userId)
+        );
+        return membershipCount != null && membershipCount > 0;
     }
 
     private TeamMemberSummary toMemberSummary(TeamMember membership) {

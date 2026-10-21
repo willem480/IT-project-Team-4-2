@@ -11,4 +11,5 @@ public class OrganizationTeamSummary {
     private final Integer teamId;
     private final String name;
     private final long memberCount;
+    private final boolean isTeamMember;
 }
