@@ -392,7 +392,7 @@ class _TeamsPageState extends State<TeamsPage> {
                 children: [
                   const Flexible(
                     child: Text(
-                      'Your Teams',
+                      'Teams',
                       style: TextStyle(
                         color: Color(0xFF111827),
                         fontSize: 18,
