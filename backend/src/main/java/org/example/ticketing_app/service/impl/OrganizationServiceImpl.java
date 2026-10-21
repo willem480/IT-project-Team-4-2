@@ -6,6 +6,7 @@ import org.example.ticketing_app.entity.Manager;
 import org.example.ticketing_app.entity.Organization;
 import org.example.ticketing_app.entity.Team;
 import org.example.ticketing_app.entity.TeamMember;
+import org.example.ticketing_app.entity.Ticket;
 import org.example.ticketing_app.entity.TicketAssignment;
 import org.example.ticketing_app.entity.User;
 import org.example.ticketing_app.mapper.ManagerMapper;
@@ -14,6 +15,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.example.ticketing_app.mapper.TeamMapper;
 import org.example.ticketing_app.mapper.TeamMemberMapper;
 import org.example.ticketing_app.mapper.TicketAssignmentMapper;
+import org.example.ticketing_app.mapper.TicketMapper;
 import org.example.ticketing_app.mapper.UserMapper;
 import org.example.ticketing_app.service.organizationServiceHelper.AddManagerRequest;
 import org.example.ticketing_app.service.organizationServiceHelper.AddTeamRequest;
@@ -24,6 +26,7 @@ import org.example.ticketing_app.service.organizationServiceHelper.OrganizationT
 import org.example.ticketing_app.service.organizationServiceHelper.OrganizationTeamSummary;
 import org.example.ticketing_app.service.organizationServiceHelper.OrganizationSummary;
 import org.example.ticketing_app.service.organizationServiceHelper.UpdateOrganizationRequest;
+import org.example.ticketing_app.service.ticketServiceHelper.TicketStatus;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,6 +53,7 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
     private final TeamMemberMapper teamMemberMapper;
     private final TeamMapper teamMapper;
     private final TicketAssignmentMapper ticketAssignmentMapper;
+    private final TicketMapper ticketMapper;
     private final UserMapper userMapper;
 
     /** Creates an organization and makes its creator the first manager in one transaction. */
@@ -129,8 +133,11 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
      * Returns every team membership in an organization.
      * Each result includes both IDs required to remove that exact membership later.
      */
-    public List<OrganizationMemberSummary> getOrganizationMembers(Integer organizationId) {
-        requireOrganization(organizationId);
+    public List<OrganizationMemberSummary> getOrganizationMembers(
+            Integer organizationId,
+            Integer viewerUserId
+    ) {
+        requireOrganizationViewer(viewerUserId, organizationId);
         return teamMemberMapper.selectList(
                         new LambdaQueryWrapper<TeamMember>()
                                 .eq(TeamMember::getOrganizationId, organizationId)
@@ -186,7 +193,7 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
             Integer organizationId,
             Integer viewerUserId
     ) {
-        requireOrganization(organizationId);
+        requireOrganizationViewer(viewerUserId, organizationId);
 
         List<OrganizationTeamSummary> teams = teamMapper.selectList(
                         new LambdaQueryWrapper<Team>()
@@ -226,8 +233,8 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
     }
 
     /**
-     * Removes an empty team only. Membership and assignment records are retained,
-     * so callers must first remove members and resolve historical assignments.
+     * Removes one team and its membership records without deleting user accounts.
+     * Assignment handling preserves closed-ticket history while releasing team references.
      */
     @Transactional
     public void removeTeam(
@@ -242,17 +249,40 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
         if (team == null || !Objects.equals(team.getOrganizationId(), organizationId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Team does not exist in the organization");
         }
-        if (countTeamMembers(teamId) > 0) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Remove all team members before deleting the team");
-        }
-        Long assignmentCount = ticketAssignmentMapper.selectCount(
+        List<TicketAssignment> assignments = ticketAssignmentMapper.selectList(
                 new LambdaQueryWrapper<TicketAssignment>()
                         .eq(TicketAssignment::getRelatedTeamId, teamId)
         );
-        if (assignmentCount != null && assignmentCount > 0) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Team has ticket assignments and cannot be deleted");
+
+        for (TicketAssignment assignment : assignments) {
+            Ticket ticket = ticketMapper.selectById(assignment.getTicketId());
+            if (ticket == null) {
+                // Remove an orphaned assignment so it cannot retain the team foreign key.
+                ticketAssignmentMapper.deleteById(assignment.getIdTicketAssignment());
+                continue;
+            }
+
+            if (TicketStatus.IN_PROGRESS.name().equals(ticket.getStatus())) {
+                // Reopen active work when the team responsible for it is removed.
+                ticketAssignmentMapper.deleteById(assignment.getIdTicketAssignment());
+                ticket.setStatus(TicketStatus.OPEN.name());
+                ticketMapper.updateById(ticket);
+            } else if (TicketStatus.CLOSED.name().equals(ticket.getStatus())) {
+                // Preserve the closed assignment history, but detach the deleted team.
+                assignment.setRelatedTeamId(null);
+                ticketAssignmentMapper.updateById(assignment);
+            } else {
+                // Open and cancelled tickets keep their status but cannot retain this team reference.
+                ticketAssignmentMapper.deleteById(assignment.getIdTicketAssignment());
+            }
+        }
+
+        List<TeamMember> memberships = teamMemberMapper.selectList(
+                new LambdaQueryWrapper<TeamMember>()
+                        .eq(TeamMember::getTeamId, teamId)
+        );
+        for (TeamMember membership : memberships) {
+            teamMemberMapper.deleteById(membership.getIdTeamMember());
         }
         teamMapper.deleteById(teamId);
     }
@@ -277,6 +307,24 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
                         .eq(Manager::getOrganizationId, organizationId)
         );
         return managerCount != null && managerCount > 0;
+    }
+
+    /** Rejects viewers who are neither managers nor team members of the requested organization. */
+    private void requireOrganizationViewer(Integer viewerUserId, Integer organizationId) {
+        requireUser(viewerUserId);
+        requireOrganization(organizationId);
+        if (isManager(viewerUserId, organizationId)) {
+            return;
+        }
+        Long membershipCount = teamMemberMapper.selectCount(
+                new LambdaQueryWrapper<TeamMember>()
+                        .eq(TeamMember::getUserId, viewerUserId)
+                        .eq(TeamMember::getOrganizationId, organizationId)
+        );
+        if (membershipCount == null || membershipCount == 0) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "You do not belong to this organization");
+        }
     }
 
     private User requireUser(Integer userId) {

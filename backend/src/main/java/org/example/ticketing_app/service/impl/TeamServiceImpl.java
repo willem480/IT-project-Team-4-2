@@ -3,12 +3,10 @@ package org.example.ticketing_app.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import org.example.ticketing_app.entity.Manager;
-import org.example.ticketing_app.entity.MemberReport;
 import org.example.ticketing_app.entity.Team;
 import org.example.ticketing_app.entity.TeamMember;
 import org.example.ticketing_app.entity.User;
 import org.example.ticketing_app.mapper.ManagerMapper;
-import org.example.ticketing_app.mapper.MemberReportMapper;
 import org.example.ticketing_app.mapper.TeamMapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.example.ticketing_app.mapper.TeamMemberMapper;
@@ -39,13 +37,13 @@ import java.util.Objects;
 public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team> {
 
     private final TeamMemberMapper teamMemberMapper;
-    private final MemberReportMapper memberReportMapper;
     private final UserMapper userMapper;
     private final ManagerMapper managerMapper;
 
     /** Returns team members and the current viewer's permission to edit the team. */
     public TeamMemberListResponse getTeamMembers(Integer teamId, Integer viewerUserId) {
         Team team = requireTeam(teamId);
+        requireOrganizationViewer(viewerUserId, team);
         List<TeamMemberSummary> members = teamMemberMapper.selectList(
                         new LambdaQueryWrapper<TeamMember>()
                                 .eq(TeamMember::getTeamId, teamId)
@@ -117,10 +115,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team> {
         );
     }
 
-    /**
-     * Removes exactly one team membership and preserves the user's memberships in other teams.
-     * Historical member reports are retained, so a membership with reports cannot be removed.
-     */
+    /** Removes exactly one team membership and preserves the user's memberships in other teams. */
     @Transactional
     public void removeTeamMember(Integer actorUserId, Integer teamId, Integer teamMemberId) {
         Team team = requireTeam(teamId);
@@ -129,14 +124,6 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team> {
         TeamMember membership = teamMemberMapper.selectById(teamMemberId);
         if (membership == null || !Objects.equals(membership.getTeamId(), teamId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Team membership does not exist");
-        }
-        Long reportCount = memberReportMapper.selectCount(
-                new LambdaQueryWrapper<MemberReport>()
-                        .eq(MemberReport::getTeammemberId, teamMemberId)
-        );
-        if (reportCount != null && reportCount > 0) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "This team member has historical reports and cannot be removed");
         }
         teamMemberMapper.deleteById(teamMemberId);
     }
@@ -152,6 +139,25 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team> {
                         .eq(Manager::getOrganizationId, team.getOrganizationId())
         );
         return managerCount != null && managerCount > 0;
+    }
+
+    /** Rejects viewers who are neither managers nor team members of the team's organization. */
+    private void requireOrganizationViewer(Integer viewerUserId, Team team) {
+        if (userMapper.selectById(viewerUserId) == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User does not exist");
+        }
+        if (canManageTeam(viewerUserId, team)) {
+            return;
+        }
+        Long membershipCount = teamMemberMapper.selectCount(
+                new LambdaQueryWrapper<TeamMember>()
+                        .eq(TeamMember::getUserId, viewerUserId)
+                        .eq(TeamMember::getOrganizationId, team.getOrganizationId())
+        );
+        if (membershipCount == null || membershipCount == 0) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "You do not belong to this organization");
+        }
     }
 
     /** Rejects changes from users who do not manage the team's organization. */

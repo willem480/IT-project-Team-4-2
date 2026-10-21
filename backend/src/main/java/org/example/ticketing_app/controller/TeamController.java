@@ -38,7 +38,7 @@ public class TeamController {
     @GetMapping("getTeamMembers")
     public TeamMemberListResponse getTeamMembers(
             @RequestParam Integer teamId,
-            @RequestParam(required = false) Integer viewerUserId
+            @RequestParam Integer viewerUserId
     ) {
         return teamService.getTeamMembers(teamId, viewerUserId);
     }

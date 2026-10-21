@@ -75,9 +75,10 @@ public class OrganizationController {
     /** Lists all team memberships in an organization, including membership and team IDs. */
     @GetMapping("getOrganizationMembers")
     public List<OrganizationMemberSummary> getOrganizationMembers(
-            @RequestParam Integer organizationId
+            @RequestParam Integer organizationId,
+            @RequestParam Integer viewerUserId
     ) {
-        return organizationService.getOrganizationMembers(organizationId);
+        return organizationService.getOrganizationMembers(organizationId, viewerUserId);
     }
 
     /** Grants manager permission to an existing user. */
@@ -104,7 +105,7 @@ public class OrganizationController {
     @GetMapping("getOrganizationTeams")
     public OrganizationTeamListResponse getOrganizationTeams(
             @RequestParam Integer organizationId,
-            @RequestParam(required = false) Integer viewerUserId
+            @RequestParam Integer viewerUserId
     ) {
         return organizationService.getOrganizationTeams(organizationId, viewerUserId);
     }
