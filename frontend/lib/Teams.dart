@@ -98,6 +98,7 @@ class _TeamsPageState extends State<TeamsPage> {
   ];
 
   String _query = '';
+  int? _renamingTeamId;
 
   @override
   void initState() {
@@ -158,6 +159,136 @@ class _TeamsPageState extends State<TeamsPage> {
       if (!mounted) return;
       setState(() => _managerError = 'Managers unavailable');
     }
+  }
+
+  Future<String?> _showTeamNameDialog(String initialName) {
+    final formKey = GlobalKey<FormState>();
+    var teamName = '';
+    var submitted = false;
+    return showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        void submit() {
+          if (submitted || !formKey.currentState!.validate()) return;
+          formKey.currentState!.save();
+          submitted = true;
+          Navigator.pop(dialogContext, teamName);
+        }
+
+        return AlertDialog(
+          title: const Text('Rename Team'),
+          content: Form(
+            key: formKey,
+            child: TextFormField(
+              initialValue: initialName,
+              autofocus: true,
+              maxLength: 200,
+              textCapitalization: TextCapitalization.words,
+              textInputAction: TextInputAction.done,
+              decoration: const InputDecoration(labelText: 'Team name'),
+              validator: (value) {
+                final trimmedName = value?.trim() ?? '';
+                if (trimmedName.isEmpty) {
+                  return 'Please enter a team name.';
+                }
+                if (trimmedName.length > 200) {
+                  return 'Name must be 200 characters or fewer.';
+                }
+                return null;
+              },
+              onSaved: (value) => teamName = value!.trim(),
+              onFieldSubmitted: (_) => submit(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(onPressed: submit, child: const Text('Save')),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _renameTeam(Team team) async {
+    if (!canManage || _renamingTeamId != null) return;
+    setState(() => _renamingTeamId = team.teamId);
+    try {
+      final name = await _showTeamNameDialog(team.name);
+      if (!mounted || name == null || name == team.name) return;
+
+      final response = await http
+          .patch(
+            Uri.parse('http://127.0.0.1:8080/team/updateTeam'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'actorUserId': widget.userId,
+              'teamId': team.teamId,
+              'name': name,
+            }),
+          )
+          .timeout(const Duration(seconds: 30));
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final updated = Team.fromJson(
+          jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>,
+        );
+        setState(() {
+          teams = teams
+              .map((item) => item.teamId == updated.teamId ? updated : item)
+              .toList();
+        });
+      }
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              response.statusCode == 200
+                  ? 'Team renamed successfully.'
+                  : _teamRenameError(response),
+            ),
+          ),
+        );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Unable to rename team. Please try again.'),
+          ),
+        );
+    } finally {
+      if (mounted) setState(() => _renamingTeamId = null);
+    }
+  }
+
+  String _teamRenameError(http.Response response) {
+    if (response.statusCode == 403) {
+      return 'Only an organisation manager can rename this team.';
+    }
+    if (response.statusCode == 404) {
+      return 'The team no longer exists. Please refresh.';
+    }
+    try {
+      final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+      if (decoded is Map<String, dynamic>) {
+        for (final key in ['message', 'detail']) {
+          final message = decoded[key];
+          if (message is String && message.trim().isNotEmpty) return message;
+        }
+      }
+    } on FormatException {
+      // Fall back to a readable message for non-JSON responses.
+    }
+    if (response.statusCode == 400 || response.statusCode == 409) {
+      return 'Check the team name. It may already exist in this organisation.';
+    }
+    return 'Unable to rename team (HTTP ${response.statusCode}). Please try again.';
   }
 
   void _openMembers(BuildContext context, int teamId) {
@@ -311,6 +442,9 @@ class _TeamsPageState extends State<TeamsPage> {
                         _avatarColors[teams.indexOf(team) %
                             _avatarColors.length],
                     onManage: () => _openAdmin(context, team.teamId),
+                    onRename: _renamingTeamId == null
+                        ? () => _renameTeam(team)
+                        : null,
                   );
                 },
               ),
@@ -397,6 +531,7 @@ class _TeamCard extends StatelessWidget {
     required this.avatarColor,
     required this.onManage,
     required this.isManager,
+    this.onRename,
   });
 
   final int teamId;
@@ -409,6 +544,7 @@ class _TeamCard extends StatelessWidget {
   final int members;
   final Color avatarColor;
   final VoidCallback onManage;
+  final VoidCallback? onRename;
 
   @override
   Widget build(BuildContext context) {
@@ -445,13 +581,26 @@ class _TeamCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          name,
-                          style: const TextStyle(
-                            color: Color(0xFF111827),
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                name,
+                                style: const TextStyle(
+                                  color: Color(0xFF111827),
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            if (isManager)
+                              IconButton(
+                                tooltip: 'Rename team',
+                                onPressed: onRename,
+                                icon: const Icon(Icons.edit, size: 18),
+                              ),
+                          ],
                         ),
                         const SizedBox(height: 4),
                         ManagerPreview(
