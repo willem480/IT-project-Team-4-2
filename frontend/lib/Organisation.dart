@@ -52,6 +52,8 @@ class _OrganisationPageState extends State<OrganisationPage> {
   }
 
   List<OrganisationModel> organisations = [];
+  final _managersByOrganisation = <int, List<({int userId, String name})>>{};
+  final _managerErrors = <int, String>{};
   static const _avatarColors = [Colors.pink, Colors.teal, Colors.red];
 
   String _query = '';
@@ -93,12 +95,36 @@ class _OrganisationPageState extends State<OrganisationPage> {
         setState(() {
           organisations = parsedOrganisations;
         });
+        for (final organisation in parsedOrganisations) {
+          _fetchManagers(organisation.organizationId);
+        }
         debugPrint('Organisations loaded: ${organisations.length}');
       } else {
         debugPrint('Failed to load organisations: ${response.statusCode}');
       }
     } catch (e) {
       debugPrint('Failed to load organisations: $e');
+    }
+  }
+
+  Future<void> _fetchManagers(int organisationId) async {
+    try {
+      final managers = await fetchOrganisationManagers(organisationId);
+      if (!mounted) return;
+      setState(() {
+        _managersByOrganisation[organisationId] = managers;
+        _managerErrors.remove(organisationId);
+        if (managers.isEmpty) _managerErrors[organisationId] = 'No managers';
+      });
+    } catch (error) {
+      debugPrint(
+        'Failed to load managers for organisation $organisationId: $error',
+      );
+      if (!mounted) return;
+      setState(() {
+        _managersByOrganisation.remove(organisationId);
+        _managerErrors[organisationId] = 'Managers unavailable';
+      });
     }
   }
 
@@ -317,8 +343,11 @@ class _OrganisationPageState extends State<OrganisationPage> {
     );
   }
 
-  void _openAdmin(BuildContext context, OrganisationModel organisation) {
-    Navigator.push<void>(
+  Future<void> _openAdmin(
+    BuildContext context,
+    OrganisationModel organisation,
+  ) async {
+    await Navigator.push<void>(
       context,
       MaterialPageRoute<void>(
         builder: (context) => AdminPage(
@@ -328,6 +357,7 @@ class _OrganisationPageState extends State<OrganisationPage> {
         ),
       ),
     );
+    if (mounted) await _fetchManagers(organisation.organizationId);
   }
 
   @override
@@ -447,6 +477,10 @@ class _OrganisationPageState extends State<OrganisationPage> {
                     organizationId: organisation.organizationId,
                     name: organisation.name,
                     members: organisation.memberCount,
+                    managers:
+                        _managersByOrganisation[organisation.organizationId] ??
+                        const [],
+                    managerError: _managerErrors[organisation.organizationId],
                     avatarColor:
                         _avatarColors[organisations.indexOf(organisation) %
                             _avatarColors.length],
@@ -525,12 +559,16 @@ class OrganizationCard extends StatelessWidget {
     required this.onOpenTeams,
     required this.isManager,
     this.onRename,
+    this.managers = const [],
+    this.managerError,
   });
 
   final int organizationId;
   final bool isManager;
   final String name;
   final int members;
+  final List<({int userId, String name})> managers;
+  final String? managerError;
   final Color avatarColor;
   final VoidCallback onManage;
   final VoidCallback? onRename;
@@ -538,112 +576,132 @@ class OrganizationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        side: const BorderSide(color: Color(0xFFE5E7EB)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => onOpenTeams(organizationId, name),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: avatarColor,
-                child: Text(
-                  name.isEmpty ? '' : name.substring(0, 1).toUpperCase(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: avatarColor,
+                    child: Text(
+                      name.isEmpty ? '' : name.substring(0, 1).toUpperCase(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Flexible(
-                          child: Text(
-                            name,
-                            style: const TextStyle(
-                              color: Color(0xFF111827),
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                name,
+                                style: const TextStyle(
+                                  color: Color(0xFF111827),
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
-                          ),
+                            if (isManager)
+                              IconButton(
+                                tooltip: 'Rename organisation',
+                                onPressed: onRename,
+                                icon: const Icon(Icons.edit, size: 18),
+                              ),
+                          ],
                         ),
-                        if (isManager)
-                          IconButton(
-                            tooltip: 'Rename organisation',
-                            onPressed: onRename,
-                            icon: const Icon(Icons.edit, size: 18),
+                        const SizedBox(height: 4),
+                        ManagerPreview(
+                          managers: managers,
+                          managerError: managerError,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: isManager ? onManage : null,
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFF065F46),
+                      backgroundColor: const Color(0xFFD1FAE5),
+                      disabledForegroundColor: const Color(0xFF9CA3AF),
+                      disabledBackgroundColor: const Color(0xFFF3F4F6),
+                      shape: const StadiumBorder(),
+                    ),
+                    child: const Text(
+                      'Manage',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+              const Divider(height: 28, color: Color(0xFFE5E7EB)),
+              Row(
+                children: [
+                  SizedBox(
+                    width: 52,
+                    height: 20,
+                    child: Stack(
+                      children: [
+                        for (var index = 0; index < 3; index++)
+                          Positioned(
+                            left: index * 16.0,
+                            child: CircleAvatar(
+                              radius: 10,
+                              backgroundColor: Colors.white,
+                              child: CircleAvatar(
+                                radius: 9,
+                                backgroundColor: const [
+                                  Color(0xFFFCE7F3),
+                                  Color(0xFFCCFBF1),
+                                  Color(0xFFDBEAFE),
+                                ][index],
+                                child: const Icon(
+                                  Icons.person,
+                                  size: 13,
+                                  color: Color(0xFF6B7280),
+                                ),
+                              ),
+                            ),
                           ),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    // Preserve the subtitle line's spacing without a mock link.
-                    const Text(
-                      '',
-                      style: TextStyle(color: Color(0xFF6B7280), fontSize: 14),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '$members members',
+                      style: const TextStyle(
+                        color: Color(0xFF6B7280),
+                        fontSize: 14,
+                      ),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              TextButton(
-                onPressed: isManager ? onManage : null,
-                style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFF065F46),
-                  backgroundColor: const Color(0xFFD1FAE5),
-                  disabledForegroundColor: const Color(0xFF9CA3AF),
-                  disabledBackgroundColor: const Color(0xFFF3F4F6),
-                  shape: const StadiumBorder(),
-                ),
-                child: const Text(
-                  'Manage',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
+                  ),
+                ],
               ),
             ],
           ),
-          const Divider(height: 28, color: Color(0xFFE5E7EB)),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  '$members members',
-                  style: const TextStyle(
-                    color: Color(0xFF6B7280),
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-              Material(
-                type: MaterialType.transparency,
-                child: InkResponse(
-                  onTap: () => onOpenTeams(organizationId, name),
-                  radius: 20,
-                  child: Tooltip(
-                    message: 'View teams in $name',
-                    child: const Icon(
-                      Icons.chevron_right,
-                      size: 20,
-                      color: Color(0xFF6B7280),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
