@@ -129,16 +129,29 @@ class _MembersPageState extends State<MembersPage> {
         final managerUserIds = (jsonDecode(managersResponse.body) as List)
             .map((manager) => manager['userId'] as int)
             .toSet();
-        final parsedMembers = teamResponse.members
-            .map(
-              (member) => (
-                teamMemberId: member.teamMemberId,
-                userId: member.userId,
-                name: member.userName,
-                email: member.email,
-              ),
-            )
-            .toList();
+        final parsedMembers =
+            teamResponse.members
+                .map(
+                  (member) => (
+                    teamMemberId: member.teamMemberId,
+                    userId: member.userId,
+                    name: member.userName,
+                    email: member.email,
+                  ),
+                )
+                .toList()
+              ..sort((a, b) {
+                final aIsManager = managerUserIds.contains(a.userId);
+                final bIsManager = managerUserIds.contains(b.userId);
+                if (aIsManager != bIsManager) return aIsManager ? -1 : 1;
+
+                final nameOrder = a.name.trim().toLowerCase().compareTo(
+                  b.name.trim().toLowerCase(),
+                );
+                return nameOrder != 0
+                    ? nameOrder
+                    : a.userId.compareTo(b.userId);
+              });
         if (!mounted) return;
         setState(() {
           members = parsedMembers;
@@ -176,9 +189,9 @@ class _MembersPageState extends State<MembersPage> {
       return;
     }
 
-    final deleted = await Navigator.push<bool>(
+    await Navigator.push<void>(
       context,
-      MaterialPageRoute<bool>(
+      MaterialPageRoute<void>(
         builder: (context) => AdminPage(
           userId: widget.userId,
           userName: _userName,
@@ -188,13 +201,6 @@ class _MembersPageState extends State<MembersPage> {
         ),
       ),
     );
-    if (deleted == true && mounted) {
-      setState(() {
-        _isLoading = true;
-        _errorMessage = null;
-      });
-      fetchMembers();
-    }
   }
 
   @override
@@ -457,28 +463,62 @@ class MemberCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final card = Container(
-      padding: EdgeInsets.fromLTRB(16, isManager ? 24 : 16, 16, 16),
+    const avatarSize = 48.0;
+    const badgeHeight = 20.0;
+    const badgeOverlap = avatarSize / 6;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isManager ? Colors.amber : const Color(0xFFE5E7EB),
-          width: isManager ? 2 : 1,
-        ),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 24,
-            backgroundColor: avatarColor,
-            child: Text(
-              _initials,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+          SizedBox(
+            width: avatarSize,
+            height: isManager
+                ? avatarSize + badgeHeight - badgeOverlap
+                : avatarSize,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                CircleAvatar(
+                  radius: avatarSize / 2,
+                  backgroundColor: avatarColor,
+                  child: Text(
+                    _initials,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                if (isManager)
+                  Positioned(
+                    top: avatarSize - badgeOverlap,
+                    left: -6,
+                    right: -6,
+                    height: badgeHeight,
+                    child: Container(
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: Colors.blue,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Text(
+                        'Manager',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
           const SizedBox(width: 12),
@@ -522,42 +562,6 @@ class MemberCard extends StatelessWidget {
             child: const Text(
               'Manage',
               style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
-    );
-    if (!isManager) return card;
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          card,
-          Positioned(
-            top: -12,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.amber,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Text(
-                  'Manager',
-                  style: TextStyle(
-                    color: Color(0xFF111827),
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
             ),
           ),
         ],

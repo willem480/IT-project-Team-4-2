@@ -78,6 +78,7 @@ class _AdminSearchPageState extends State<AdminSearchPage> {
         oldWidget.actorUserId != widget.actorUserId) {
       _addedUserIds.clear();
       _addingUserIds.clear();
+      _teamMemberUserIds.clear();
       _searchUser(_searchQuery);
     }
   }
@@ -95,6 +96,7 @@ class _AdminSearchPageState extends State<AdminSearchPage> {
   String _searchQuery = '';
   final Set<int> _addingUserIds = {};
   final Set<int> _addedUserIds = {};
+  final Set<int> _teamMemberUserIds = {};
   List<({int idUser, String name, String email})>? _users;
   String? _errorMessage;
 
@@ -189,13 +191,17 @@ class _AdminSearchPageState extends State<AdminSearchPage> {
           })
           .where(
             (user) =>
-                !memberIds.contains(user.idUser) &&
-                (user.name.toLowerCase().contains(search) ||
-                    user.email.toLowerCase().contains(search)),
+                user.name.toLowerCase().contains(search) ||
+                user.email.toLowerCase().contains(search),
           )
           .toList();
-      // Keep the backend's name-first order among matching non-members.
-      setState(() => _users = users);
+      // Keep the backend's name-first order and mark existing members.
+      setState(() {
+        _users = users;
+        _teamMemberUserIds
+          ..clear()
+          ..addAll(memberIds);
+      });
     } catch (_) {
       if (!mounted || requestId != _searchRequestId) return;
       setState(() {
@@ -213,7 +219,7 @@ class _AdminSearchPageState extends State<AdminSearchPage> {
     ({int idUser, String name, String email}) user,
   ) async {
     if (_addingUserIds.contains(user.idUser) ||
-        _addedUserIds.contains(user.idUser)) {
+        _teamMemberUserIds.contains(user.idUser)) {
       return;
     }
     final teamId = widget.teamId;
@@ -243,7 +249,7 @@ class _AdminSearchPageState extends State<AdminSearchPage> {
       }
       setState(() {
         _addedUserIds.add(user.idUser);
-        _users?.removeWhere((candidate) => candidate.idUser == user.idUser);
+        _teamMemberUserIds.add(user.idUser);
       });
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('User added to team.')));
@@ -271,6 +277,7 @@ class _AdminSearchPageState extends State<AdminSearchPage> {
   ) {
     final name = user.name.trim();
     final isAdding = _addingUserIds.contains(user.idUser);
+    final isMember = _teamMemberUserIds.contains(user.idUser);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -317,25 +324,40 @@ class _AdminSearchPageState extends State<AdminSearchPage> {
             ),
           ),
           const SizedBox(width: 8),
-          TextButton(
-            onPressed: isAdding ? null : () => _addMember(user),
-            style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFF065F46),
-              backgroundColor: const Color(0xFFD1FAE5),
-              minimumSize: const Size(0, 28),
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              shape: const StadiumBorder(),
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: isAdding || isMember ? null : () => _addMember(user),
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFF065F46),
+                  backgroundColor: const Color(0xFFD1FAE5),
+                  disabledForegroundColor: const Color(0xFF6B7280),
+                  disabledBackgroundColor: isMember
+                      ? const Color(0xFFE5E7EB)
+                      : const Color(0xFFD1FAE5),
+                  minimumSize: const Size(0, 28),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  shape: const StadiumBorder(),
+                ),
+                child: isMember
+                    ? const Text(
+                        'Already a team member',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      )
+                    : isAdding
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text(
+                        'Add',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+              ),
             ),
-            child: isAdding
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text(
-                    'Add',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
           ),
         ],
       ),
