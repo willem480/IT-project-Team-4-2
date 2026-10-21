@@ -176,7 +176,9 @@ class _AcceptedJobDetailState extends State<AcceptedJobDetail> {
                         ),
                         if (widget.ticket.datePosted != null)
                           Text(
-                            "Posted on: ${widget.ticket.datePosted}",
+                            "Posted on: ${widget.ticket.datePosted.
+                            toString().length >= 10 ?widget.ticket.datePosted.
+                            toString().substring(0,10) : widget.ticket.datePosted}",
                             style: TextStyle(fontSize: 16),
                           ),
                         const Spacer(),

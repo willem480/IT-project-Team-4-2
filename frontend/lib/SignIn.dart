@@ -77,9 +77,6 @@ class _SignInPageState extends State<SignInPage> {
         html.window.localStorage['currentUserId'] = userId.toString();
         final String userName = responseData['name'] ?? 'User';
 
-        print("✅ 登录成功！当前用户 ID: $userId, 用户名: $userName");
-
-        // 💡 关键：登录成功时，将用户 ID 存入浏览器本地缓存
         html.window.localStorage['currentUserId'] = userId.toString();
 
         Navigator.pushReplacement(
@@ -100,7 +97,7 @@ class _SignInPageState extends State<SignInPage> {
       setState(() {
         isLoading = false;
       });
-      print("💥 网络请求错误: $e");
+      print("network request error $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Network error: $e')),
       );

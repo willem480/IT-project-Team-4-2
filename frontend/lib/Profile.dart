@@ -330,8 +330,8 @@
                         OutlinedButton.icon(
                           onPressed: (){
                             setState(() {
-                              isDateActive = true;   // 💡 激活 Date 高光
-                              isPayActive = false;   // 取消 Pay 高光
+                              isDateActive = true;
+                              isPayActive = false;
                               isDateAscending = !isDateAscending;
                             });
 
@@ -348,14 +348,12 @@
                           icon: Icon(
                             isDateAscending ? Icons.arrow_upward : Icons.arrow_downward,
                             size: 16,
-                            // 💡 激活时变深蓝，平时变黑
                             color: isDateActive ? Colors.blue.shade800 : Colors.black87,
                           ),
 
                           label: Text(
                             isDateAscending ? "Date: New to Last" : "Date : Last to New",
                             style: TextStyle(
-                              // 💡 激活时字变蓝且加粗
                               color: isDateActive ? Colors.blue.shade800 : Colors.black87,
                               fontWeight: isDateActive ? FontWeight.bold : FontWeight.w500,
                             ),
@@ -363,9 +361,7 @@
 
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            // 💡 激活时变浅蓝底色，平时为白色
                             backgroundColor: isDateActive ? Colors.blue.shade50 : Colors.white,
-                            // 💡 激活时变粗蓝边框，平时为灰色
                             side: BorderSide(color: isDateActive ? Colors.blue : Colors.grey, width: isDateActive ? 1.5 : 1),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -379,8 +375,8 @@
                         OutlinedButton.icon(
                           onPressed: (){
                             setState(() {
-                              isPayActive = true;    // 💡 激活 Pay 高光
-                              isDateActive = false;  // 取消 Date 高光
+                              isPayActive = true;
+                              isDateActive = false;
                               isPayAscending = !isPayAscending;
                             });
 
@@ -564,6 +560,7 @@
             ticket.idTicket ?? 0, 
             ticket.datePosted?.toString() ?? 'No date',
             widget.userId,
+            isReadOnly: true,
             );
             
         }).toList(),
@@ -590,7 +587,7 @@
       );
     }
 
-    Widget _buildTicket(BuildContext context, String title, String companyName, String price, String description, int ticketId, String datePosted, int currentUserId){
+    Widget _buildTicket(BuildContext context, String title, String companyName, String price, String description, int ticketId, String datePosted, int currentUserId, {bool isReadOnly = false}){
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
         child: InkWell(
@@ -604,7 +601,7 @@
                 description: description,
                 date: datePosted,
                 currentUserId:Global.currentUserId,
-                isReadOnly: widget.userId != Global.currentUserId,
+                isReadOnly: isReadOnly || (widget.userId != Global.currentUserId),
               )));
             },
             borderRadius: BorderRadius.circular(12),
@@ -657,13 +654,13 @@
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        // 绿色的价格
+
                         Text('\$$price', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 18)),
 
                         const SizedBox(height: 24),
 
 
-                        Text(datePosted, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                        Text(datePosted.toString().length >= 10 ? datePosted.toString().substring(0,10) : datePosted, style: const TextStyle(fontSize: 12, color: Colors.grey)),
                       ],
                     )
                   ],

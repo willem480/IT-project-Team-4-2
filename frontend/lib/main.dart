@@ -178,7 +178,7 @@ void fetchAssignTickets() async {
           print(" get ticket successfully， ${openTickets.length} ");
         }
       } catch (e) {
-        print("💥 get ticket error: $e");
+        print("get ticket error: $e");
       }
     }
 
@@ -611,7 +611,7 @@ void fetchAssignTickets() async {
                     children: [
                       Text('\$$price', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 18)),
                       const SizedBox(height: 12),
-                      Text(date, style: TextStyle(fontSize: 12, color: Colors.grey)),
+                      Text(date.length >= 10 ? date.substring(0, 10) : date, style: TextStyle(fontSize: 12, color: Colors.grey)),
 
                     ],
                   )

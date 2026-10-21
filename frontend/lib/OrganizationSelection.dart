@@ -49,7 +49,7 @@ class _OrganizationSelectionPageState extends State<OrganizationSelectionPage> {
       }
     } catch (e) {
       setState(() => isLoading = false);
-      print("网络请求错误: $e");
+      print("network request error: $e");
     }
   }
 
@@ -72,7 +72,6 @@ class _OrganizationSelectionPageState extends State<OrganizationSelectionPage> {
         itemCount: managedOrgs.length,
         itemBuilder: (context, index) {
           final org = managedOrgs[index];
-          // 💡 优化：直接由 ListTile 接管背景和圆角
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: ListTile(

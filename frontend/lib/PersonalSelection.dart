@@ -33,7 +33,7 @@ class _PersonnelSelectionPageState extends State<PersonnelSelectionPage> {
   Future<void> fetchTeamMembers() async {
     final url = Uri.parse("http://127.0.0.1:8080/team/getTeamMembers?teamId=${widget.teamId}&viewerUserId=${widget.currentUserId}");
 
-    print("===== 准备获取小组成员: $url =====");
+    print("team member list: $url =====");
 
     try {
       final response = await http.get(url);
@@ -52,7 +52,7 @@ class _PersonnelSelectionPageState extends State<PersonnelSelectionPage> {
       }
     } catch (e) {
       setState(() => isLoading = false);
-      print("网络请求错误: $e");
+      print("network error: $e");
     }
   }
 
@@ -69,12 +69,10 @@ class _PersonnelSelectionPageState extends State<PersonnelSelectionPage> {
         body: jsonEncode({}),
       );
 
-      print("📡 委派接口返回状态码: ${response.statusCode}");
-      print("📦 委派接口返回内容: ${response.body}");
 
       if (response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("✅ 成功将任务委派给个人！")),
+          const SnackBar(content: Text("job successfully！")),
         );
         Navigator.pushAndRemoveUntil(
           context,
@@ -83,7 +81,7 @@ class _PersonnelSelectionPageState extends State<PersonnelSelectionPage> {
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("委派失败，状态码: ${response.statusCode}")),
+          SnackBar(content: Text("delegate error: ${response.statusCode}")),
         );
       }
     } catch (e) {
