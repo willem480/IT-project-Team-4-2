@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -7,6 +8,32 @@ import 'Admin.dart';
 import 'Profile.dart';
 import 'Members.dart';
 import 'models/Teams_model.dart';
+
+Future<List<({int userId, String name})>> fetchOrganisationManagers(
+  int organisationId,
+) async {
+  final response = await http
+      .get(
+        Uri.parse(
+          'http://127.0.0.1:8080/organization/getOrganizationManagers?organizationId=$organisationId',
+        ),
+        headers: {'Content-Type': 'application/json'},
+      )
+      .timeout(const Duration(seconds: 30));
+  if (response.statusCode != 200) {
+    throw Exception('Manager request failed (${response.statusCode})');
+  }
+  final data = jsonDecode(utf8.decode(response.bodyBytes)) as List<dynamic>;
+  final managers = data.map((item) {
+    final manager = item as Map<String, dynamic>;
+    final name = (manager['userName'] as String).trim();
+    return (
+      userId: manager['userId'] as int,
+      name: name.isEmpty ? 'Manager' : name,
+    );
+  }).toList();
+  return managers;
+}
 
 class TeamsPage extends StatefulWidget {
   const TeamsPage({
@@ -61,6 +88,8 @@ class _TeamsPageState extends State<TeamsPage> {
 
   List<Team> teams = [];
   bool canManage = false;
+  List<({int userId, String name})> _managers = [];
+  String? _managerError;
   static const _avatarColors = [
     Colors.pink,
     Colors.teal,
@@ -76,6 +105,7 @@ class _TeamsPageState extends State<TeamsPage> {
     _userName = widget.userName.trim();
     _fetchUserName();
     fetchTeams();
+    _fetchManagers();
   }
 
   @override
@@ -112,6 +142,21 @@ class _TeamsPageState extends State<TeamsPage> {
       }
     } catch (e) {
       debugPrint('Failed to load teams: $e');
+    }
+  }
+
+  Future<void> _fetchManagers() async {
+    try {
+      final managers = await fetchOrganisationManagers(widget.organizationId);
+      if (!mounted) return;
+      setState(() {
+        _managers = managers;
+        _managerError = managers.isEmpty ? 'No managers' : null;
+      });
+    } catch (error) {
+      debugPrint('Failed to load managers: $error');
+      if (!mounted) return;
+      setState(() => _managerError = 'Managers unavailable');
     }
   }
 
@@ -251,7 +296,8 @@ class _TeamsPageState extends State<TeamsPage> {
                     teamId: team.teamId,
                     onOpenMembers: (id) => _openMembers(context, id),
                     name: team.name,
-                    description: 'Loading...',
+                    managers: _managers,
+                    managerError: _managerError,
                     members: team.memberCount,
                     initials: team.name
                         .trim()
@@ -300,7 +346,7 @@ class _TeamsPageState extends State<TeamsPage> {
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute<void>(
-                    builder: (context) => Profile(userId: widget.userId,),
+                    builder: (context) => Profile(userId: widget.userId),
                   ),
                   (route) => route.isFirst,
                 );
@@ -331,7 +377,8 @@ class _TeamCard extends StatelessWidget {
     required this.onOpenMembers,
     required this.initials,
     required this.name,
-    required this.description,
+    required this.managers,
+    required this.managerError,
     required this.members,
     required this.avatarColor,
     required this.onManage,
@@ -343,139 +390,199 @@ class _TeamCard extends StatelessWidget {
   final ValueChanged<int> onOpenMembers;
   final String initials;
   final String name;
-  final String description;
+  final List<({int userId, String name})> managers;
+  final String? managerError;
   final int members;
   final Color avatarColor;
   final VoidCallback onManage;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        side: const BorderSide(color: Color(0xFFE5E7EB)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => onOpenMembers(teamId),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: avatarColor,
-                child: Text(
-                  initials,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: avatarColor,
+                    child: Text(
+                      initials,
                       style: const TextStyle(
-                        color: Color(0xFF111827),
-                        fontSize: 18,
+                        color: Colors.white,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      description,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          style: const TextStyle(
+                            color: Color(0xFF111827),
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        ManagerPreview(
+                          managers: managers,
+                          managerError: managerError,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: isManager ? onManage : null,
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFF065F46),
+                      backgroundColor: const Color(0xFFD1FAE5),
+                      disabledForegroundColor: const Color(0xFF9CA3AF),
+                      disabledBackgroundColor: const Color(0xFFF3F4F6),
+                      shape: const StadiumBorder(),
+                    ),
+                    child: const Text(
+                      'Manage',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+              const Divider(height: 28, color: Color(0xFFE5E7EB)),
+              Row(
+                children: [
+                  SizedBox(
+                    width: 52,
+                    height: 20,
+                    child: Stack(
+                      children: [
+                        for (var index = 0; index < 3; index++)
+                          Positioned(
+                            left: index * 16.0,
+                            child: CircleAvatar(
+                              radius: 10,
+                              backgroundColor: Colors.white,
+                              child: CircleAvatar(
+                                radius: 9,
+                                backgroundColor: const [
+                                  Color(0xFFFCE7F3),
+                                  Color(0xFFCCFBF1),
+                                  Color(0xFFDBEAFE),
+                                ][index],
+                                child: const Icon(
+                                  Icons.person,
+                                  size: 13,
+                                  color: Color(0xFF6B7280),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '$members members',
                       style: const TextStyle(
                         color: Color(0xFF6B7280),
                         fontSize: 14,
                       ),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              TextButton(
-                onPressed: isManager ? onManage : null,
-                style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFF065F46),
-                  backgroundColor: const Color(0xFFD1FAE5),
-                  disabledForegroundColor: const Color(0xFF9CA3AF),
-                  disabledBackgroundColor: const Color(0xFFF3F4F6),
-                  shape: const StadiumBorder(),
-                ),
-                child: const Text(
-                  'Manage',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
+                  ),
+                ],
               ),
             ],
           ),
-          const Divider(height: 28, color: Color(0xFFE5E7EB)),
-          Row(
+        ),
+      ),
+    );
+  }
+}
+
+class ManagerPreview extends StatelessWidget {
+  const ManagerPreview({
+    super.key,
+    this.managers = const [],
+    this.managerError,
+  });
+
+  final List<({int userId, String name})> managers;
+  final String? managerError;
+
+  @override
+  Widget build(BuildContext context) {
+    if (managers.isEmpty) {
+      return SizedBox(
+        height: 20,
+        child: Text(
+          managerError ?? '',
+          style: const TextStyle(color: Color(0xFF6B7280), fontSize: 12),
+        ),
+      );
+    }
+    final preview = managers.take(3).toList();
+    final names = preview.map((manager) => manager.name).join(', ');
+    return Row(
+      children: [
+        SizedBox(
+          width: 20 + (preview.length - 1) * 14.0,
+          height: 20,
+          child: Stack(
             children: [
-              SizedBox(
-                width: 52,
-                height: 20,
-                child: Stack(
-                  children: [
-                    for (var index = 0; index < 3; index++)
-                      Positioned(
-                        left: index * 16.0,
-                        child: CircleAvatar(
-                          radius: 10,
-                          backgroundColor: Colors.white,
-                          child: CircleAvatar(
-                            radius: 9,
-                            backgroundColor: const [
-                              Color(0xFFFCE7F3),
-                              Color(0xFFCCFBF1),
-                              Color(0xFFDBEAFE),
-                            ][index],
-                            child: const Icon(
-                              Icons.person,
-                              size: 13,
-                              color: Color(0xFF6B7280),
-                            ),
-                          ),
+              for (var index = 0; index < preview.length; index++)
+                Positioned(
+                  left: index * 14.0,
+                  child: CircleAvatar(
+                    radius: 10,
+                    backgroundColor: Colors.white,
+                    child: CircleAvatar(
+                      radius: 9,
+                      // Keep each random colour stable across card rebuilds.
+                      backgroundColor: Colors
+                          .primaries[Random(preview[index].userId)
+                              .nextInt(Colors.primaries.length)]
+                          .shade600,
+                      child: Text(
+                        preview[index].name.characters.first.toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  '$members members',
-                  style: const TextStyle(
-                    color: Color(0xFF6B7280),
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-              Material(
-                type: MaterialType.transparency,
-                child: InkResponse(
-                  onTap: () => onOpenMembers(teamId),
-                  radius: 20,
-                  child: Tooltip(
-                    message: 'View members of $name',
-                    child: const Icon(
-                      Icons.chevron_right,
-                      size: 20,
-                      color: Color(0xFF6B7280),
                     ),
                   ),
                 ),
-              ),
             ],
           ),
-        ],
-      ),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            managers.length > 3 ? '$names...' : names,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Color(0xFF6B7280), fontSize: 12),
+          ),
+        ),
+      ],
     );
   }
 }
