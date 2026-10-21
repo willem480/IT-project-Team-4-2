@@ -155,7 +155,14 @@ class _MembersPageState extends State<MembersPage> {
                   ),
                 )
                 .toList()
-              ..sort(_comparePeople);
+              ..sort((a, b) {
+                final aIsCurrentUser = a.userId == widget.userId;
+                final bIsCurrentUser = b.userId == widget.userId;
+                if (aIsCurrentUser != bIsCurrentUser) {
+                  return aIsCurrentUser ? -1 : 1;
+                }
+                return _comparePeople(a, b);
+              });
         final managerUserIds = managers
             .map((manager) => manager.userId)
             .toSet();
@@ -171,6 +178,11 @@ class _MembersPageState extends State<MembersPage> {
                 )
                 .toList()
               ..sort((a, b) {
+                final aIsCurrentUser = a.userId == widget.userId;
+                final bIsCurrentUser = b.userId == widget.userId;
+                if (aIsCurrentUser != bIsCurrentUser) {
+                  return aIsCurrentUser ? -1 : 1;
+                }
                 final aIsManager = managerUserIds.contains(a.userId);
                 final bIsManager = managerUserIds.contains(b.userId);
                 if (aIsManager != bIsManager) return aIsManager ? -1 : 1;
@@ -417,6 +429,7 @@ class _MembersPageState extends State<MembersPage> {
       child: MemberCard(
         canManage: canManage,
         isManager: _managerUserIds.contains(person.userId),
+        isCurrentUser: person.userId == widget.userId,
         teamMemberId: person.teamMemberId,
         onManage: _openAdmin,
         onRemove: !_memberActionInProgress ? () => _removeMember(person) : null,
@@ -642,6 +655,7 @@ class MemberCard extends StatelessWidget {
     required this.avatarColor,
     required this.isManager,
     required this.canManage,
+    this.isCurrentUser = false,
     this.onRemove,
     this.isRemoving = false,
   });
@@ -653,6 +667,7 @@ class MemberCard extends StatelessWidget {
   final Color avatarColor;
   final bool isManager;
   final bool canManage;
+  final bool isCurrentUser;
   final VoidCallback? onRemove;
   final bool isRemoving;
 
@@ -731,13 +746,43 @@ class MemberCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    color: Color(0xFF111827),
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        name,
+                        maxLines: isCurrentUser ? 1 : null,
+                        overflow: isCurrentUser ? TextOverflow.ellipsis : null,
+                        style: const TextStyle(
+                          color: Color(0xFF111827),
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    if (isCurrentUser) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE5E7EB),
+                          border: Border.all(color: const Color(0xFFE5E7EB)),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: const Text(
+                          'You',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Text(
