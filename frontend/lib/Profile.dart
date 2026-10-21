@@ -47,7 +47,32 @@
     bool isDateAscending = true;
     bool isDateActive = false;
     bool isPayActive = false;
+    bool isSubscribed = false;
 
+    Future<void> toggleSubscribe(bool value) async {
+      final url = Uri.parse('http://127.0.0.1:8080/user/subscribeToEmail?userId=${widget.userId}&isSubscribed=$value');
+
+      try {
+        final response = await http.post(
+          url,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({}),
+        );
+
+        if (response.statusCode == 200) {
+          setState(() {
+            isSubscribed = value;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(value ? "Subscribed to email successfully!" : "Unsubscribed successfully!")),
+          );
+        } else {
+          print("Failed to update subscription status");
+        }
+      } catch (e) {
+        print("Network request error: $e");
+      }
+    }
 
 
     void fetchFirstUserData() async {
@@ -71,6 +96,7 @@
             thisMonthEarnings = myUser.totalEarningsThisMonth.toDouble() ?? 0.0;
             thisMonthTimes = myUser.numberOfEarningsThisMonth.toInt() ?? 0;
             userDescription= myUser.description ?? "No description";
+            isSubscribed = myUser.isSubscribed ?? false;
           });
         }
     }
@@ -217,12 +243,37 @@
               else{
                 Navigator.pop(context);
               }
-
             },
           ),
           title: Text('Hello! $userName', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
 
+          actions: [
+            if (isMe) ...[
+              Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                        'Subscribe Email',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.black87)
+                    ),
+                    Checkbox(
+                      value: isSubscribed,
+                      activeColor: Colors.blueAccent,
+                      onChanged: (bool? newValue) {
+                        if (newValue != null) {
+                          toggleSubscribe(newValue);
+                        }
+                      },
+                    ),
+                    const SizedBox(width: 12),
+                  ],
+                ),
+              ),
+            ],
+          ],
         ),
+
         body: Column(
 
           mainAxisAlignment: MainAxisAlignment.center,
@@ -326,7 +377,6 @@
                         }),
 
                         SizedBox(width: 20),
-                        // 1. Date 筛选按钮
                         OutlinedButton.icon(
                           onPressed: (){
                             setState(() {

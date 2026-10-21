@@ -17,6 +17,7 @@ class UserProfile {
     final int numberOfEarningsThisMonth;
     final int percentageEarningsCompareToLastMonth;
     final String description;
+    final bool? isSubscribed;
 
     UserProfile({
         required this.idUser,
@@ -27,6 +28,7 @@ class UserProfile {
         required this.numberOfEarningsThisMonth,
         required this.percentageEarningsCompareToLastMonth,
         required this.description,
+        this.isSubscribed,
     });
 
     factory UserProfile.fromJson(Map<String, dynamic> json) => UserProfile(
@@ -38,6 +40,7 @@ class UserProfile {
         numberOfEarningsThisMonth: json["numberOfEarningsThisMonth"],
         percentageEarningsCompareToLastMonth: json["percentageEarningsCompareToLastMonth"],
         description: json["description"] ?? 'no description',
+        isSubscribed: json["isSubscribed"] ?? false,
     );
 
     Map<String, dynamic> toJson() => {
@@ -49,5 +52,7 @@ class UserProfile {
         "numberOfEarningsThisMonth": numberOfEarningsThisMonth,
         "percentageEarningsCompareToLastMonth": percentageEarningsCompareToLastMonth,
         "description": description,
+        "isSubscribed": isSubscribed,
+
     };
 }
