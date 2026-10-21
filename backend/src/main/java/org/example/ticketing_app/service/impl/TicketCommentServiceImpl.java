@@ -49,7 +49,6 @@ public class TicketCommentServiceImpl extends ServiceImpl<TicketCommentMapper, T
     public List<TicketCommentReturn> getTicketCommentByTicketID(int operatorId, int ticketID) {
 
         List<TicketComment> ticketComments = lambdaQuery().eq(TicketComment::getTicketIdticket, ticketID).list();
-        User operator = userMapper.selectById(operatorId);
         List<TicketCommentReturn> ticketCommentReturns = new ArrayList<>();
         for (TicketComment ticketComment : ticketComments) {
             User poster = userMapper.selectById(ticketComment.getUserIduser());
