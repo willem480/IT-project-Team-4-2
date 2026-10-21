@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ticketing_app/main.dart';
 import 'package:ticketing_app/models/ticket_comment.dart';
 import 'dart:convert';
+import 'package:ticketing_app/Profile.dart';
 import 'package:http/http.dart' as http;
 
 class PostAJobDetailUser extends StatefulWidget {
@@ -12,7 +13,7 @@ class PostAJobDetailUser extends StatefulWidget {
   final int ticketId;
   final String date;
   final int currentUserId;
-
+  final bool isReadOnly;
   const PostAJobDetailUser({
     super.key,
     required this.title,
@@ -22,6 +23,7 @@ class PostAJobDetailUser extends StatefulWidget {
     required this.ticketId,
     required this.date,
     required this.currentUserId,
+    this.isReadOnly = false,
   });
 
   @override
@@ -194,7 +196,7 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
         ],
       ),
 
-      floatingActionButton: Padding(
+      floatingActionButton: widget.isReadOnly ? null : Padding(
         padding: const EdgeInsets.only(bottom: 20),
         child: SizedBox(
             width: 200,
@@ -247,7 +249,6 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
         const Text('Comments', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         const SizedBox(height: 16),
 
-        // 评论列表（聊天流）
         commentList.isEmpty
             ? const Padding(
           padding: EdgeInsets.symmetric(vertical: 20.0),
@@ -267,20 +268,28 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (!isMe) ...[
-                    CircleAvatar(
-                      radius: 18,
-                      backgroundColor: Colors.grey.shade300,
-                      child: Text(initial, style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
+
+                    GestureDetector(
+                      onTap: () {
+
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => Profile(userId: comment.posterId))
+                        );
+                      },
+                      child: CircleAvatar(
+                        radius: 18,
+                        backgroundColor: Colors.grey.shade300,
+                        child: Text(initial, style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
+                      ),
                     ),
                     const SizedBox(width: 8),
                   ],
 
-                  // 消息体
                   Flexible(
                     child: Column(
                       crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                       children: [
-                        // 名字和时间标签
                         Padding(
                           padding: const EdgeInsets.only(bottom: 4.0, left: 4.0, right: 4.0),
                           child: Text(
@@ -289,12 +298,11 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
                           ),
                         ),
 
-                        // 双击删除监听与气泡渲染
+
                         Builder(
                           builder: (BuildContext bubbleContext) {
                             return GestureDetector(
                               onDoubleTap: () async {
-                                // 只有自己的评论才能双击删除
                                 if (!isMe) return;
 
                                 final RenderBox button = bubbleContext.findRenderObject() as RenderBox;
@@ -372,7 +380,7 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
         ),
 
         const SizedBox(height: 20),
-
+      if(!widget.isReadOnly)
         Row(
           children: [
             Expanded(
@@ -382,7 +390,8 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
                   hintText: 'Type a message...',
                   filled: true,
                   fillColor: Colors.white,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 12),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(24),
                     borderSide: BorderSide(color: Colors.grey.shade300),
@@ -411,7 +420,7 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
             ),
           ],
         ),
-        const SizedBox(height: 80), // 留出底部按钮的空间
+        const SizedBox(height: 80), //
       ],
     );
   }
