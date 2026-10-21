@@ -129,16 +129,29 @@ class _MembersPageState extends State<MembersPage> {
         final managerUserIds = (jsonDecode(managersResponse.body) as List)
             .map((manager) => manager['userId'] as int)
             .toSet();
-        final parsedMembers = teamResponse.members
-            .map(
-              (member) => (
-                teamMemberId: member.teamMemberId,
-                userId: member.userId,
-                name: member.userName,
-                email: member.email,
-              ),
-            )
-            .toList();
+        final parsedMembers =
+            teamResponse.members
+                .map(
+                  (member) => (
+                    teamMemberId: member.teamMemberId,
+                    userId: member.userId,
+                    name: member.userName,
+                    email: member.email,
+                  ),
+                )
+                .toList()
+              ..sort((a, b) {
+                final aIsManager = managerUserIds.contains(a.userId);
+                final bIsManager = managerUserIds.contains(b.userId);
+                if (aIsManager != bIsManager) return aIsManager ? -1 : 1;
+
+                final nameOrder = a.name.trim().toLowerCase().compareTo(
+                  b.name.trim().toLowerCase(),
+                );
+                return nameOrder != 0
+                    ? nameOrder
+                    : a.userId.compareTo(b.userId);
+              });
         if (!mounted) return;
         setState(() {
           members = parsedMembers;
