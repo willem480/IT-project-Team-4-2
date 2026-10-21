@@ -19,6 +19,8 @@ import java.util.Properties;
 @Service
 public final class EmailServiceHelper {
 
+    private static final String AUTOMATED_SENDER_NAME = "ProvisionIT Support - Do Not Reply";
+
     public static String imapHost;
     public static int imapPort;
     public static String imapUsername;
@@ -344,11 +346,7 @@ public final class EmailServiceHelper {
         MimeMessage reply =
                 new MimeMessage(session);
 
-        reply.setFrom(
-                new InternetAddress(
-                        smtpUsername
-                )
-        );
+        configureAutomatedSender(reply);
 
         reply.setRecipients(
                 Message.RecipientType.TO,
@@ -361,9 +359,7 @@ public final class EmailServiceHelper {
                 subject
         );
 
-        reply.setText(
-                body
-        );
+        reply.setText(withAutomatedFooter(body));
 
         Transport.send(reply);
     }
@@ -395,9 +391,7 @@ public final class EmailServiceHelper {
 
         MimeMessage reply = new MimeMessage(session);
 
-        reply.setFrom(
-                new InternetAddress(smtpUsername)
-        );
+        configureAutomatedSender(reply);
 
         reply.setRecipient(
                 Message.RecipientType.TO,
@@ -408,17 +402,18 @@ public final class EmailServiceHelper {
                 "Re: " + originalSubject
         );
 
-        reply.setText(
+        reply.setText(withAutomatedFooter(
                 "Thank you for contacting us.\n\n" +
                         "We could not process your email because it does not follow the required format.\n" +
                         "Please edit and resend your email using the following format:\n\n" +
                         "Subject: Post Job\n\n" +
+                        "Body:\n" +
                         "Title: [Job title]\n" +
                         "Description:\n" +
                         "[Job description]\n" +
                         "Location: [Job location]\n" +
                         "Pay: [Amount]"
-        );
+        ));
 
         Transport.send(reply);
     }
@@ -450,9 +445,7 @@ public final class EmailServiceHelper {
 
         MimeMessage reply = new MimeMessage(session);
 
-        reply.setFrom(
-                new InternetAddress(smtpUsername)
-        );
+        configureAutomatedSender(reply);
 
         reply.setRecipient(
                 Message.RecipientType.TO,
@@ -583,7 +576,7 @@ public final class EmailServiceHelper {
             }
         }
 
-        reply.setText(body.toString());
+        reply.setText(withAutomatedFooter(body.toString()));
 
         Transport.send(reply);
     }
@@ -616,7 +609,7 @@ public final class EmailServiceHelper {
         );
 
         MimeMessage reply = new MimeMessage(session);
-        reply.setFrom(new InternetAddress(smtpUsername));
+        configureAutomatedSender(reply);
         reply.setRecipient(Message.RecipientType.TO, new InternetAddress(recipient));
         reply.setSubject("Re: " + originalSubject);
 
@@ -626,7 +619,7 @@ public final class EmailServiceHelper {
                         DateTimeFormatter.ofPattern("MMMM d, uuuu 'at' HH:mm", Locale.ENGLISH)
                 );
 
-        reply.setText(
+        reply.setText(withAutomatedFooter(
                 "Thank you for your job posting.\n\n" +
                         "Your ticket has been created successfully.\n\n" +
                         "Ticket ID: " + ticket.getIdTicket() + "\n" +
@@ -637,7 +630,7 @@ public final class EmailServiceHelper {
                         "Status: " + ticket.getStatus() + "\n" +
                         "Created at: " + createdAt + "\n\n" +
                         "We will notify you when there is an update to your ticket."
-        );
+        ));
 
         Transport.send(reply);
     }
@@ -667,7 +660,7 @@ public final class EmailServiceHelper {
         );
 
         MimeMessage reply = new MimeMessage(session);
-        reply.setFrom(new InternetAddress(smtpUsername));
+        configureAutomatedSender(reply);
         reply.setRecipient(Message.RecipientType.TO, new InternetAddress(recipient));
         reply.setSubject("Re: " + originalSubject);
 
@@ -677,7 +670,7 @@ public final class EmailServiceHelper {
                         DateTimeFormatter.ofPattern("MMMM d, uuuu 'at' HH:mm", Locale.ENGLISH)
                 );
 
-        reply.setText(
+        reply.setText(withAutomatedFooter(
                 "Your ticket has been updated successfully.\n\n" +
                         "Ticket ID: " + ticket.getIdTicket() + "\n" +
                         "Title: " + ticket.getTitle() + "\n" +
@@ -686,7 +679,7 @@ public final class EmailServiceHelper {
                         "Pay: $" + ticket.getPay() + "\n" +
                         "Status: " + ticket.getStatus() + "\n" +
                         "Created at: " + createdAt
-        );
+        ));
 
         Transport.send(reply);
     }
@@ -715,10 +708,10 @@ public final class EmailServiceHelper {
         );
 
         MimeMessage reply = new MimeMessage(session);
-        reply.setFrom(new InternetAddress(smtpUsername));
+        configureAutomatedSender(reply);
         reply.setRecipient(Message.RecipientType.TO, new InternetAddress(recipient));
         reply.setSubject("Re: " + originalSubject);
-        reply.setText(
+        reply.setText(withAutomatedFooter(
                 "We could not update this ticket.\n\n" +
                         "Please make sure the Ticket ID is valid, you are using the email address " +
                         "that created the ticket, and the ticket is still open.\n\n" +
@@ -730,7 +723,7 @@ public final class EmailServiceHelper {
                         "[Optional new description]\n" +
                         "Location: [Optional new location]\n" +
                         "Pay: [Optional new amount]"
-        );
+        ));
 
         Transport.send(reply);
     }
@@ -760,14 +753,14 @@ public final class EmailServiceHelper {
         );
 
         MimeMessage reply = new MimeMessage(session);
-        reply.setFrom(new InternetAddress(smtpUsername));
+        configureAutomatedSender(reply);
         reply.setRecipient(Message.RecipientType.TO, new InternetAddress(recipient));
         reply.setSubject("Re: " + originalSubject);
-        reply.setText(
+        reply.setText(withAutomatedFooter(
                 "Your ticket has been deleted successfully.\n\n" +
                         "Ticket ID: " + ticket.getIdTicket() + "\n" +
                         "Title: " + ticket.getTitle()
-        );
+        ));
 
         Transport.send(reply);
     }
@@ -796,18 +789,35 @@ public final class EmailServiceHelper {
         );
 
         MimeMessage reply = new MimeMessage(session);
-        reply.setFrom(new InternetAddress(smtpUsername));
+        configureAutomatedSender(reply);
         reply.setRecipient(Message.RecipientType.TO, new InternetAddress(recipient));
         reply.setSubject("Re: " + originalSubject);
-        reply.setText(
+        reply.setText(withAutomatedFooter(
                 "We could not cancel this ticket.\n\n" +
                         "Please make sure the Ticket ID is valid, you are using the email address " +
                         "that created the ticket, and the ticket is still open.\n\n" +
                         "Use the following format:\n\n" +
                         "Subject: Cancel Ticket\n\n" +
                         "Ticket ID: [Ticket ID]"
-        );
+        ));
 
         Transport.send(reply);
+    }
+
+    /** Applies the common sender identity and routes accidental replies to the monitored inbox. */
+    private static void configureAutomatedSender(MimeMessage message) throws Exception {
+        message.setFrom(new InternetAddress(smtpUsername, AUTOMATED_SENDER_NAME));
+        message.setReplyTo(new Address[]{new InternetAddress(imapUsername)});
+    }
+
+    /** Adds the support mailbox to every automated email without duplicating it in each template. */
+    private static String withAutomatedFooter(String body) {
+        return body + automatedFooter();
+    }
+
+    private static String automatedFooter() {
+        return "\n\n---\n" +
+                "This is an automated message from ProvisionIT Support. Please do not reply to this email.\n" +
+                "For ticket requests, updates, or cancellations, please email: " + imapUsername;
     }
 }
