@@ -250,6 +250,10 @@ public class OrganizationReportServiceImpl
                 .append("\n\n");
 
         body.append("Team Breakdown\n");
+        body.append("""
+                Note: the team statistics is relative to a specific team, since one member can exist
+                in multiple teams, the individual team statistics don't add up to the organization statistics
+               \s""");
         body.append("--------------\n");
         body.append(teamDetails);
 
