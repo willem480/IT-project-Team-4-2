@@ -4,6 +4,7 @@ import 'package:ticketing_app/models/ticket_comment.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:ticketing_app/OrganizationSelection.dart';
+import 'package:ticketing_app/Profile.dart';
 import 'package:ticketing_app/TeamSelectionForTeamDelegatePage.dart';
 
 
@@ -396,20 +397,29 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (!isMe) ...[
-                    CircleAvatar(
-                      radius: 18,
-                      backgroundColor: Colors.grey.shade300,
-                      child: Text(initial, style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
+
+                    GestureDetector(
+                      onTap: () {
+
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => Profile(userId: comment.posterId))
+                        );
+                      },
+                      child: CircleAvatar(
+                        radius: 18,
+                        backgroundColor: Colors.grey.shade300,
+                        child: Text(initial, style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
+                      ),
                     ),
                     const SizedBox(width: 8),
                   ],
 
-                  // 消息体
+
                   Flexible(
                     child: Column(
                       crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                       children: [
-                        // 名字和时间标签
                         Padding(
                           padding: const EdgeInsets.only(bottom: 4.0, left: 4.0, right: 4.0),
                           child: Text(

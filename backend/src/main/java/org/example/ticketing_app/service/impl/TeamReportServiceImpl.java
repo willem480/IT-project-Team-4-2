@@ -14,7 +14,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
@@ -66,8 +68,13 @@ public class TeamReportServiceImpl
                 .append(team.getName())
                 .append("\n");
 
+        DateTimeFormatter formatter =
+                DateTimeFormatter.ofPattern(
+                        "EEEE, dd MMMM yyyy 'at' hh:mm:ss a",
+                        Locale.ENGLISH);
+
         body.append("Generated: ")
-                .append(LocalDateTime.now())
+                .append(LocalDateTime.now().format(formatter))
                 .append("\n\n");
 
         body.append("Members\n");

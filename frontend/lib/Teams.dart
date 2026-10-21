@@ -87,6 +87,7 @@ class _TeamsPageState extends State<TeamsPage> {
   }
 
   List<Team> teams = [];
+  Map<int, bool> _teamMembership = {};
   bool canManage = false;
   List<({int userId, String name})> _managers = [];
   String? _managerError;
@@ -131,10 +132,17 @@ class _TeamsPageState extends State<TeamsPage> {
       );
 
       if (response.statusCode == 200) {
-        final parsedResponse = teamsResponseFromJson(response.body);
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final parsedResponse = TeamsResponse.fromJson(data);
+        final membership = {
+          for (final team in data['teams'] as List<dynamic>)
+            team['teamId'] as int:
+                (team['teamMember'] ?? team['isTeamMember']) == true,
+        };
         if (!mounted) return;
         setState(() {
           teams = parsedResponse.teams;
+          _teamMembership = membership;
           canManage = parsedResponse.canManage;
         });
         debugPrint('Teams loaded: ${teams.length}');
@@ -292,6 +300,7 @@ class _TeamsPageState extends State<TeamsPage> {
   }
 
   void _openMembers(BuildContext context, int teamId) {
+    if (!canManage && _teamMembership[teamId] != true) return;
     Navigator.push(
       context,
       MaterialPageRoute<void>(
@@ -323,6 +332,19 @@ class _TeamsPageState extends State<TeamsPage> {
     final visibleTeams = teams
         .where((team) => team.name.toLowerCase().contains(_query))
         .toList();
+    visibleTeams.sort((a, b) {
+      if (!canManage) {
+        final aIsMember = _teamMembership[a.teamId] ?? false;
+        final bIsMember = _teamMembership[b.teamId] ?? false;
+        if (aIsMember != bIsMember) return aIsMember ? -1 : 1;
+      }
+      final nameOrder = a.name.trim().toLowerCase().compareTo(
+        b.name.trim().toLowerCase(),
+      );
+      if (nameOrder != 0) return nameOrder;
+      final caseOrder = a.name.compareTo(b.name);
+      return caseOrder != 0 ? caseOrder : a.teamId.compareTo(b.teamId);
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -424,6 +446,7 @@ class _TeamsPageState extends State<TeamsPage> {
                   final team = visibleTeams[index];
                   return _TeamCard(
                     isManager: canManage,
+                    isTeamMember: _teamMembership[team.teamId] ?? false,
                     teamId: team.teamId,
                     onOpenMembers: (id) => _openMembers(context, id),
                     name: team.name,
@@ -531,11 +554,13 @@ class _TeamCard extends StatelessWidget {
     required this.avatarColor,
     required this.onManage,
     required this.isManager,
+    required this.isTeamMember,
     this.onRename,
   });
 
   final int teamId;
   final bool isManager;
+  final bool isTeamMember;
   final ValueChanged<int> onOpenMembers;
   final String initials;
   final String name;
@@ -556,7 +581,7 @@ class _TeamCard extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => onOpenMembers(teamId),
+        onTap: isManager || isTeamMember ? () => onOpenMembers(teamId) : null,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -611,18 +636,23 @@ class _TeamCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  TextButton(
-                    onPressed: isManager ? onManage : null,
-                    style: TextButton.styleFrom(
-                      foregroundColor: const Color(0xFF065F46),
-                      backgroundColor: const Color(0xFFD1FAE5),
-                      disabledForegroundColor: const Color(0xFF9CA3AF),
-                      disabledBackgroundColor: const Color(0xFFF3F4F6),
-                      shape: const StadiumBorder(),
-                    ),
-                    child: const Text(
-                      'Manage',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                  GestureDetector(
+                    // Keep disabled button taps from opening the parent card.
+                    onTap: isManager && isTeamMember ? null : () {},
+                    excludeFromSemantics: true,
+                    child: TextButton(
+                      onPressed: isManager && isTeamMember ? onManage : null,
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFF065F46),
+                        backgroundColor: const Color(0xFFD1FAE5),
+                        disabledForegroundColor: const Color(0xFF9CA3AF),
+                        disabledBackgroundColor: const Color(0xFFF3F4F6),
+                        shape: const StadiumBorder(),
+                      ),
+                      child: Text(
+                        isTeamMember ? 'Manage' : 'You are not in this team',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
                 ],

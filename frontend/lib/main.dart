@@ -10,11 +10,13 @@ import 'dart:convert';
 import 'package:ticketing_app/models/ticket_model.dart';
 import 'package:ticketing_app/models/user_profile.dart';
 import 'dart:html' as html; //
-
+import 'package:ticketing_app/global.dart';
 void main() {
   String? savedUserIdStr = html.window.localStorage['currentUserId'];
   int? savedUserId = savedUserIdStr != null ? int.tryParse(savedUserIdStr) : null;
-
+  if(savedUserId!=null){
+    Global.currentUserId = savedUserId;
+  }
   runApp(MyApp(initialUserId: savedUserId));
 
 }

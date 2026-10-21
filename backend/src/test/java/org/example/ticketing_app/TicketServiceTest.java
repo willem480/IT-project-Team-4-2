@@ -185,13 +185,19 @@ public class TicketServiceTest {
         teamMember5.setTeamId(3);
         teamMember5.setOrganizationId(2);
         teamMember5.setUserId(2003);
+        TeamMember teamMember6 = new TeamMember();
+        teamMember6.setIdTeamMember(6);
+        teamMember6.setTeamId(2);
+        teamMember6.setOrganizationId(1);
+        teamMember6.setUserId(1003);
+
 
         teamMemberMapper.insertOrUpdate(teamMember1);
         teamMemberMapper.insertOrUpdate(teamMember2);
         teamMemberMapper.insertOrUpdate(teamMember3);
         teamMemberMapper.insertOrUpdate(teamMember4);
         teamMemberMapper.insertOrUpdate(teamMember5);
-
+        teamMemberMapper.insertOrUpdate(teamMember6);
         // Tickets
 
         Ticket ticket1 = new Ticket();
@@ -428,6 +434,13 @@ public class TicketServiceTest {
         assignment9.setDateAssigned(
                 LocalDateTime.of(2026, 9, 12, 8, 0));
         assignment9.setRelatedTeamId(4);
+        TicketAssignment assignment10 = new TicketAssignment();
+        assignment10.setIdTicketAssignment(10);
+        assignment10.setAssigneeId(1003);
+        assignment10.setTicketId(3);
+        assignment10.setDateAssigned(
+                LocalDateTime.of(2026, 9, 20, 9, 0));
+        assignment10.setRelatedTeamId(2);
 
         ticketAssignmentMapper.insertOrUpdate(assignment1);
         ticketAssignmentMapper.insertOrUpdate(assignment2);
@@ -438,6 +451,7 @@ public class TicketServiceTest {
         ticketAssignmentMapper.insertOrUpdate(assignment7);
         ticketAssignmentMapper.insertOrUpdate(assignment8);
         ticketAssignmentMapper.insertOrUpdate(assignment9);
+        ticketAssignmentMapper.insertOrUpdate(assignment10);
     }
 
     @Test
@@ -467,7 +481,7 @@ public class TicketServiceTest {
                 false);
         TeamReport teamReport = teamReportService.generateReport(1001, 4, false);
         OrganizationReport organizationReport = organizationReportService.generateReport(1001, 1, false);
-        System.out.println(report.getBody());
+        System.out.println(teamReport.getBody());
     }
 
 @Test

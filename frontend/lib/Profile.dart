@@ -6,8 +6,8 @@
   import 'models/user_profile.dart';
   import 'package:http/http.dart' as http;
   import 'dart:convert';
-
-
+  import 'package:ticketing_app/global.dart';
+  import 'dart:html' as html;
 
 
 
@@ -47,6 +47,7 @@
     bool isDateAscending = true;
     bool isDateActive = false;
     bool isPayActive = false;
+
 
 
     void fetchFirstUserData() async {
@@ -197,18 +198,26 @@
     bool is_Detail_Tab = true;
     @override
     Widget build(BuildContext context) {
+      bool isMe = widget.userId == Global.currentUserId;
       return Scaffold(
         backgroundColor: Color(0xFFF9FAFB),
         appBar: AppBar(
           leading: BackButton(
             onPressed: () {
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute<void>(
-                  builder: (context) => MyHomePage(title: 'Find a job', currentUserId: widget.userId),
-                ),
-                (route) => false,
-              );
+              if(isMe){
+                html.window.localStorage['currentPage'] = 'home';
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (context) => MyHomePage(title: 'Find a job', currentUserId: widget.userId),
+                  ),
+                      (route) => false,
+                );
+              }
+              else{
+                Navigator.pop(context);
+              }
+
             },
           ),
           title: Text('Hello! $userName', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
@@ -259,7 +268,8 @@
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text("Description", style: TextStyle(color: Colors.grey, fontSize: 16, fontWeight: FontWeight.bold)),
-                                      IconButton(onPressed: (){_showEditDescriptionDialog();}, icon: Icon(Icons.edit),)            
+                                      if(isMe)
+                                      IconButton(onPressed: (){_showEditDescriptionDialog();}, icon: Icon(Icons.edit),)
                                     ],
                                   ),
                                   
@@ -453,7 +463,7 @@
         ),
 
 // Bottom Navigation Bar with highlighted "My Profile" tab and shadow effect
-        bottomNavigationBar: BottomAppBar(
+        bottomNavigationBar: isMe ? BottomAppBar(
           color: Colors.white,
           shape: const CircularNotchedRectangle(),
           notchMargin: 8.0,
@@ -498,7 +508,7 @@
               ),
             ],
           ),
-        ),
+        ) : null,
       );
     }
 
@@ -593,7 +603,8 @@
                 price: price,
                 description: description,
                 date: datePosted,
-                currentUserId: currentUserId,
+                currentUserId:Global.currentUserId,
+                isReadOnly: widget.userId != Global.currentUserId,
               )));
             },
             borderRadius: BorderRadius.circular(12),

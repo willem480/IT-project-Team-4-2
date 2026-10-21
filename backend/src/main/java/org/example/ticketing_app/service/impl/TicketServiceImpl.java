@@ -2,6 +2,7 @@ package org.example.ticketing_app.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.similarity.JaroWinklerSimilarity;
 import org.example.ticketing_app.entity.Ticket;
 import org.example.ticketing_app.entity.TicketAssignment;
@@ -407,6 +408,7 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
         int atIndex = email.indexOf('@');
         user.setName(atIndex > 0 ? email.substring(0, atIndex) : email);
         user.setEmail(email);
+        user.setSubscribeEmail((byte) 1);
         userService.save(user);
         return user;
     }
@@ -554,5 +556,22 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
             }
         }
         else return tickets;
+    }
+
+    public void updateTicket(int ticketId, String title, String description, String location, Integer pay) {
+        Ticket ticket = baseMapper.selectById(ticketId);
+        if (!StringUtils.isBlank(title)) {
+            ticket.setTitle(title);
+        }
+        if (!StringUtils.isBlank(description)) {
+            ticket.setDescription(description);
+        }
+        if (!StringUtils.isBlank(location)) {
+            ticket.setLocation(location);
+        }
+        if (pay != null) {
+            ticket.setPay(pay);
+        }
+        saveOrUpdate(ticket);
     }
 }

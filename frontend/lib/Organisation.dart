@@ -367,6 +367,16 @@ class _OrganisationPageState extends State<OrganisationPage> {
           (organisation) => organisation.name.toLowerCase().contains(_query),
         )
         .toList();
+    visibleOrganisations.sort((a, b) {
+      final nameOrder = a.name.trim().toLowerCase().compareTo(
+        b.name.trim().toLowerCase(),
+      );
+      if (nameOrder != 0) return nameOrder;
+      final caseOrder = a.name.compareTo(b.name);
+      return caseOrder != 0
+          ? caseOrder
+          : a.organizationId.compareTo(b.organizationId);
+    });
 
     return Scaffold(
       appBar: AppBar(

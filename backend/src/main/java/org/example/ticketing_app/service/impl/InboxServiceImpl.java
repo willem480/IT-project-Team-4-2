@@ -181,7 +181,6 @@ public class InboxServiceImpl extends ServiceImpl<InboxMapper, Inbox> {
 
         inboxFolder.close(false);
         store.close();
-        System.out.println("Inbox sync complete.");
     }
 
     private EmailSummary buildEmailSummary(String email) {

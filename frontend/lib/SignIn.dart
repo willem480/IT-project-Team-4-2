@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:ticketing_app/Signup.dart';
 import 'package:ticketing_app/main.dart';
 import 'dart:html' as html;
+import 'package:ticketing_app/global.dart';
 
 class SignIn extends StatelessWidget {
   const SignIn({super.key});
@@ -71,8 +72,9 @@ class _SignInPageState extends State<SignInPage> {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
-
         final int userId = responseData['idUser'] ?? 1;
+        Global.currentUserId = userId;
+        html.window.localStorage['currentUserId'] = userId.toString();
         final String userName = responseData['name'] ?? 'User';
 
         print("✅ 登录成功！当前用户 ID: $userId, 用户名: $userName");

@@ -265,4 +265,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> {
                                 }))
                 .toList();
     }
+
+    public void subscribeToEmail(boolean isSubscribed, int userId) {
+        User user = getById(userId);
+        if (user != null) {
+            user.setSubscribeEmail((byte) (isSubscribed ? 1 : 0));
+            saveOrUpdate(user);
+        }
+        else throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "user not found for this id: " + userId);
+    }
 }

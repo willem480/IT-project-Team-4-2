@@ -5,6 +5,7 @@ import org.example.ticketing_app.mapper.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.example.ticketing_app.service.emailServiceHelper.EmailServiceHelper;
 import org.example.ticketing_app.service.ticketServiceHelper.TicketStatus;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,8 +14,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Objects;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.example.ticketing_app.entity.OrganizationReport;
@@ -46,13 +47,17 @@ public class OrganizationReportServiceImpl
     private final UserMapper userMapper;
 
     @Transactional
-    public OrganizationReport generateReport(int managerId, int organizationId, boolean emailCopy) throws Exception {
+    public OrganizationReport generateReport(
+            int managerId,
+            int organizationId,
+            boolean emailCopy) throws Exception {
 
         Organization organization =
                 organizationMapper.selectById(organizationId);
 
         if (organization == null) {
-            throw new ResponseStatusException(BAD_REQUEST,
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
                     "Organization not found");
         }
 
@@ -61,8 +66,7 @@ public class OrganizationReportServiceImpl
                         new LambdaQueryWrapper<Manager>()
                                 .eq(
                                         Manager::getOrganizationId,
-                                        organizationId)
-                );
+                                        organizationId));
 
         String managerNames =
                 managers.stream()
@@ -78,10 +82,13 @@ public class OrganizationReportServiceImpl
                         new LambdaQueryWrapper<Team>()
                                 .eq(
                                         Team::getOrganizationId,
-                                        organizationId)
-                );
+                                        organizationId));
 
         int totalTeams = teams.size();
+
+        Set<Integer> uniqueMemberIds = new HashSet<>();
+        Set<Integer> countedAssignmentIds = new HashSet<>();
+
         int totalMembers = 0;
         int totalAssigned = 0;
         int totalCompleted = 0;
@@ -101,8 +108,13 @@ public class OrganizationReportServiceImpl
                                 : managerNames)
                 .append("\n");
 
+        DateTimeFormatter formatter =
+                DateTimeFormatter.ofPattern(
+                        "EEEE, dd MMMM yyyy 'at' hh:mm:ss a",
+                        Locale.ENGLISH);
+
         body.append("Generated: ")
-                .append(LocalDateTime.now())
+                .append(LocalDateTime.now().format(formatter))
                 .append("\n\n");
 
         StringBuilder teamDetails =
@@ -115,8 +127,7 @@ public class OrganizationReportServiceImpl
                             new LambdaQueryWrapper<TeamMember>()
                                     .eq(
                                             TeamMember::getTeamId,
-                                            team.getIdTeam())
-                    );
+                                            team.getIdTeam()));
 
             int memberCount = teamMembers.size();
 
@@ -125,22 +136,29 @@ public class OrganizationReportServiceImpl
             int teamInProgress = 0;
             int teamRevenue = 0;
 
-            totalMembers += memberCount;
-
             for (TeamMember teamMember : teamMembers) {
+
+                uniqueMemberIds.add(
+                        teamMember.getUserId());
 
                 List<TicketAssignment> assignments =
                         ticketAssignmentMapper.selectList(
                                 new LambdaQueryWrapper<TicketAssignment>()
                                         .eq(
                                                 TicketAssignment::getAssigneeId,
-                                                teamMember.getUserId())
-                        );
+                                                teamMember.getUserId()));
 
                 teamAssigned += assignments.size();
-                totalAssigned += assignments.size();
 
                 for (TicketAssignment assignment : assignments) {
+
+                    boolean firstTimeAssignment =
+                            countedAssignmentIds.add(
+                                    assignment.getIdTicketAssignment());
+
+                    if (firstTimeAssignment) {
+                        totalAssigned++;
+                    }
 
                     Ticket ticket =
                             ticketMapper.selectById(
@@ -157,15 +175,20 @@ public class OrganizationReportServiceImpl
                     if (status == TicketStatus.CLOSED) {
 
                         teamCompleted++;
-                        totalCompleted++;
-
                         teamRevenue += ticket.getPay();
-                        totalRevenue += ticket.getPay();
+
+                        if (firstTimeAssignment) {
+                            totalCompleted++;
+                            totalRevenue += ticket.getPay();
+                        }
 
                     } else if (status == TicketStatus.IN_PROGRESS) {
 
                         teamInProgress++;
-                        totalInProgress++;
+
+                        if (firstTimeAssignment) {
+                            totalInProgress++;
+                        }
                     }
                 }
             }
@@ -195,6 +218,8 @@ public class OrganizationReportServiceImpl
                     .append("\n\n");
         }
 
+        totalMembers = uniqueMemberIds.size();
+
         body.append("Organization Statistics\n");
         body.append("-----------------------\n");
 
@@ -223,6 +248,10 @@ public class OrganizationReportServiceImpl
                 .append("\n\n");
 
         body.append("Team Breakdown\n");
+        body.append("""
+                Note: the team statistics is relative to a specific team, since one member can exist
+                in multiple teams, the individual team statistics don't add up to the organization statistics
+               \s""");
         body.append("--------------\n");
         body.append(teamDetails);
 
@@ -243,14 +272,25 @@ public class OrganizationReportServiceImpl
                 LocalDateTime.now());
 
         save(report);
+
         if (emailCopy) {
             try {
-                User manager = userMapper.selectById(managerId);
-                EmailServiceHelper.sendReply(manager.getEmail(), report.getTitle(), report.getBody());
+                User manager =
+                        userMapper.selectById(
+                                managerId);
+
+                EmailServiceHelper.sendReply(
+                        manager.getEmail(),
+                        report.getTitle(),
+                        report.getBody());
+
             } catch (Exception e) {
-                throw new ResponseStatusException(BAD_REQUEST, e.getMessage());
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        e.getMessage());
             }
         }
+
         return report;
     }
 }
