@@ -119,7 +119,7 @@ public class OrganizationController {
         return organizationService.addTeam(request);
     }
 
-    /** Removes an empty team after verifying manager permission again. */
+    /** Removes a team and releases its related ticket assignments after verifying manager permission. */
     @DeleteMapping("removeTeam")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void removeTeam(
@@ -128,5 +128,15 @@ public class OrganizationController {
             @RequestParam Integer teamId
     ) {
         organizationService.removeTeam(actorUserId, organizationId, teamId);
+    }
+
+    /** Removes an organization and its teams after verifying the actor manages that organization. */
+    @DeleteMapping("removeOrganization")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void removeOrganization(
+            @RequestParam Integer actorUserId,
+            @RequestParam Integer organizationId
+    ) {
+        organizationService.removeOrganization(actorUserId, organizationId);
     }
 }
