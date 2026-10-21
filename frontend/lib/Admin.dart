@@ -77,12 +77,10 @@ class _AdminPageState extends State<AdminPage> {
     }
   }
 
-  bool tmpEmailCopy = true;
   bool _isDeleting = false;
   bool _isAddingTeam = false;
   bool _isRemovingTeam = false;
   bool _isGeneratingReport = false;
-  Map<String, dynamic>? _report;
 
   void _goBack(BuildContext context) {
     Navigator.maybePop(context);
@@ -604,10 +602,28 @@ class _AdminPageState extends State<AdminPage> {
     );
   }
 
-  Future<void> _openReporting() async {
+  Future<void> _openReport() async {
     if (_isGeneratingReport) return;
     setState(() => _isGeneratingReport = true);
     try {
+      final emailCopy = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Do you want an email copy?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('No'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Yes'),
+            ),
+          ],
+        ),
+      );
+      if (!mounted || emailCopy == null) return;
+
       final String path;
       final Map<String, String> parameters;
       if (widget.teamMemberId != null) {
@@ -630,15 +646,18 @@ class _AdminPageState extends State<AdminPage> {
 
       parameters.addAll({
         'managerId': '${widget.userId}',
-        'emailCopy': '$tmpEmailCopy',
+        'emailCopy': '$emailCopy',
       });
       final report = await _loadReportData(path, parameters, generate: true);
       if (!mounted) return;
       if (report['title'] is! String || report['body'] is! String) {
         throw const FormatException('The server returned an invalid report.');
       }
-      setState(() => _report = report);
-      _reportMessage('Report generated. Select View Report to read it.');
+      if (emailCopy) {
+        _reportMessage('Report generated. An email copy has been requested.');
+      } else {
+        await _viewReport(report);
+      }
     } on FormatException catch (error) {
       if (mounted) _reportMessage(error.message);
     } catch (_) {
@@ -657,47 +676,80 @@ class _AdminPageState extends State<AdminPage> {
     );
   }
 
-  void _viewReport() {
-    final report = _report;
-    if (report == null) {
-      _reportMessage('Generate a report using Reporting first.');
-      return;
+  Future<void> _viewReport(Map<String, dynamic> report) async {
+    var isConfirmingClose = false;
+
+    Future<void> closeReport(BuildContext dialogContext) async {
+      if (isConfirmingClose) return;
+      isConfirmingClose = true;
+      final discard = await showDialog<bool>(
+        context: dialogContext,
+        builder: (confirmationContext) => AlertDialog(
+          title: const Text('Close report?'),
+          content: const Text(
+            'Closing this window will discard the report from this page. '
+            'You will need to generate a new report to view it again.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(confirmationContext, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(confirmationContext, true),
+              child: const Text('Close report'),
+            ),
+          ],
+        ),
+      );
+      isConfirmingClose = false;
+      if (discard == true && dialogContext.mounted) {
+        Navigator.pop(dialogContext);
+      }
     }
-    showDialog<void>(
+
+    await showDialog<void>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(report['title'] as String),
-        content: SizedBox(
-          width: 640,
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (final entry in report.entries)
-                  if (entry.key != 'title' && entry.key != 'body')
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: SelectableText(
-                        _formatReportDateTime(
-                          '${entry.key}: ${entry.value ?? '-'}',
+      barrierDismissible: false,
+      builder: (dialogContext) => PopScope<void>(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop) closeReport(dialogContext);
+        },
+        child: AlertDialog(
+          title: Text(report['title'] as String),
+          content: SizedBox(
+            width: 640,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final entry in report.entries)
+                    if (entry.key != 'title' && entry.key != 'body')
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: SelectableText(
+                          _formatReportDateTime(
+                            '${entry.key}: ${entry.value ?? '-'}',
+                          ),
                         ),
                       ),
-                    ),
-                const Divider(),
-                SelectableText(
-                  _formatReportDateTime(report['body'] as String),
-                ),
-              ],
+                  const Divider(),
+                  SelectableText(
+                    _formatReportDateTime(report['body'] as String),
+                  ),
+                ],
+              ),
             ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => closeReport(dialogContext),
+              child: const Text('Close'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Close'),
-          ),
-        ],
       ),
     );
   }
@@ -780,17 +832,12 @@ class _AdminPageState extends State<AdminPage> {
               ),
               const SizedBox(height: 16),
               const Text(
-                'Admin',
+                'Select a manager action for organizations or teams',
                 style: TextStyle(
                   color: Color(0xFF111827),
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                 ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Select a manager action for organizations or teams',
-                style: TextStyle(color: Color(0xFF6B7280), fontSize: 14),
               ),
               const SizedBox(height: 36),
               if (isOrganisationManagement) ...[
@@ -843,20 +890,9 @@ class _AdminPageState extends State<AdminPage> {
                 icon: Icons.bar_chart_rounded,
                 iconColor: const Color(0xFF16A34A),
                 iconBackgroundColor: const Color(0xFFF0FDF4),
-                title: _isGeneratingReport
-                    ? 'Generating Report...'
-                    : 'Reporting',
+                title: _isGeneratingReport ? 'Generating Report...' : 'Report',
                 description: 'Generate a performance report.',
-                onTap: _isGeneratingReport ? null : _openReporting,
-              ),
-              const SizedBox(height: 30),
-              _AdminActionCard(
-                icon: Icons.description_outlined,
-                iconColor: const Color(0xFF2563EB),
-                iconBackgroundColor: const Color(0xFFEFF6FF),
-                title: 'View Report',
-                description: 'Read the latest report generated on this page.',
-                onTap: _viewReport,
+                onTap: _isGeneratingReport ? null : _openReport,
               ),
             ],
           ),
