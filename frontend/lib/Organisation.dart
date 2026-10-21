@@ -347,6 +347,7 @@ class _OrganisationPageState extends State<OrganisationPage> {
     BuildContext context,
     OrganisationModel organisation,
   ) async {
+    if (!organisation.canManage) return;
     await Navigator.push<void>(
       context,
       MaterialPageRoute<void>(
@@ -663,18 +664,24 @@ class OrganizationCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  TextButton(
-                    onPressed: isManager ? onManage : null,
-                    style: TextButton.styleFrom(
-                      foregroundColor: const Color(0xFF065F46),
-                      backgroundColor: const Color(0xFFD1FAE5),
-                      disabledForegroundColor: const Color(0xFF9CA3AF),
-                      disabledBackgroundColor: const Color(0xFFF3F4F6),
-                      shape: const StadiumBorder(),
-                    ),
-                    child: const Text(
-                      'Manage',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                  GestureDetector(
+                    // Consume taps across the disabled button's entire bounds.
+                    behavior: HitTestBehavior.opaque,
+                    onTap: isManager ? null : () {},
+                    excludeFromSemantics: true,
+                    child: TextButton(
+                      onPressed: isManager ? onManage : null,
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFF065F46),
+                        backgroundColor: const Color(0xFFD1FAE5),
+                        disabledForegroundColor: const Color(0xFF9CA3AF),
+                        disabledBackgroundColor: const Color(0xFFF3F4F6),
+                        shape: const StadiumBorder(),
+                      ),
+                      child: const Text(
+                        'Manage',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
                 ],
