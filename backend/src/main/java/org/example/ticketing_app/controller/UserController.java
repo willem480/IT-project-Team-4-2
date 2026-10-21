@@ -50,4 +50,9 @@ public class UserController {
     public List<UserReturn> getUsersByKeyWord(@RequestParam(required = false) String keyword) {
         return userService.getUsersByKeyword(keyword);
     }
+
+    @PostMapping("subscribeToEmail")
+    public void subscribeToEmail(boolean isSubscribed, int userId) {
+        userService.subscribeToEmail(isSubscribed, userId);
+    }
 }

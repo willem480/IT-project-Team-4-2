@@ -408,6 +408,7 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
         int atIndex = email.indexOf('@');
         user.setName(atIndex > 0 ? email.substring(0, atIndex) : email);
         user.setEmail(email);
+        user.setSubscribeEmail((byte) 1);
         userService.save(user);
         return user;
     }
