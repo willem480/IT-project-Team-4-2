@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -73,10 +74,27 @@ class _AdminSearchPageState extends State<AdminSearchPage> {
       _userName = widget.userName.trim();
       _fetchUserName();
     }
+    if (oldWidget.teamId != widget.teamId ||
+        oldWidget.actorUserId != widget.actorUserId) {
+      _addedUserIds.clear();
+      _addingUserIds.clear();
+      _searchUser(_searchQuery);
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    _searchRequestId++;
+    super.dispose();
   }
 
   bool _isLoading = false;
+  Timer? _searchDebounce;
+  int _searchRequestId = 0;
+  String _searchQuery = '';
   final Set<int> _addingUserIds = {};
+  final Set<int> _addedUserIds = {};
   List<({int idUser, String name, String email})>? _users;
   String? _errorMessage;
 
@@ -90,53 +108,102 @@ class _AdminSearchPageState extends State<AdminSearchPage> {
     Color(0xFF10B981),
   ];
 
-  Future<void> _searchUser(String query) async {
-    final email = query.trim();
-    if (email.isEmpty || _isLoading) return;
-
+  void _onSearchChanged(String query) {
+    _searchDebounce?.cancel();
+    // Invalidate earlier responses as soon as the input changes.
+    _searchRequestId++;
+    _searchQuery = query.trim();
     setState(() {
-      _isLoading = true;
+      _isLoading = _searchQuery.isNotEmpty;
       _users = null;
       _errorMessage = null;
     });
+    if (_searchQuery.isEmpty) return;
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      _searchUser(query);
+    });
+  }
+
+  Future<void> _searchUser(String query) async {
+    _searchDebounce?.cancel();
+    final keyword = query.trim();
+    _searchQuery = keyword;
+    final requestId = ++_searchRequestId;
+
+    setState(() {
+      _isLoading = keyword.isNotEmpty;
+      _users = null;
+      _errorMessage = null;
+    });
+    if (keyword.isEmpty) return;
 
     try {
-      final url = Uri.parse(
-        'http://127.0.0.1:8080/user/getUsersByEmail',
-      ).replace(queryParameters: {'email': email});
-      final response = await http
-          .post(url, headers: {'Content-Type': 'application/json'})
-          .timeout(const Duration(seconds: 30));
-      if (response.statusCode != 200) {
-        throw Exception('User search failed');
+      final url = Uri.parse('http://127.0.0.1:8080/user/getUsersByEmail')
+          .replace(queryParameters: {'keyword': keyword});
+      final membersUrl = Uri.parse('http://127.0.0.1:8080/team/getTeamMembers')
+          .replace(
+            queryParameters: {
+              'teamId': '${widget.teamId}',
+              'viewerUserId': '${widget.actorUserId}',
+            },
+          );
+      final responses = await Future.wait([
+        http.post(url, headers: {'Content-Type': 'application/json'}),
+        http.get(membersUrl),
+      ]).timeout(const Duration(seconds: 30));
+      if (!mounted || requestId != _searchRequestId) return;
+      if (responses.any((response) => response.statusCode != 200)) {
+        throw Exception('Failed to load users or team members');
       }
 
-      final decoded = jsonDecode(response.body);
+      final membersData = jsonDecode(responses[1].body);
+      if (membersData is! Map<String, dynamic> ||
+          membersData['members'] is! List) {
+        throw const FormatException('Expected a list of team members');
+      }
+      final memberIds = (membersData['members'] as List).map((member) {
+        if (member is! Map<String, dynamic> || member['userId'] is! int) {
+          throw const FormatException('Invalid team member response');
+        }
+        return member['userId'] as int;
+      }).toSet()..addAll(_addedUserIds);
+
+      final decoded = jsonDecode(responses[0].body);
       if (decoded is! List) {
         throw const FormatException('Expected a list of users');
       }
-      final users = decoded.map((user) {
-        if (user is! Map<String, dynamic> ||
-            user['idUser'] is! int ||
-            user['name'] is! String ||
-            user['email'] is! String) {
-          throw const FormatException('Invalid user response');
-        }
-        return (
-          idUser: user['idUser'] as int,
-          name: user['name'] as String,
-          email: user['email'] as String,
-        );
-      }).toList();
-      if (!mounted) return;
+      final search = keyword.toLowerCase();
+      final users = decoded
+          .map((user) {
+            if (user is! Map<String, dynamic> ||
+                user['idUser'] is! int ||
+                user['name'] is! String ||
+                user['email'] is! String) {
+              throw const FormatException('Invalid user response');
+            }
+            return (
+              idUser: user['idUser'] as int,
+              name: user['name'] as String,
+              email: user['email'] as String,
+            );
+          })
+          .where(
+            (user) =>
+                !memberIds.contains(user.idUser) &&
+                (user.name.toLowerCase().contains(search) ||
+                    user.email.toLowerCase().contains(search)),
+          )
+          .toList();
+      // Keep the backend's name-first order among matching non-members.
       setState(() => _users = users);
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted || requestId != _searchRequestId) return;
       setState(() {
-        _errorMessage = 'Failed to search users. Please try again.';
+        _errorMessage =
+            'Failed to load users or team members. Please try again.';
       });
     } finally {
-      if (mounted) {
+      if (mounted && requestId == _searchRequestId) {
         setState(() => _isLoading = false);
       }
     }
@@ -145,20 +212,23 @@ class _AdminSearchPageState extends State<AdminSearchPage> {
   Future<void> _addMember(
     ({int idUser, String name, String email}) user,
   ) async {
-    if (_addingUserIds.contains(user.idUser)) return;
+    if (_addingUserIds.contains(user.idUser) ||
+        _addedUserIds.contains(user.idUser)) {
+      return;
+    }
+    final teamId = widget.teamId;
+    final actorUserId = widget.actorUserId;
 
     setState(() => _addingUserIds.add(user.idUser));
     try {
-      final url = Uri.parse(
-        'http://127.0.0.1:8080/team/addTeamMember',
-      );
+      final url = Uri.parse('http://127.0.0.1:8080/team/addTeamMember');
       final response = await http
           .post(
             url,
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({
-              'actorUserId': widget.actorUserId,
-              'teamId': widget.teamId,
+              'actorUserId': actorUserId,
+              'teamId': teamId,
               'userId': user.idUser,
             }),
           )
@@ -166,16 +236,30 @@ class _AdminSearchPageState extends State<AdminSearchPage> {
       if (response.statusCode != 201) {
         throw Exception('Failed to add user');
       }
-      if (!mounted) return;
+      if (!mounted ||
+          widget.teamId != teamId ||
+          widget.actorUserId != actorUserId) {
+        return;
+      }
+      setState(() {
+        _addedUserIds.add(user.idUser);
+        _users?.removeWhere((candidate) => candidate.idUser == user.idUser);
+      });
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Create user success')));
+          .showSnackBar(const SnackBar(content: Text('User added to team.')));
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted ||
+          widget.teamId != teamId ||
+          widget.actorUserId != actorUserId) {
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to add user. Please try again.')),
       );
     } finally {
-      if (mounted) {
+      if (mounted &&
+          widget.teamId == teamId &&
+          widget.actorUserId == actorUserId) {
         setState(() => _addingUserIds.remove(user.idUser));
       }
     }
@@ -310,7 +394,8 @@ class _AdminSearchPageState extends State<AdminSearchPage> {
                     onPressed: () => Navigator.push<void>(
                       context,
                       MaterialPageRoute<void>(
-                        builder: (context) =>  Profile(userId: widget.actorUserId),
+                        builder: (context) =>
+                            Profile(userId: widget.actorUserId),
                       ),
                     ),
                     icon: CircleAvatar(
@@ -339,8 +424,9 @@ class _AdminSearchPageState extends State<AdminSearchPage> {
               ),
               const SizedBox(height: 16),
               TextField(
-                keyboardType: TextInputType.emailAddress,
+                keyboardType: TextInputType.text,
                 textInputAction: TextInputAction.search,
+                onChanged: _onSearchChanged,
                 onSubmitted: _searchUser,
                 decoration: InputDecoration(
                   hintText: 'Search by name or email',
