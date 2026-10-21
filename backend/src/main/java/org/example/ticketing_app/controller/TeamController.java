@@ -6,10 +6,13 @@ import org.example.ticketing_app.service.impl.TeamServiceImpl;
 import org.example.ticketing_app.service.teamServiceHelper.AddTeamMemberRequest;
 import org.example.ticketing_app.service.teamServiceHelper.TeamMemberListResponse;
 import org.example.ticketing_app.service.teamServiceHelper.TeamMemberSummary;
+import org.example.ticketing_app.service.teamServiceHelper.UpdateTeamRequest;
+import org.example.ticketing_app.service.organizationServiceHelper.OrganizationTeamSummary;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -47,6 +50,14 @@ public class TeamController {
             @Valid @RequestBody AddTeamMemberRequest request
     ) {
         return teamService.addTeamMember(request);
+    }
+
+    /** Renames a team after checking that the acting user manages its organization. */
+    @PatchMapping("updateTeam")
+    public OrganizationTeamSummary updateTeam(
+            @Valid @RequestBody UpdateTeamRequest request
+    ) {
+        return teamService.updateTeam(request);
     }
 
     /** Removes one user-to-team membership after checking manager permission. */

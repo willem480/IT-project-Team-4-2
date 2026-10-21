@@ -16,6 +16,8 @@ import org.example.ticketing_app.mapper.UserMapper;
 import org.example.ticketing_app.service.teamServiceHelper.AddTeamMemberRequest;
 import org.example.ticketing_app.service.teamServiceHelper.TeamMemberListResponse;
 import org.example.ticketing_app.service.teamServiceHelper.TeamMemberSummary;
+import org.example.ticketing_app.service.teamServiceHelper.UpdateTeamRequest;
+import org.example.ticketing_app.service.organizationServiceHelper.OrganizationTeamSummary;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -86,6 +88,35 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team> {
         return toMemberSummary(membership);
     }
 
+    /** Renames a team after verifying its organization's manager permission. */
+    @Transactional
+    public OrganizationTeamSummary updateTeam(UpdateTeamRequest request) {
+        Team team = requireTeam(request.getTeamId());
+        requireManager(request.getActorUserId(), team);
+
+        String normalizedName = request.getName().trim();
+        boolean duplicateName = list(
+                new LambdaQueryWrapper<Team>()
+                        .eq(Team::getOrganizationId, team.getOrganizationId())
+        ).stream().anyMatch(existingTeam ->
+                !Objects.equals(existingTeam.getIdTeam(), team.getIdTeam())
+                        && existingTeam.getName() != null
+                        && existingTeam.getName().equalsIgnoreCase(normalizedName)
+        );
+        if (duplicateName) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "A team with this name already exists in the organization");
+        }
+
+        team.setName(normalizedName);
+        updateById(team);
+        return new OrganizationTeamSummary(
+                team.getIdTeam(),
+                team.getName(),
+                countTeamMembers(team.getIdTeam())
+        );
+    }
+
     /**
      * Removes exactly one team membership and preserves the user's memberships in other teams.
      * Historical member reports are retained, so a membership with reports cannot be removed.
@@ -137,6 +168,14 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team> {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Team does not exist");
         }
         return team;
+    }
+
+    private long countTeamMembers(Integer teamId) {
+        Long memberCount = teamMemberMapper.selectCount(
+                new LambdaQueryWrapper<TeamMember>()
+                        .eq(TeamMember::getTeamId, teamId)
+        );
+        return memberCount == null ? 0 : memberCount;
     }
 
     private TeamMemberSummary toMemberSummary(TeamMember membership) {
