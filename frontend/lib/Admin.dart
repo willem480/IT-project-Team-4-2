@@ -654,10 +654,24 @@ class _AdminPageState extends State<AdminPage> {
         throw const FormatException('The server returned an invalid report.');
       }
       if (emailCopy) {
-        _reportMessage('Report generated. An email copy has been requested.');
-      } else {
-        await _viewReport(report);
+        await showDialog<void>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Email sent successfully'),
+            content: const Text(
+              'A copy of the report has been sent to your email.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+        if (!mounted) return;
       }
+      await _viewReport(report);
     } on FormatException catch (error) {
       if (mounted) _reportMessage(error.message);
     } catch (_) {
@@ -687,8 +701,8 @@ class _AdminPageState extends State<AdminPage> {
         builder: (confirmationContext) => AlertDialog(
           title: const Text('Close report?'),
           content: const Text(
-            'Closing this window will discard the report from this page. '
-            'You will need to generate a new report to view it again.',
+            'Closing this window will permanently delete this report. '
+            'Are you sure?',
           ),
           actions: [
             TextButton(
@@ -697,7 +711,7 @@ class _AdminPageState extends State<AdminPage> {
             ),
             TextButton(
               onPressed: () => Navigator.pop(confirmationContext, true),
-              child: const Text('Close report'),
+              child: const Text('Yes'),
             ),
           ],
         ),
@@ -882,7 +896,7 @@ class _AdminPageState extends State<AdminPage> {
                   iconColor: const Color(0xFFDC2626),
                   iconBackgroundColor: const Color(0xFFFEF2F2),
                   title: 'Delete User',
-                  description: 'Remove or deactivate a user.',
+                  description: 'Remove this member from team and deallocate all ticket assignment from the team',
                   onTap: _isDeleting ? null : _deleteUser,
                 ),
               if (!isOrganisationManagement) const SizedBox(height: 30),
