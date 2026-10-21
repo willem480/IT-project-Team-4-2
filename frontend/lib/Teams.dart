@@ -300,6 +300,7 @@ class _TeamsPageState extends State<TeamsPage> {
   }
 
   void _openMembers(BuildContext context, int teamId) {
+    if (!canManage && _teamMembership[teamId] != true) return;
     Navigator.push(
       context,
       MaterialPageRoute<void>(
@@ -331,6 +332,19 @@ class _TeamsPageState extends State<TeamsPage> {
     final visibleTeams = teams
         .where((team) => team.name.toLowerCase().contains(_query))
         .toList();
+    visibleTeams.sort((a, b) {
+      if (!canManage) {
+        final aIsMember = _teamMembership[a.teamId] ?? false;
+        final bIsMember = _teamMembership[b.teamId] ?? false;
+        if (aIsMember != bIsMember) return aIsMember ? -1 : 1;
+      }
+      final nameOrder = a.name.trim().toLowerCase().compareTo(
+        b.name.trim().toLowerCase(),
+      );
+      if (nameOrder != 0) return nameOrder;
+      final caseOrder = a.name.compareTo(b.name);
+      return caseOrder != 0 ? caseOrder : a.teamId.compareTo(b.teamId);
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -567,7 +581,7 @@ class _TeamCard extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => onOpenMembers(teamId),
+        onTap: isManager || isTeamMember ? () => onOpenMembers(teamId) : null,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
