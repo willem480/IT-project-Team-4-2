@@ -59,7 +59,9 @@ class _MembersPageState extends State<MembersPage> {
     }
   }
 
-  List<({int? teamMemberId, String name, String email})> members = [];
+  List<({int? teamMemberId, int userId, String name, String email})> members =
+      [];
+  Set<int> _managerUserIds = {};
   bool canManage = false;
   bool _isLoading = true;
   String? _errorMessage;
@@ -113,10 +115,25 @@ class _MembersPageState extends State<MembersPage> {
           throw const FormatException('Invalid members response.');
         }
         final teamResponse = TeamMembersResponse.fromJson(parsedResponse);
+        final managersResponse = await http
+            .get(
+              Uri.parse(
+                'http://127.0.0.1:8080/organization/getOrganizationManagers?organizationId=${teamResponse.organizationId}',
+              ),
+              headers: {'Content-Type': 'application/json'},
+            )
+            .timeout(const Duration(seconds: 30));
+        if (managersResponse.statusCode != 200) {
+          throw Exception('Failed to load organisation managers.');
+        }
+        final managerUserIds = (jsonDecode(managersResponse.body) as List)
+            .map((manager) => manager['userId'] as int)
+            .toSet();
         final parsedMembers = teamResponse.members
             .map(
               (member) => (
                 teamMemberId: member.teamMemberId,
+                userId: member.userId,
                 name: member.userName,
                 email: member.email,
               ),
@@ -125,6 +142,7 @@ class _MembersPageState extends State<MembersPage> {
         if (!mounted) return;
         setState(() {
           members = parsedMembers;
+          _managerUserIds = managerUserIds;
           canManage = teamResponse.canManage;
           _organizationId = teamResponse.organizationId;
           _isLoading = false;
@@ -306,7 +324,10 @@ class _MembersPageState extends State<MembersPage> {
                       separatorBuilder: (context, index) =>
                           const SizedBox(height: 12),
                       itemBuilder: (context, index) => MemberCard(
-                        isManager: canManage,
+                        canManage: canManage,
+                        isManager: _managerUserIds.contains(
+                          visibleMembers[index].userId,
+                        ),
                         teamMemberId: visibleMembers[index].teamMemberId,
                         onManage: _openAdmin,
                         name: visibleMembers[index].name,
@@ -396,6 +417,7 @@ class MemberCard extends StatelessWidget {
     required this.email,
     required this.avatarColor,
     required this.isManager,
+    required this.canManage,
   });
 
   final int? teamMemberId;
@@ -404,6 +426,7 @@ class MemberCard extends StatelessWidget {
   final String email;
   final Color avatarColor;
   final bool isManager;
+  final bool canManage;
 
   String get _initials {
     final words = name.trim().split(RegExp(r'\s+'));
@@ -417,12 +440,15 @@ class MemberCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
+    final card = Container(
+      padding: EdgeInsets.fromLTRB(16, isManager ? 24 : 16, 16, 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(
+          color: isManager ? Colors.amber : const Color(0xFFE5E7EB),
+          width: isManager ? 2 : 1,
+        ),
       ),
       child: Row(
         children: [
@@ -464,7 +490,7 @@ class MemberCard extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           TextButton(
-            onPressed: isManager && teamMemberId != null
+            onPressed: canManage && teamMemberId != null
                 ? () => onManage(teamMemberId!)
                 : null,
             style: TextButton.styleFrom(
@@ -479,6 +505,42 @@ class MemberCard extends StatelessWidget {
             child: const Text(
               'Manage',
               style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (!isManager) return card;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          card,
+          Positioned(
+            top: -12,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.amber,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  'Manager',
+                  style: TextStyle(
+                    color: Color(0xFF111827),
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
             ),
           ),
         ],
