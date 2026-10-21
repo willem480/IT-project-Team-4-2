@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 
 import 'Profile.dart';
 import 'adminSearch.dart';
+import 'models/team_members_model.dart';
 
 class AdminPage extends StatefulWidget {
   const AdminPage({
@@ -410,14 +411,13 @@ class _AdminPageState extends State<AdminPage> {
     }
   }
 
-  Future<void> _deleteUser() async {
-    if (_isDeleting) return;
+  Future<void> _deleteMember() async {
+    if (_isDeleting || widget.teamMemberId != null) return;
     final teamId = widget.teamId;
-    final teamMemberId = widget.teamMemberId;
-    if (teamId == null || teamMemberId == null) {
+    if (teamId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Unable to delete user: team or member is missing.'),
+          content: Text('Unable to delete member: team is missing.'),
         ),
       );
       return;
@@ -425,19 +425,93 @@ class _AdminPageState extends State<AdminPage> {
 
     setState(() => _isDeleting = true);
     try {
+      final listUrl = Uri.parse('http://127.0.0.1:8080/team/getTeamMembers')
+          .replace(
+            queryParameters: {
+              'teamId': '$teamId',
+              'viewerUserId': '${widget.userId}',
+            },
+          );
+      final listResponse = await http
+          .get(listUrl)
+          .timeout(const Duration(seconds: 30));
+      if (!mounted) return;
+      if (listResponse.statusCode != 200) {
+        throw FormatException(_deleteErrorMessage(listResponse, loading: true));
+      }
+
+      final TeamMembersResponse team;
+      try {
+        team = teamMembersResponseFromJson(utf8.decode(listResponse.bodyBytes));
+      } catch (_) {
+        throw const FormatException(
+          'The server returned an invalid member list.',
+        );
+      }
+      if (team.teamId != teamId) {
+        throw const FormatException(
+          'The server returned an invalid member list.',
+        );
+      }
+      if (!team.canManage) {
+        throw const FormatException(
+          'Only an organisation manager can delete team members.',
+        );
+      }
+      if (team.members.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('There are no members to delete.')),
+        );
+        return;
+      }
+
+      final selectedMember = await showDialog<TeamMember>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Delete Member'),
+          content: SizedBox(
+            width: 400,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 320),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final member in team.members)
+                      ListTile(
+                        title: Text(member.userName),
+                        subtitle: Text(member.email),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => Navigator.pop(dialogContext, member),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('cancel'),
+            ),
+          ],
+        ),
+      );
+      if (selectedMember == null || !mounted) return;
+
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (dialogContext) => AlertDialog(
-          title: const Text('Delete User'),
-          content: const Text('Remove this user from the team?'),
+          title: const Text('Delete Member'),
+          content: const Text('Are you sure you want to delete this member?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Cancel'),
+              child: const Text('cancel'),
             ),
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('Delete'),
+              child: const Text('delete'),
             ),
           ],
         ),
@@ -449,7 +523,7 @@ class _AdminPageState extends State<AdminPage> {
             queryParameters: {
               'actorUserId': '${widget.userId}',
               'teamId': '$teamId',
-              'teamMemberId': '$teamMemberId',
+              'teamMemberId': '${selectedMember.teamMemberId}',
             },
           );
       final response = await http
@@ -464,17 +538,20 @@ class _AdminPageState extends State<AdminPage> {
           SnackBar(
             content: Text(
               succeeded
-                  ? 'User removed from the team successfully.'
+                  ? 'Member removed from the team successfully.'
                   : _deleteErrorMessage(response),
             ),
           ),
         );
-      if (succeeded) Navigator.pop(context, true);
+    } on FormatException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error.message)));
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Unable to delete user. Please try again.'),
+          content: Text('Unable to delete member. Please try again.'),
         ),
       );
     } finally {
@@ -482,8 +559,8 @@ class _AdminPageState extends State<AdminPage> {
     }
   }
 
-  String _deleteErrorMessage(http.Response response) {
-    final body = response.body.trim();
+  String _deleteErrorMessage(http.Response response, {bool loading = false}) {
+    final body = utf8.decode(response.bodyBytes).trim();
     try {
       final decoded = jsonDecode(body);
       if (decoded is Map<String, dynamic>) {
@@ -497,7 +574,8 @@ class _AdminPageState extends State<AdminPage> {
     } on FormatException {
       if (body.isNotEmpty && !body.startsWith('<')) return body;
     }
-    return 'Unable to delete user (HTTP ${response.statusCode}). Please try again.';
+    final action = loading ? 'load members' : 'delete member';
+    return 'Unable to $action (HTTP ${response.statusCode}). Please try again.';
   }
 
   void _reportMessage(String message) {
@@ -771,7 +849,6 @@ class _AdminPageState extends State<AdminPage> {
   @override
   Widget build(BuildContext context) {
     final displayName = _displayName;
-    final isMemberManagement = widget.teamMemberId != null;
     final isTeamManagement =
         widget.teamId != null && widget.teamMemberId == null;
     final isOrganisationManagement =
@@ -881,7 +958,7 @@ class _AdminPageState extends State<AdminPage> {
                 ),
                 const SizedBox(height: 30),
               ],
-              if (isTeamManagement)
+              if (isTeamManagement) ...[
                 _AdminActionCard(
                   icon: Icons.person_add_alt_1_outlined,
                   iconColor: const Color(0xFF2563EB),
@@ -890,16 +967,17 @@ class _AdminPageState extends State<AdminPage> {
                   description: 'Add a member to your team',
                   onTap: () => _createUser(context),
                 ),
-              if (isMemberManagement)
+                const SizedBox(height: 30),
                 _AdminActionCard(
                   icon: Icons.person_remove_outlined,
                   iconColor: const Color(0xFFDC2626),
                   iconBackgroundColor: const Color(0xFFFEF2F2),
-                  title: 'Delete User',
-                  description: 'Remove this member from team and deallocate all ticket assignment from the team',
-                  onTap: _isDeleting ? null : _deleteUser,
+                  title: _isDeleting ? 'Deleting Member...' : 'Delete Member',
+                  description: 'Remove a member from your team.',
+                  onTap: _isDeleting ? null : _deleteMember,
                 ),
-              if (!isOrganisationManagement) const SizedBox(height: 30),
+                const SizedBox(height: 30),
+              ],
               _AdminActionCard(
                 icon: Icons.bar_chart_rounded,
                 iconColor: const Color(0xFF16A34A),

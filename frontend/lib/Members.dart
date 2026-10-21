@@ -189,9 +189,9 @@ class _MembersPageState extends State<MembersPage> {
       return;
     }
 
-    final deleted = await Navigator.push<bool>(
+    await Navigator.push<void>(
       context,
-      MaterialPageRoute<bool>(
+      MaterialPageRoute<void>(
         builder: (context) => AdminPage(
           userId: widget.userId,
           userName: _userName,
@@ -201,13 +201,6 @@ class _MembersPageState extends State<MembersPage> {
         ),
       ),
     );
-    if (deleted == true && mounted) {
-      setState(() {
-        _isLoading = true;
-        _errorMessage = null;
-      });
-      fetchMembers();
-    }
   }
 
   @override
