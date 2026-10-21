@@ -224,29 +224,10 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "A team with this name already exists in the organization");
         }
-
         Team team = new Team();
         team.setOrganizationId(request.getOrganizationId());
         team.setName(request.getName().trim());
         teamMapper.insert(team);
-
-        // Every organization manager is automatically a member of each new team.
-        Set<Integer> managerUserIds = new HashSet<>();
-        managerMapper.selectList(
-                        new LambdaQueryWrapper<Manager>()
-                                .eq(Manager::getOrganizationId, request.getOrganizationId())
-                ).stream()
-                .map(Manager::getUserId)
-                .filter(Objects::nonNull)
-                .forEach(managerUserIds::add);
-        for (Integer managerUserId : managerUserIds) {
-            TeamMember membership = new TeamMember();
-            membership.setTeamId(team.getIdTeam());
-            membership.setOrganizationId(team.getOrganizationId());
-            membership.setUserId(managerUserId);
-            teamMemberMapper.insert(membership);
-        }
-
         return toTeamSummary(team, request.getActorUserId());
     }
 
