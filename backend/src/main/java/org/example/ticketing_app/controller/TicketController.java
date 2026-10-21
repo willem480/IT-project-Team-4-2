@@ -52,4 +52,9 @@ public class TicketController {
     public void completeTicket(@RequestParam int ticketId) {
         ticketService.completeTicket(ticketId);
     }
+
+    @PostMapping("updatePostedTicket")
+    public void updatePostedTicket(@RequestParam int ticketId, @RequestParam(required = false) String title, @RequestParam(required = false)String description, @RequestParam(required = false)String location, @RequestParam(required = false) Integer pay) {
+        ticketService.updateTicket(ticketId, title, description, location, pay);
+    }
 }
