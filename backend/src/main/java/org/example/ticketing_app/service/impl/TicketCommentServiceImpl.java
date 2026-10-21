@@ -49,17 +49,18 @@ public class TicketCommentServiceImpl extends ServiceImpl<TicketCommentMapper, T
     public List<TicketCommentReturn> getTicketCommentByTicketID(int operatorId, int ticketID) {
 
         List<TicketComment> ticketComments = lambdaQuery().eq(TicketComment::getTicketIdticket, ticketID).list();
-        User user = userMapper.selectById(operatorId);
+        User operator = userMapper.selectById(operatorId);
         List<TicketCommentReturn> ticketCommentReturns = new ArrayList<>();
         for (TicketComment ticketComment : ticketComments) {
+            User poster = userMapper.selectById(ticketComment.getUserIduser());
             TicketCommentReturn ticketCommentReturn = new TicketCommentReturn();
             ticketCommentReturn.setIdticketComment(ticketComment.getIdticketComment());
             ticketCommentReturn.setDate(ticketComment.getDate());
             ticketCommentReturn.setTicketId(ticketComment.getTicketIdticket());
             ticketCommentReturn.setContent(ticketComment.getContent());
-            ticketCommentReturn.setPosterId(ticketComment.getUserIduser());
-            ticketCommentReturn.setUserName(user.getName());
-            ticketCommentReturn.setOwnedByCurUser(ticketComment.getUserIduser() == operatorId);
+            ticketCommentReturn.setPosterId(poster.getIdUser());
+            ticketCommentReturn.setUserName(poster.getName());
+            ticketCommentReturn.setOwnedByCurUser(poster.getIdUser() == operatorId);
             ticketCommentReturns.add(ticketCommentReturn);
         }
         return ticketCommentReturns;
