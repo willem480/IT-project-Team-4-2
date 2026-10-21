@@ -7,6 +7,7 @@ import 'package:ticketing_app/models/ticket_model.dart';
 import 'AcceptedJobDetail.dart';
 import 'PostJob.dart';
 import 'Profile.dart';
+import 'SignIn.dart';
 import 'main.dart' show MyHomePage;
 
 const _ink = Color(0xFF111827);
@@ -432,6 +433,19 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
       appBar: AppBar(
         backgroundColor: const Color(0xFFF9FAFB),
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.logout, color: Colors.black54),
+          tooltip: 'Log out to Sign In',
+          onPressed: () {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const SignInPage(title: 'Find a job'),
+              ),
+              (route) => false,
+            );
+          },
+        ),
         title: const Text(
           'MYTI',
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
