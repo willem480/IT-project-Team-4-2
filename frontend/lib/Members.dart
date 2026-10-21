@@ -7,6 +7,13 @@ import 'Admin.dart';
 import 'Profile.dart';
 import 'models/team_members_model.dart';
 
+typedef _MemberEntry = ({
+  int? teamMemberId,
+  int userId,
+  String name,
+  String email,
+});
+
 class MembersPage extends StatefulWidget {
   const MembersPage({
     super.key,
@@ -59,8 +66,8 @@ class _MembersPageState extends State<MembersPage> {
     }
   }
 
-  List<({int? teamMemberId, int userId, String name, String email})> members =
-      [];
+  List<_MemberEntry> members = [];
+  List<_MemberEntry> _managers = [];
   Set<int> _managerUserIds = {};
   bool canManage = false;
   bool _isLoading = true;
@@ -126,8 +133,22 @@ class _MembersPageState extends State<MembersPage> {
         if (managersResponse.statusCode != 200) {
           throw Exception('Failed to load organisation managers.');
         }
-        final managerUserIds = (jsonDecode(managersResponse.body) as List)
-            .map((manager) => manager['userId'] as int)
+        // Organisation roles are display-only here; only getTeamMembers supplies
+        // membership IDs and entries for the Team Members section.
+        final managers =
+            (jsonDecode(managersResponse.body) as List)
+                .map<_MemberEntry>(
+                  (manager) => (
+                    teamMemberId: null,
+                    userId: manager['userId'] as int,
+                    name: manager['userName'] as String,
+                    email: manager['email'] as String,
+                  ),
+                )
+                .toList()
+              ..sort(_comparePeople);
+        final managerUserIds = managers
+            .map((manager) => manager.userId)
             .toSet();
         final parsedMembers =
             teamResponse.members
@@ -145,16 +166,12 @@ class _MembersPageState extends State<MembersPage> {
                 final bIsManager = managerUserIds.contains(b.userId);
                 if (aIsManager != bIsManager) return aIsManager ? -1 : 1;
 
-                final nameOrder = a.name.trim().toLowerCase().compareTo(
-                  b.name.trim().toLowerCase(),
-                );
-                return nameOrder != 0
-                    ? nameOrder
-                    : a.userId.compareTo(b.userId);
+                return _comparePeople(a, b);
               });
         if (!mounted) return;
         setState(() {
           members = parsedMembers;
+          _managers = managers;
           _managerUserIds = managerUserIds;
           canManage = teamResponse.canManage;
           _organizationId = teamResponse.organizationId;
@@ -203,8 +220,72 @@ class _MembersPageState extends State<MembersPage> {
     );
   }
 
+  static int _comparePeople(_MemberEntry a, _MemberEntry b) {
+    final nameOrder = a.name.trim().toLowerCase().compareTo(
+      b.name.trim().toLowerCase(),
+    );
+    return nameOrder != 0 ? nameOrder : a.userId.compareTo(b.userId);
+  }
+
+  Widget _sectionHeader(String title, String count) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Flexible(
+            child: Text(
+              title,
+              style: const TextStyle(
+                color: Color(0xFF111827),
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            count,
+            style: const TextStyle(
+              color: Color(0xFF6B7280),
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _personCard(_MemberEntry person, int index) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: MemberCard(
+        canManage: canManage,
+        isManager: _managerUserIds.contains(person.userId),
+        teamMemberId: person.teamMemberId,
+        onManage: _openAdmin,
+        name: person.name,
+        email: person.email,
+        avatarColor: _avatarColors[index % _avatarColors.length],
+      ),
+    );
+  }
+
+  Widget _emptySection(String message) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Center(
+        child: Text(message, style: const TextStyle(color: Color(0xFF6B7280))),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final visibleManagers = _managers
+        .where((manager) => manager.name.toLowerCase().contains(_query))
+        .toList();
     final visibleMembers = members
         .where((member) => member.name.toLowerCase().contains(_query))
         .toList();
@@ -264,7 +345,7 @@ class _MembersPageState extends State<MembersPage> {
                   setState(() => _query = value.trim().toLowerCase());
                 },
                 decoration: InputDecoration(
-                  hintText: 'Search teams, members...',
+                  hintText: 'Search managers, members...',
                   hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
                   prefixIcon: const Icon(Icons.search, color: Colors.grey),
                   filled: true,
@@ -281,69 +362,44 @@ class _MembersPageState extends State<MembersPage> {
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Flexible(
-                    child: Text(
-                      'Team Members',
-                      style: TextStyle(
-                        color: Color(0xFF111827),
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    '${visibleMembers.length} results',
-                    style: const TextStyle(
-                      color: Color(0xFF6B7280),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
             Expanded(
-              child:
-                  _isLoading || _errorMessage != null || visibleMembers.isEmpty
+              child: _isLoading || _errorMessage != null
                   ? Center(
                       child: Text(
-                        _isLoading
-                            ? 'Loading members...'
-                            : _errorMessage ??
-                                  (members.isEmpty
-                                      ? 'No members in this team yet.'
-                                      : 'No members match your search.'),
+                        _isLoading ? 'Loading members...' : _errorMessage!,
                         style: const TextStyle(color: Color(0xFF6B7280)),
                       ),
                     )
-                  : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  : ListView(
+                      padding: const EdgeInsets.only(bottom: 16),
                       keyboardDismissBehavior:
                           ScrollViewKeyboardDismissBehavior.onDrag,
-                      itemCount: visibleMembers.length,
-                      separatorBuilder: (context, index) =>
-                          const SizedBox(height: 12),
-                      itemBuilder: (context, index) => MemberCard(
-                        canManage: canManage,
-                        isManager: _managerUserIds.contains(
-                          visibleMembers[index].userId,
+                      children: [
+                        _sectionHeader(
+                          'Managers',
+                          '${visibleManagers.length} managers',
                         ),
-                        teamMemberId: visibleMembers[index].teamMemberId,
-                        onManage: _openAdmin,
-                        name: visibleMembers[index].name,
-                        email: visibleMembers[index].email,
-                        avatarColor:
-                            _avatarColors[members.indexOf(
-                                  visibleMembers[index],
-                                ) %
-                                _avatarColors.length],
-                      ),
+                        if (visibleManagers.isEmpty)
+                          _emptySection(
+                            _managers.isEmpty
+                                ? 'No managers in this organisation.'
+                                : 'No managers match your search.',
+                          ),
+                        for (final manager in visibleManagers)
+                          _personCard(manager, _managers.indexOf(manager)),
+                        _sectionHeader(
+                          'Team Members',
+                          '${visibleMembers.length} results',
+                        ),
+                        if (visibleMembers.isEmpty)
+                          _emptySection(
+                            members.isEmpty
+                                ? 'No members in this team yet.'
+                                : 'No members match your search.',
+                          ),
+                        for (final member in visibleMembers)
+                          _personCard(member, members.indexOf(member)),
+                      ],
                     ),
             ),
           ],
