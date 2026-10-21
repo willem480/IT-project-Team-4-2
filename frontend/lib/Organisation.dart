@@ -59,7 +59,14 @@ class _OrganisationPageState extends State<OrganisationPage> {
   String _query = '';
   bool _isCreating = false;
   bool _isSubmitting = false;
+  int? _removingOrganisationId;
+
+  bool get _isRemoving => _removingOrganisationId != null;
+  bool _isSubmittingRemoval = false;
   int? _renamingOrganisationId;
+
+  bool get _isManager =>
+      organisations.any((organisation) => organisation.canManage);
 
   @override
   void initState() {
@@ -185,7 +192,7 @@ class _OrganisationPageState extends State<OrganisationPage> {
   }
 
   Future<void> _createOrganisation() async {
-    if (_isCreating) return;
+    if (!_isManager || _isCreating || _isRemoving) return;
     setState(() => _isCreating = true);
     try {
       final name = await _showOrganisationNameDialog();
@@ -240,8 +247,110 @@ class _OrganisationPageState extends State<OrganisationPage> {
     }
   }
 
+  Future<void> _removeOrganisation(OrganisationModel selected) async {
+    if (!selected.canManage ||
+        _isRemoving ||
+        _isCreating ||
+        _renamingOrganisationId != null) {
+      return;
+    }
+    setState(() => _removingOrganisationId = selected.organizationId);
+    try {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Remove this organisation?'),
+          content: Text(
+            'Are you sure you want to remove "${selected.name}"? '
+            'This will also remove its teams, memberships and manager roles. '
+            'This action cannot be undone.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Remove'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+
+      setState(() => _isSubmittingRemoval = true);
+      final response = await http
+          .delete(
+            Uri.parse('http://127.0.0.1:8080/organization/removeOrganization')
+                .replace(
+                  queryParameters: {
+                    'actorUserId': '${widget.userId}',
+                    'organizationId': '${selected.organizationId}',
+                  },
+                ),
+          )
+          .timeout(const Duration(seconds: 30));
+      if (!mounted) return;
+
+      final succeeded = response.statusCode >= 200 && response.statusCode < 300;
+      if (succeeded) {
+        setState(() {
+          organisations.removeWhere(
+            (organisation) =>
+                organisation.organizationId == selected.organizationId,
+          );
+          _managersByOrganisation.remove(selected.organizationId);
+          _managerErrors.remove(selected.organizationId);
+        });
+        await fetchOrganisations();
+        if (!mounted) return;
+      }
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              succeeded
+                  ? 'Organisation removed successfully.'
+                  : _organisationError(response, action: 'remove'),
+            ),
+          ),
+        );
+    } on FormatException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Unable to remove organisation. Please try again.'),
+          ),
+        );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _removingOrganisationId = null;
+          _isSubmittingRemoval = false;
+        });
+      }
+    }
+  }
+
   Future<void> _renameOrganisation(OrganisationModel organisation) async {
-    if (!organisation.canManage || _renamingOrganisationId != null) return;
+    if (!organisation.canManage ||
+        _renamingOrganisationId != null ||
+        _isRemoving) {
+      return;
+    }
     setState(() => _renamingOrganisationId = organisation.organizationId);
     try {
       final name = await _showOrganisationNameDialog(
@@ -319,7 +428,8 @@ class _OrganisationPageState extends State<OrganisationPage> {
     } on FormatException {
       // Fall back to a readable message for non-JSON responses.
     }
-    if (response.statusCode == 400 || response.statusCode == 409) {
+    if (action != 'remove' &&
+        (response.statusCode == 400 || response.statusCode == 409)) {
       return 'Check the organisation name. It may already exist.';
     }
     return 'Unable to $action organisation (HTTP ${response.statusCode}). Please try again.';
@@ -434,14 +544,47 @@ class _OrganisationPageState extends State<OrganisationPage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Flexible(
-                    child: Text(
-                      'Organizations',
-                      style: TextStyle(
-                        color: Color(0xFF111827),
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        const Flexible(
+                          child: Text(
+                            'Organizations',
+                            style: TextStyle(
+                              color: Color(0xFF111827),
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        if (_isManager) ...[
+                          const SizedBox(width: 4),
+                          IconButton(
+                            tooltip: 'Create organisation',
+                            onPressed: _isCreating || _isRemoving
+                                ? null
+                                : _createOrganisation,
+                            iconSize: 26,
+                            style: IconButton.styleFrom(
+                              foregroundColor: Colors.blue,
+                              backgroundColor: Colors.transparent,
+                              fixedSize: const Size(40, 40),
+                              padding: const EdgeInsets.all(7),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            icon: _isSubmitting
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.blue,
+                                    ),
+                                  )
+                                : const Icon(Icons.add_circle_outline),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -461,27 +604,10 @@ class _OrganisationPageState extends State<OrganisationPage> {
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 keyboardDismissBehavior:
                     ScrollViewKeyboardDismissBehavior.onDrag,
-                itemCount: visibleOrganisations.length + 1,
+                itemCount: visibleOrganisations.length,
                 separatorBuilder: (context, index) =>
                     const SizedBox(height: 12),
                 itemBuilder: (context, index) {
-                  if (index == visibleOrganisations.length) {
-                    return Center(
-                      child: IconButton.filledTonal(
-                        tooltip: 'Create organisation',
-                        onPressed: _isCreating ? null : _createOrganisation,
-                        icon: _isSubmitting
-                            ? const SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.add),
-                      ),
-                    );
-                  }
                   final organisation = visibleOrganisations[index];
                   return OrganizationCard(
                     isManager: organisation.canManage,
@@ -496,7 +622,16 @@ class _OrganisationPageState extends State<OrganisationPage> {
                         _avatarColors[organisations.indexOf(organisation) %
                             _avatarColors.length],
                     onManage: () => _openAdmin(context, organisation),
-                    onRename: _renamingOrganisationId == null
+                    onRemove:
+                        !_isRemoving &&
+                            !_isCreating &&
+                            _renamingOrganisationId == null
+                        ? () => _removeOrganisation(organisation)
+                        : null,
+                    isRemoving:
+                        _isSubmittingRemoval &&
+                        _removingOrganisationId == organisation.organizationId,
+                    onRename: _renamingOrganisationId == null && !_isRemoving
                         ? () => _renameOrganisation(organisation)
                         : null,
                     onOpenTeams: (id, name) => _openTeams(context, id, name),
@@ -584,6 +719,8 @@ class OrganizationCard extends StatelessWidget {
     required this.onOpenTeams,
     required this.isManager,
     this.onRename,
+    this.onRemove,
+    this.isRemoving = false,
     this.managers = const [],
     this.managerError,
   });
@@ -597,6 +734,8 @@ class OrganizationCard extends StatelessWidget {
   final Color avatarColor;
   final VoidCallback onManage;
   final VoidCallback? onRename;
+  final VoidCallback? onRemove;
+  final bool isRemoving;
   final void Function(int organisationId, String organisationName) onOpenTeams;
 
   @override
@@ -664,6 +803,30 @@ class OrganizationCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
+                  if (isManager)
+                    IconButton(
+                      tooltip: 'Remove organisation',
+                      onPressed: onRemove,
+                      iconSize: 26,
+                      style: IconButton.styleFrom(
+                        foregroundColor: Colors.red,
+                        backgroundColor: Colors.transparent,
+                        fixedSize: const Size(40, 40),
+                        padding: const EdgeInsets.all(7),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      icon: isRemoving
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.red,
+                                semanticsLabel: 'Removing organisation',
+                              ),
+                            )
+                          : const Icon(Icons.remove_circle_outline),
+                    ),
                   GestureDetector(
                     // Consume taps across the disabled button's entire bounds.
                     behavior: HitTestBehavior.opaque,
@@ -725,6 +888,25 @@ class OrganizationCard extends StatelessWidget {
                       style: const TextStyle(
                         color: Color(0xFF6B7280),
                         fontSize: 14,
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: isManager ? null : () {},
+                    excludeFromSemantics: true,
+                    child: TextButton(
+                      onPressed: isManager ? () {} : null,
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFF1D4ED8),
+                        backgroundColor: const Color(0xFFDBEAFE),
+                        disabledForegroundColor: const Color(0xFF9CA3AF),
+                        disabledBackgroundColor: const Color(0xFFF3F4F6),
+                        shape: const StadiumBorder(),
+                      ),
+                      child: const Text(
+                        'Report',
+                        style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),

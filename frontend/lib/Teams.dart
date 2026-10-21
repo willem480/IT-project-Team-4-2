@@ -100,6 +100,13 @@ class _TeamsPageState extends State<TeamsPage> {
 
   String _query = '';
   int? _renamingTeamId;
+  bool _isAddingTeam = false;
+  bool _isSubmittingTeam = false;
+  int? _removingTeamId;
+  bool _isSubmittingRemoval = false;
+
+  bool get _teamActionInProgress =>
+      _isAddingTeam || _removingTeamId != null || _renamingTeamId != null;
 
   @override
   void initState() {
@@ -120,19 +127,19 @@ class _TeamsPageState extends State<TeamsPage> {
     }
   }
 
-  void fetchTeams() async {
+  Future<void> fetchTeams() async {
     final url = Uri.parse(
       'http://127.0.0.1:8080/organization/getOrganizationTeams?organizationId=${widget.organizationId}&viewerUserId=${widget.userId}',
     );
 
     try {
-      final response = await http.get(
-        url,
-        headers: {'Content-Type': 'application/json'},
-      );
+      final response = await http
+          .get(url, headers: {'Content-Type': 'application/json'})
+          .timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final data =
+            jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
         final parsedResponse = TeamsResponse.fromJson(data);
         final membership = {
           for (final team in data['teams'] as List<dynamic>)
@@ -169,7 +176,7 @@ class _TeamsPageState extends State<TeamsPage> {
     }
   }
 
-  Future<String?> _showTeamNameDialog(String initialName) {
+  Future<String?> _showTeamNameDialog({String? initialName}) {
     final formKey = GlobalKey<FormState>();
     var teamName = '';
     var submitted = false;
@@ -184,7 +191,7 @@ class _TeamsPageState extends State<TeamsPage> {
         }
 
         return AlertDialog(
-          title: const Text('Rename Team'),
+          title: Text(initialName == null ? 'Add Team' : 'Rename Team'),
           content: Form(
             key: formKey,
             child: TextFormField(
@@ -213,18 +220,163 @@ class _TeamsPageState extends State<TeamsPage> {
               onPressed: () => Navigator.pop(dialogContext),
               child: const Text('Cancel'),
             ),
-            FilledButton(onPressed: submit, child: const Text('Save')),
+            FilledButton(
+              onPressed: submit,
+              child: Text(initialName == null ? 'Add' : 'Save'),
+            ),
           ],
         );
       },
     );
   }
 
+  Future<void> _addTeam() async {
+    if (!canManage || _teamActionInProgress) return;
+    setState(() => _isAddingTeam = true);
+    try {
+      final name = await _showTeamNameDialog();
+      if (name == null || !mounted) return;
+
+      setState(() => _isSubmittingTeam = true);
+      final response = await http
+          .post(
+            Uri.parse('http://127.0.0.1:8080/organization/addTeam'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'actorUserId': widget.userId,
+              'organizationId': widget.organizationId,
+              'name': name,
+            }),
+          )
+          .timeout(const Duration(seconds: 30));
+      if (!mounted) return;
+
+      if (response.statusCode == 201) {
+        final team = Team.fromJson(
+          jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>,
+        );
+        setState(() => teams = [...teams, team]);
+        await fetchTeams();
+        if (!mounted) return;
+      }
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              response.statusCode == 201
+                  ? 'Team added successfully.'
+                  : _teamError(response, action: 'add'),
+            ),
+          ),
+        );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Unable to add team. Please try again.'),
+          ),
+        );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isAddingTeam = false;
+          _isSubmittingTeam = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _removeTeam(Team team) async {
+    if (!canManage || _teamActionInProgress) return;
+    setState(() => _removingTeamId = team.teamId);
+    try {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Remove this team?'),
+          content: Text(
+            'Are you sure you want to remove "${team.name}"? '
+            'User accounts will be kept. This action cannot be undone.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Remove'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+
+      setState(() => _isSubmittingRemoval = true);
+      final response = await http
+          .delete(
+            Uri.parse('http://127.0.0.1:8080/organization/removeTeam').replace(
+              queryParameters: {
+                'actorUserId': '${widget.userId}',
+                'organizationId': '${widget.organizationId}',
+                'teamId': '${team.teamId}',
+              },
+            ),
+          )
+          .timeout(const Duration(seconds: 30));
+      if (!mounted) return;
+
+      final succeeded = response.statusCode >= 200 && response.statusCode < 300;
+      if (succeeded) {
+        setState(() {
+          teams.removeWhere((item) => item.teamId == team.teamId);
+          _teamMembership.remove(team.teamId);
+        });
+        await fetchTeams();
+        if (!mounted) return;
+      }
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              succeeded
+                  ? 'Team removed successfully.'
+                  : _teamError(response, action: 'remove'),
+            ),
+          ),
+        );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Unable to remove team. Please try again.'),
+          ),
+        );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _removingTeamId = null;
+          _isSubmittingRemoval = false;
+        });
+      }
+    }
+  }
+
   Future<void> _renameTeam(Team team) async {
-    if (!canManage || _renamingTeamId != null) return;
+    if (!canManage || _teamActionInProgress) return;
     setState(() => _renamingTeamId = team.teamId);
     try {
-      final name = await _showTeamNameDialog(team.name);
+      final name = await _showTeamNameDialog(initialName: team.name);
       if (!mounted || name == null || name == team.name) return;
 
       final response = await http
@@ -257,7 +409,7 @@ class _TeamsPageState extends State<TeamsPage> {
             content: Text(
               response.statusCode == 200
                   ? 'Team renamed successfully.'
-                  : _teamRenameError(response),
+                  : _teamError(response, action: 'rename'),
             ),
           ),
         );
@@ -275,12 +427,14 @@ class _TeamsPageState extends State<TeamsPage> {
     }
   }
 
-  String _teamRenameError(http.Response response) {
+  String _teamError(http.Response response, {required String action}) {
     if (response.statusCode == 403) {
-      return 'Only an organisation manager can rename this team.';
+      return 'Only an organisation manager can $action this team.';
     }
     if (response.statusCode == 404) {
-      return 'The team no longer exists. Please refresh.';
+      return action == 'rename'
+          ? 'The team no longer exists. Please refresh.'
+          : 'The organisation or team no longer exists. Please refresh.';
     }
     try {
       final decoded = jsonDecode(utf8.decode(response.bodyBytes));
@@ -293,10 +447,11 @@ class _TeamsPageState extends State<TeamsPage> {
     } on FormatException {
       // Fall back to a readable message for non-JSON responses.
     }
-    if (response.statusCode == 400 || response.statusCode == 409) {
+    if (action != 'remove' &&
+        (response.statusCode == 400 || response.statusCode == 409)) {
       return 'Check the team name. It may already exist in this organisation.';
     }
-    return 'Unable to rename team (HTTP ${response.statusCode}). Please try again.';
+    return 'Unable to $action team (HTTP ${response.statusCode}). Please try again.';
   }
 
   void _openMembers(BuildContext context, int teamId) {
@@ -413,14 +568,46 @@ class _TeamsPageState extends State<TeamsPage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Flexible(
-                    child: Text(
-                      'Teams',
-                      style: TextStyle(
-                        color: Color(0xFF111827),
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        const Flexible(
+                          child: Text(
+                            'Teams',
+                            style: TextStyle(
+                              color: Color(0xFF111827),
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        if (canManage) ...[
+                          const SizedBox(width: 4),
+                          IconButton(
+                            tooltip: 'Add team',
+                            onPressed: _teamActionInProgress ? null : _addTeam,
+                            iconSize: 26,
+                            style: IconButton.styleFrom(
+                              foregroundColor: Colors.blue,
+                              backgroundColor: Colors.transparent,
+                              fixedSize: const Size(40, 40),
+                              padding: const EdgeInsets.all(7),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            icon: _isSubmittingTeam
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.blue,
+                                      semanticsLabel: 'Adding team',
+                                    ),
+                                  )
+                                : const Icon(Icons.add_circle_outline),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -466,7 +653,12 @@ class _TeamsPageState extends State<TeamsPage> {
                         _avatarColors[teams.indexOf(team) %
                             _avatarColors.length],
                     onManage: () => _openAdmin(context, team.teamId),
-                    onRename: _renamingTeamId == null
+                    onRemove: !_teamActionInProgress
+                        ? () => _removeTeam(team)
+                        : null,
+                    isRemoving:
+                        _isSubmittingRemoval && _removingTeamId == team.teamId,
+                    onRename: !_teamActionInProgress
                         ? () => _renameTeam(team)
                         : null,
                   );
@@ -557,6 +749,8 @@ class _TeamCard extends StatelessWidget {
     required this.isManager,
     required this.isTeamMember,
     this.onRename,
+    this.onRemove,
+    this.isRemoving = false,
   });
 
   final int teamId;
@@ -571,6 +765,8 @@ class _TeamCard extends StatelessWidget {
   final Color avatarColor;
   final VoidCallback onManage;
   final VoidCallback? onRename;
+  final VoidCallback? onRemove;
+  final bool isRemoving;
 
   @override
   Widget build(BuildContext context) {
@@ -637,6 +833,30 @@ class _TeamCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
+                  if (isManager)
+                    IconButton(
+                      tooltip: 'Remove team',
+                      onPressed: onRemove,
+                      iconSize: 26,
+                      style: IconButton.styleFrom(
+                        foregroundColor: Colors.red,
+                        backgroundColor: Colors.transparent,
+                        fixedSize: const Size(40, 40),
+                        padding: const EdgeInsets.all(7),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      icon: isRemoving
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.red,
+                                semanticsLabel: 'Removing team',
+                              ),
+                            )
+                          : const Icon(Icons.remove_circle_outline),
+                    ),
                   GestureDetector(
                     // Keep disabled button taps from opening the parent card.
                     behavior: HitTestBehavior.opaque,
@@ -715,6 +935,25 @@ class _TeamCard extends StatelessWidget {
                       ),
                     ),
                   ],
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: isManager ? null : () {},
+                    excludeFromSemantics: true,
+                    child: TextButton(
+                      onPressed: isManager ? () {} : null,
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFF1D4ED8),
+                        backgroundColor: const Color(0xFFDBEAFE),
+                        disabledForegroundColor: const Color(0xFF9CA3AF),
+                        disabledBackgroundColor: const Color(0xFFF3F4F6),
+                        shape: const StadiumBorder(),
+                      ),
+                      child: const Text(
+                        'Report',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ],
