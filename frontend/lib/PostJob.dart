@@ -33,10 +33,6 @@ class _PostJobPageState extends State<PostJob> {
       final Map<String, dynamic> jsonData = jsonDecode(response.body);
       setState(() {
         userName = jsonData['name'] ?? 'User';
-        userEmail = jsonData['email'] ?? '';
-
-        emailController.text = userEmail;
-
       });
     }
   }
@@ -51,7 +47,6 @@ class _PostJobPageState extends State<PostJob> {
   @override
   void dispose(){
     titleController.dispose();
-    emailController.dispose();
     addressController.dispose();
     payController.dispose();
     assigndateController.dispose();
@@ -60,12 +55,6 @@ class _PostJobPageState extends State<PostJob> {
   }
   Future<void> submitTicketData() async {
 
-    if (emailController.text.trim() != userEmail) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("❌ Email incorrect"), backgroundColor: Colors.red),
-      );
-      return;
-    }
 
     if (payController.text.trim().isEmpty || int.tryParse(payController.text) == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -85,7 +74,6 @@ class _PostJobPageState extends State<PostJob> {
     Map<String, dynamic> requestData = {
       'posterId': widget.currentUserId,
       "title": titleController.text,
-      "email": emailController.text,
       "location": addressController.text, 
       "pay": int.tryParse(payController.text),
       "company": selectedCompany ?? "Unknown",
@@ -172,32 +160,7 @@ class _PostJobPageState extends State<PostJob> {
               ),
             ),
             SizedBox(height: 32.0),
-            
-            
-            //email
-              const Text(
-              'Email',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.black),
-            ),
-            
-            TextField(
-              controller: emailController,
-              decoration: InputDecoration(
-                hintText: 'Write your email',
-                hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: Colors.black, width: 1.0)
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: Colors.blue, width: 1.0)
-                ),
-              ),
-            ),
 
-            SizedBox(height: 32.0),
-            
 
             //Address
               const Text(

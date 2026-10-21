@@ -9,13 +9,19 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:ticketing_app/models/ticket_model.dart';
 import 'package:ticketing_app/models/user_profile.dart';
+import 'dart:html' as html; //
 
 void main() {
-  runApp(const MyApp());
+  String? savedUserIdStr = html.window.localStorage['currentUserId'];
+  int? savedUserId = savedUserIdStr != null ? int.tryParse(savedUserIdStr) : null;
+
+  runApp(MyApp(initialUserId: savedUserId));
+
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final int? initialUserId;
+  const MyApp({super.key, required this.initialUserId});
 
   // This widget is the root of your application.
   @override
@@ -23,9 +29,11 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        colorScheme: .fromSeed(seedColor: const Color(0xFFF9FAFB)),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFF9FAFB)),
       ),
-      home: const SignInPage(title: 'Find a job'),
+      home: initialUserId != null
+          ? MyHomePage(title: 'Find a job', currentUserId: initialUserId!)
+          : const SignIn(),
     );
   }
 }
@@ -51,6 +59,9 @@ class _MyHomePageState extends State<MyHomePage> {
   bool isDateAscending = true;
   bool isManager = false;
   int? managerOrgId; //This is used to record company of a user managered
+  bool isDateActive = false;
+  bool isPayActive = false;
+
   Future<void> checkManagerStatus() async{
     final url = Uri.parse('http://127.0.0.1:8080/organization/getOrganizations?viewerUserId=${widget.currentUserId}');
     try {
@@ -207,38 +218,42 @@ void fetchAssignTickets() async {
  
     return Scaffold(
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: const Color(0xFFF9FAFB),
-        elevation: 0,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text('MYTI', style: TextStyle(color:Colors.black, fontWeight: FontWeight.bold)),
+          backgroundColor: const Color(0xFFF9FAFB),
+          elevation: 0,
 
-        actions:[
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: GestureDetector(
-              onTap: () {
-                print('profile open');
-                Navigator.push(context, MaterialPageRoute(builder: (context) => Profile(userId: widget.currentUserId)));
+          leading: IconButton(
+            icon: const Icon(Icons.logout, color: Colors.black54),
+            tooltip: 'Log out to Sign In',
+            onPressed: () {
 
-              },
-              child: 
-                CircleAvatar(
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const SignInPage(title: 'Find a job')),
+                    (route) => false,
+              );
+            },
+          ),
+          title: Text('MYTI', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+
+          actions:[
+            Padding(
+              padding: const EdgeInsets.only(right: 16.0),
+              child: GestureDetector(
+                onTap: () {
+                  print('profile open');
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => Profile(userId: widget.currentUserId)));
+                },
+                child: CircleAvatar(
                   radius: 16,
                   backgroundColor: Colors.blue,
                   child: Text(
                     userName.isNotEmpty? userName.substring(0,1).toUpperCase():'U',
-                    style: TextStyle(fontSize: 12, color:Colors.white, fontWeight:FontWeight.bold),),
+                    style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
                 ),
-
+              ),
             )
-
-          )
-        ]
-        
+          ]
       ),
       //body
       body: SafeArea(
@@ -353,84 +368,89 @@ void fetchAssignTickets() async {
               ),
 
               Padding(
-                padding:  EdgeInsets.all(16.0),
-                child: Row(// from left to right
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
                   children: [
-                    OutlinedButton.icon(
-                      
-                      onPressed:(){
-                        setState(() {
-                          isPayAscending = !isPayAscending;
-                        }); 
 
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          isPayActive = true;
+                          isDateActive = false;
+                          isPayAscending = !isPayAscending;
+                        });
                         String filterValue = isPayAscending ? 'payDescending' : 'payAscending';
-                        print("User toggled filter: $filterValue");
                         fetchOpenTickets(filterValue);
                       },
-
                       icon: Icon(
                         isPayAscending ? Icons.arrow_upward : Icons.arrow_downward,
-                        size:  16,
-                        color: Colors.black87,
+                        size: 16,
+                        color: isPayActive ? Colors.blue.shade800 : Colors.black87,
                       ),
-
                       label: Text(
-                          isPayAscending ? "Pay: High to Low" : "Pay : Low to High",
-                        style: const TextStyle(
-                          color : Colors.black87,
-                          fontWeight: FontWeight.w500,
-                        )
+                        isPayAscending ? "Pay: High to Low" : "Pay: Low to High",
+                        style: TextStyle(
+                          color: isPayActive ? Colors.blue.shade800 : Colors.black87,
+                          fontWeight: isPayActive ? FontWeight.bold : FontWeight.w500,
+                        ),
                       ),
-
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        backgroundColor:  Colors.white,
-                        side: BorderSide(color: Colors.grey),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        )
+
+                        backgroundColor: isPayActive ? Colors.blue.shade50 : Colors.white,
+
+                        side: BorderSide(color: isPayActive ? Colors.blue : Colors.grey.shade300, width: isPayActive ? 1.5 : 1),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       ),
-                      //visual button
-
-
                     ),
-                    const SizedBox(width: 20,),
+                    const SizedBox(width: 12),
+
                     OutlinedButton.icon(
-                        onPressed:(){
+                      onPressed: () {
+                        setState(() {
+                          isDateActive = true;
+                          isPayActive = false;
+                          isDateAscending = !isDateAscending;
+                        });
+                        String filterValue = isDateAscending ? 'timeAscending' : 'timeDescending';
+                        fetchOpenTickets(filterValue);
+                      },
+                      icon: Icon(
+                        isDateAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                        size: 16,
+                        color: isDateActive ? Colors.blue.shade800 : Colors.black87,
+                      ),
+                      label: Text(
+                        isDateAscending ? "Time: Oldest first" : "Time: Newest first",
+                        style: TextStyle(
+                          color: isDateActive ? Colors.blue.shade800 : Colors.black87,
+                          fontWeight: isDateActive ? FontWeight.bold : FontWeight.w500,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+
+                        backgroundColor: isDateActive ? Colors.blue.shade50 : Colors.white,
+                        side: BorderSide(color: isDateActive ? Colors.blue : Colors.grey.shade300, width: isDateActive ? 1.5 : 1),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+
+                    if (isDateActive || isPayActive) ...[
+                      const SizedBox(width: 12),
+                      TextButton(
+                        onPressed: () {
                           setState(() {
-                            isDateAscending = !isDateAscending;
+                            isDateActive = false;
+                            isPayActive = false;
                           });
-
-                          String filterValue = isDateAscending ? 'timeAscending' : 'timeDescending';
-                          print("User toggled filter: $filterValue");
-                          fetchOpenTickets(filterValue);
+                          fetchOpenTickets('');
                         },
-
-                        icon: Icon(
-                          isDateAscending ? Icons.arrow_upward : Icons.arrow_downward,
-                          size:  16,
-                          color: Colors.black87,
-                        ),
-
-                        label: Text(
-                            isDateAscending ? "Date: earliest to lastest" : "Date: lastest to earliest",
-                            style: const TextStyle(
-                              color : Colors.black87,
-                              fontWeight: FontWeight.w500,
-                            )
-                        ),
-
-                        style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            backgroundColor:  Colors.white,
-                            side: BorderSide(color: Colors.grey),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            )
-                        )
-                    )
-                  ]
-                )
+                        child: const Text("Reset", style: TextStyle(color: Colors.teal, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ],
+                ),
               ),
 
               //scrol area
