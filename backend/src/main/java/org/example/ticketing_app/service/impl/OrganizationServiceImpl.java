@@ -1,6 +1,7 @@
 package org.example.ticketing_app.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import org.example.ticketing_app.entity.Manager;
 import org.example.ticketing_app.entity.Organization;
@@ -268,8 +269,13 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
                 ticketMapper.updateById(ticket);
             } else if (TicketStatus.CLOSED.name().equals(ticket.getStatus())) {
                 // Preserve the closed assignment history, but detach the deleted team.
-                assignment.setRelatedTeamId(null);
-                ticketAssignmentMapper.updateById(assignment);
+                ticketAssignmentMapper.update(
+                        null,
+                        new LambdaUpdateWrapper<TicketAssignment>()
+                                .eq(TicketAssignment::getIdTicketAssignment,
+                                        assignment.getIdTicketAssignment())
+                                .set(TicketAssignment::getRelatedTeamId, null)
+                );
             } else {
                 // Open and cancelled tickets keep their status but cannot retain this team reference.
                 ticketAssignmentMapper.deleteById(assignment.getIdTicketAssignment());
@@ -284,6 +290,35 @@ public class OrganizationServiceImpl extends ServiceImpl<OrganizationMapper, Org
             teamMemberMapper.deleteById(membership.getIdTeamMember());
         }
         teamMapper.deleteById(teamId);
+    }
+
+    /**
+     * Removes one organization and its teams, memberships, and manager roles.
+     * User accounts and historical report records are preserved.
+     */
+    @Transactional
+    public void removeOrganization(Integer actorUserId, Integer organizationId) {
+        requireOrganization(organizationId);
+        requireManager(actorUserId, organizationId);
+
+        List<Team> teams = teamMapper.selectList(
+                new LambdaQueryWrapper<Team>()
+                        .eq(Team::getOrganizationId, organizationId)
+        );
+        for (Team team : teams) {
+            removeTeam(actorUserId, organizationId, team.getIdTeam());
+        }
+
+        // Clean up any malformed membership row that did not belong to a listed team.
+        teamMemberMapper.delete(
+                new LambdaQueryWrapper<TeamMember>()
+                        .eq(TeamMember::getOrganizationId, organizationId)
+        );
+        managerMapper.delete(
+                new LambdaQueryWrapper<Manager>()
+                        .eq(Manager::getOrganizationId, organizationId)
+        );
+        removeById(organizationId);
     }
 
     /** A user can manage an organization only when a matching manager row exists. */
