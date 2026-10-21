@@ -474,6 +474,9 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
             Expanded(
               child: TextField(
                 controller: commentController,
+                onSubmitted: (value) {
+                  postNewComment();
+                },
                 decoration: InputDecoration(
                   hintText: 'Type a message...',
                   filled: true,

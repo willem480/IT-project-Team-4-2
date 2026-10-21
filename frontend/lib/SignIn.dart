@@ -45,7 +45,7 @@ class _SignInPageState extends State<SignInPage> {
 
     if (email.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter both email')),
+        const SnackBar(content: Text('Please enter email')),
       );
       return;
     }
@@ -136,6 +136,11 @@ class _SignInPageState extends State<SignInPage> {
                 const SizedBox(height: 8),
                 TextField(
                   controller: _emailController,
+                  onSubmitted: (value) {
+                    if (!isLoading) {
+                      handleSignIn();
+                    }
+                  },
                   decoration: InputDecoration(
                     hintText: 'ABC@gmail.com',
                     hintStyle: const TextStyle(color: Colors.grey, fontSize: 12),

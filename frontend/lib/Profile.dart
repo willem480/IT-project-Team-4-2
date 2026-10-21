@@ -355,7 +355,7 @@
                             const SizedBox(height: 25),
                             Text('\$$totalEarnings',style: TextStyle(fontSize: 50, fontWeight: FontWeight.bold),),
                             const SizedBox(height: 60),
-                            Text('This month: \$$thisMonthEarnings and $thisMonthTimes times payouts', style: const TextStyle(fontWeight:FontWeight.bold, fontSize: 15, color: Colors.grey)),
+                            Text('This month: \$$thisMonthEarnings and $thisMonthTimes payouts', style: const TextStyle(fontWeight:FontWeight.bold, fontSize: 15, color: Colors.grey)),
                           ],
                       )
                     ),
