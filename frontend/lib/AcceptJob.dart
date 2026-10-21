@@ -23,8 +23,7 @@ class _RelatedTeam {
     this.canManage = false,
   });
 
-  // A null ID represents the "All accepted jobs" menu option.
-  final int? id;
+  final int id;
   final String name;
   final String organizationName;
   final bool canManage;
@@ -89,7 +88,10 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
   _JobSort? _sortBy;
   bool _isAscending = true;
   _RelatedTeam? _selectedTeam;
+  final _relatedTeamsMenuController = MenuController();
+  List<_RelatedTeam> _relatedTeams = [];
   bool _isLoadingTeams = false;
+  String? _teamsError;
   int _jobsRequestId = 0;
   int _teamsRequestId = 0;
 
@@ -205,100 +207,53 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
     return myTeams;
   }
 
-  Future<void> _openRelatedTeams() async {
+  void _openRelatedTeams() {
+    if (_relatedTeamsMenuController.isOpen) {
+      _relatedTeamsMenuController.close();
+      return;
+    }
+    _relatedTeamsMenuController.open();
+    _loadRelatedTeams();
+  }
+
+  Future<void> _loadRelatedTeams() async {
     if (_isLoadingTeams) return;
     final userId = widget.userId;
     final requestId = ++_teamsRequestId;
-    setState(() => _isLoadingTeams = true);
+    setState(() {
+      _isLoadingTeams = true;
+      _teamsError = null;
+      _relatedTeams = [];
+    });
     try {
       final teams = await _fetchMyTeams(userId);
       if (!mounted || widget.userId != userId || requestId != _teamsRequestId) {
         return;
       }
-      setState(() => _isLoadingTeams = false);
-      final selected = await showModalBottomSheet<_RelatedTeam>(
-        context: context,
-        isScrollControlled: true,
-        builder: (sheetContext) => SafeArea(
-          child: SizedBox(
-            height: MediaQuery.sizeOf(sheetContext).height * 0.6,
-            child: Column(
-              children: [
-                ListTile(
-                  title: const Text(
-                    'Related to',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                  trailing: IconButton(
-                    tooltip: 'Close teams',
-                    onPressed: () => Navigator.pop(sheetContext),
-                    icon: const Icon(Icons.close),
-                  ),
-                ),
-                const Divider(height: 1),
-                Expanded(
-                  child: ListView(
-                    children: [
-                      ListTile(
-                        title: const Text('All accepted jobs'),
-                        selected: _selectedTeam == null,
-                        onTap: () => Navigator.pop(
-                          sheetContext,
-                          const _RelatedTeam(
-                            id: null,
-                            name: 'All accepted jobs',
-                          ),
-                        ),
-                      ),
-                      if (teams.isEmpty)
-                        const Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Text(
-                            'You do not manage or belong to any teams.',
-                          ),
-                        ),
-                      for (final team in teams)
-                        ListTile(
-                          leading: const Icon(Icons.groups_outlined),
-                          title: Text(team.name),
-                          subtitle: Text(team.organizationName),
-                          selected: _selectedTeam?.id == team.id,
-                          onTap: () => Navigator.pop(sheetContext, team),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-      if (!mounted ||
-          selected == null ||
-          widget.userId != userId ||
-          requestId != _teamsRequestId) {
-        return;
-      }
-      _searchController.clear();
       setState(() {
-        _selectedTeam = selected.id == null ? null : selected;
-        _keyword = '';
-        _sortBy = null;
+        _isLoadingTeams = false;
+        _relatedTeams = teams;
       });
-      await _fetchAcceptedJobs();
     } catch (error) {
       if (!mounted || widget.userId != userId || requestId != _teamsRequestId) {
         return;
       }
-      setState(() => _isLoadingTeams = false);
+      setState(() {
+        _isLoadingTeams = false;
+        _teamsError = 'Unable to load teams. Retry';
+      });
       debugPrint('Failed to load teams for user $userId: $error');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Unable to load your teams. Please try again.'),
-          action: SnackBarAction(label: 'Retry', onPressed: _openRelatedTeams),
-        ),
-      );
     }
+  }
+
+  void _selectRelatedTeam(_RelatedTeam team) {
+    _searchController.clear();
+    setState(() {
+      _selectedTeam = team;
+      _keyword = '';
+      _sortBy = null;
+    });
+    _fetchAcceptedJobs();
   }
 
   @override
@@ -324,11 +279,14 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
       _fetchUserName();
     }
     if (oldWidget.userId != widget.userId) {
+      _relatedTeamsMenuController.close();
       _searchController.clear();
       _keyword = '';
       _sortBy = null;
       _selectedTeam = null;
+      _relatedTeams = [];
       _isLoadingTeams = false;
+      _teamsError = null;
       _teamsRequestId++;
       _fetchAcceptedJobs();
     }
@@ -581,17 +539,60 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
                                     : Icons.arrow_downward,
                                 onPressed: () => _toggleSort(sort),
                               ),
-                            _FilterButton(
-                              label: _isLoadingTeams
-                                  ? 'Loading teams...'
-                                  : _selectedTeam == null
-                                  ? 'Related to'
-                                  : 'Related to: ${_selectedTeam!.name}',
-                              isActive: _selectedTeam != null,
-                              icon: Icons.keyboard_arrow_down,
-                              onPressed: _isLoadingTeams
-                                  ? null
-                                  : _openRelatedTeams,
+                            MenuAnchor(
+                              controller: _relatedTeamsMenuController,
+                              alignmentOffset: const Offset(0, 4),
+                              consumeOutsideTap: true,
+                              style: const MenuStyle(
+                                alignment: AlignmentDirectional.bottomStart,
+                                backgroundColor: WidgetStatePropertyAll(
+                                  Colors.white,
+                                ),
+                                minimumSize: WidgetStatePropertyAll(
+                                  Size(200, 0),
+                                ),
+                                maximumSize: WidgetStatePropertyAll(
+                                  Size(320, 320),
+                                ),
+                              ),
+                              menuChildren: [
+                                if (_isLoadingTeams)
+                                  const MenuItemButton(
+                                    child: Text('Loading teams...'),
+                                  )
+                                else if (_teamsError != null)
+                                  MenuItemButton(
+                                    closeOnActivate: false,
+                                    onPressed: _loadRelatedTeams,
+                                    child: Text(_teamsError!),
+                                  )
+                                else if (_relatedTeams.isEmpty)
+                                  const MenuItemButton(
+                                    child: Text('No related teams'),
+                                  )
+                                else
+                                  for (final team in _relatedTeams)
+                                    MenuItemButton(
+                                      onPressed: () => _selectRelatedTeam(team),
+                                      trailingIcon: _selectedTeam?.id == team.id
+                                          ? const Icon(Icons.check, size: 18)
+                                          : null,
+                                      child: Text(
+                                        team.name,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                              ],
+                              builder: (context, controller, child) =>
+                                  _FilterButton(
+                                    label: _selectedTeam == null
+                                        ? 'Related to'
+                                        : 'Related to: ${_selectedTeam!.name}',
+                                    isActive: _selectedTeam != null,
+                                    icon: Icons.keyboard_arrow_down,
+                                    onPressed: _openRelatedTeams,
+                                  ),
                             ),
                             if (_sortBy != null ||
                                 _keyword.isNotEmpty ||

@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.example.ticketing_app.service.impl.UserServiceImpl;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -48,7 +47,7 @@ public class UserController {
     }
 
     @PostMapping("getUsersByEmail")
-    public List<UserReturn> getUsersByEmail(@RequestParam(required = false) String email) {
-        return userService.getUsersByEmail(email);
+    public List<UserReturn> getUsersByKeyWord(@RequestParam(required = false) String keyword) {
+        return userService.getUsersByKeyword(keyword);
     }
 }

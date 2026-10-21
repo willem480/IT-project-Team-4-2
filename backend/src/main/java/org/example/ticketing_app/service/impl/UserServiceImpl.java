@@ -2,6 +2,7 @@ package org.example.ticketing_app.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.similarity.JaroWinklerSimilarity;
 import org.example.ticketing_app.entity.User;
 import org.example.ticketing_app.mapper.TicketAssignmentMapper;
 import org.example.ticketing_app.mapper.UserMapper;
@@ -17,8 +18,8 @@ import org.example.ticketing_app.service.userServiceHelper.SignInRequest;
 import org.example.ticketing_app.service.userServiceHelper.SignUpRequest;
 
 import java.time.YearMonth;
+import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -136,15 +137,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> {
             if (!StringUtils.isBlank(newEmail)) {
                 user.setEmail(newEmail);
             }
-            else if (!StringUtils.isBlank(newName)) {
+            if (!StringUtils.isBlank(newName)) {
                 user.setName(newName);
             }
 
-            else if (!StringUtils.isBlank(newDescription)) {
+            if (!StringUtils.isBlank(newDescription)) {
                 user.setDescription(newDescription);
             }
             saveOrUpdate(user);
         }
+        else throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "you are updating the information of a user that doesn't exist");
     }
 
     private UserReturn createBasicUserReturn(User user) {
@@ -217,11 +219,50 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> {
         return createBasicUserReturn(user);
     }
 
-    public List<UserReturn> getUsersByEmail(String email) {
-        if (StringUtils.isBlank(email)) {
-            return list().stream().map(user -> createBasicUserReturn(user)).collect(Collectors.toList());
+    public List<UserReturn> getUsersByKeyword(String keyword) {
+        List<UserReturn> users = list().stream()
+                .map(this::createBasicUserReturn)
+                .toList();
+
+        if (StringUtils.isBlank(keyword)) {
+            return users;
         }
-        List<User> users = list(new LambdaQueryWrapper<User>().eq(User::getEmail, email));
-        return users.stream().map(user -> createBasicUserReturn(user)).collect(Collectors.toList());
+
+        JaroWinklerSimilarity similarity = new JaroWinklerSimilarity();
+        String search = keyword.toLowerCase();
+
+        return users.stream()
+                .sorted(
+                        Comparator
+                                .comparingInt((UserReturn u) -> {
+                                    String name = u.getName().toLowerCase();
+                                    String email = u.getEmail().toLowerCase();
+
+                                    if (name.equals(search)) {
+                                        return 0;
+                                    }
+
+                                    if (name.contains(search)) {
+                                        return 1;
+                                    }
+
+                                    if (email.contains(search)) {
+                                        return 2;
+                                    }
+
+                                    return 3;
+                                })
+                                .thenComparingDouble(u -> {
+                                    double nameScore = similarity.apply(
+                                            search,
+                                            u.getName().toLowerCase());
+
+                                    double emailScore = similarity.apply(
+                                            search,
+                                            u.getEmail().toLowerCase());
+
+                                    return -Math.max(nameScore, emailScore);
+                                }))
+                .toList();
     }
 }

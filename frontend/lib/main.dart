@@ -49,6 +49,36 @@ class _MyHomePageState extends State<MyHomePage> {
   String userName = 'Loading...';
   bool isPayAscending = true;
   bool isDateAscending = true;
+  bool isManager = false;
+  int? managerOrgId; //This is used to record company of a user managered
+  Future<void> checkManagerStatus() async{
+    final url = Uri.parse('http://127.0.0.1:8080/organization/getOrganizations?viewerUserId=${widget.currentUserId}');
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        print("org list raw data: ${response.body}");
+        List<dynamic> organizations = jsonDecode(response.body);
+
+        bool hasManagerPermission = false;
+        int? foundOrgId;
+
+        for (var org in organizations) {
+          if (org['canManage'] == true) {
+            hasManagerPermission = true;
+            foundOrgId = org['organizationId'];
+            break;
+          }
+        }
+
+        setState(() {
+          isManager = hasManagerPermission;
+          managerOrgId = foundOrgId;
+        });
+      }
+    } catch (e) {
+      print("identify error: $e");
+    }
+  }
 
   //search function
   void fetchTicketsByKeyword(String keyword) async{
@@ -75,10 +105,10 @@ class _MyHomePageState extends State<MyHomePage> {
           openTickets = parsedTickets;
 
         });
-        print("✅ 首页工单获取成功，共 ${openTickets.length} 条");
+        print("ticket get successfully ${openTickets.length} ");
       }
     } catch (e) {
-      print("💥 首页工单获取失败: $e");
+      print("get ticket error $e");
     }
 
   }
@@ -104,10 +134,10 @@ class _MyHomePageState extends State<MyHomePage> {
             openTickets = parsedTickets;
 
           });
-          print("✅ 首页工单获取成功，共 ${openTickets.length} 条");
+          print("get tickte successfully， ${openTickets.length} ");
         }
       } catch (e) {
-        print("💥 首页工单获取失败: $e");
+        print("get ticket error: $e");
       }
     }
 
@@ -132,10 +162,10 @@ void fetchAssignTickets() async {
             openTickets = parsedTickets;
 
           });
-          print("✅ 首页工单获取成功，共 ${openTickets.length} 条");
+          print(" get ticket successfully， ${openTickets.length} ");
         }
       } catch (e) {
-        print("💥 首页工单获取失败: $e");
+        print("💥 get ticket error: $e");
       }
     }
 
@@ -146,11 +176,9 @@ void fetchAssignTickets() async {
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({}), // 保持有 body
+        body: jsonEncode({}),
       );
 
-      print("📡 getUser 状态码: ${response.statusCode}");
-      print("📦 getUser 返回内容: ${response.body}");
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonData = jsonDecode(response.body);
@@ -158,12 +186,10 @@ void fetchAssignTickets() async {
         setState(() {
           userName = myUser.name ?? 'User';
         });
-        print("✅ 用户名成功更新为: $userName");
-      } else {
-        print("❌ 获取用户失败，状态码: ${response.statusCode}");
+        print("username changed to: $userName");
       }
     } catch (e) {
-      print("💥 解析用户数据时发生异常: $e"); // 👈 错误会精准打印在这里
+      print("parse user data error: $e");
     }
   }
     @override
@@ -171,6 +197,7 @@ void fetchAssignTickets() async {
       super.initState();
       fetchOpenTickets('');
       fetchUserData();
+      checkManagerStatus();
     }
 
   @override
@@ -247,6 +274,8 @@ void fetchAssignTickets() async {
                           description: selection.description ?? "No description",
                           date: selection.datePosted?.toString() ?? "no date",
                           currentUserId: widget.currentUserId,
+                          isManager: isManager,
+                          managerOrgId: managerOrgId,
                         ),
                       ),
                     );
@@ -497,55 +526,77 @@ void fetchAssignTickets() async {
 
     );
   }
-
   Widget _buildJobCard(BuildContext context, String title, String companyName, String price, String description, int ticketId, String date){
-      return InkWell(
-        onTap: (){
-          print('tap job ticket in find job page');
-          Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser(ticketId: ticketId, title: title, company: companyName, price: price, description: description, date: date, currentUserId: widget.currentUserId,)),);
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          width: 500,
-          height: 250,
-          margin: const EdgeInsets.all(10),
-          padding: EdgeInsets.all(16),
+    return Padding(
 
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withValues(alpha: 0.1),
-                blurRadius: 2,
-                offset: const Offset(0, 1),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: InkWell(
+          onTap: (){
+            print('tap job ticket in find job page');
+            Navigator.push(context, MaterialPageRoute(builder: (context) => FindAJobDetailUser(
+                ticketId: ticketId, title: title, company: companyName, price: price, description: description, date: date,
+                currentUserId: widget.currentUserId, isManager: isManager, managerOrgId: managerOrgId
+            )),);
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+              decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade300),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withValues(alpha: 0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    )
+                  ]
+              ),
+              child: Row(
+
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        const SizedBox(height: 6),
+
+                        Row(
+                          children: [
+                            const Icon(Icons.business, size: 14, color: Colors.grey),
+                            const SizedBox(width: 4),
+                            Expanded(child: Text(companyName, style: const TextStyle(fontSize: 13, color: Colors.grey), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text("Poster Name: $userName", style: const TextStyle(fontSize: 12, color: Colors.black54)),
+
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(width: 16),
+
+
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text('\$$price', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 18)),
+                      const SizedBox(height: 12),
+                      Text(date, style: TextStyle(fontSize: 12, color: Colors.grey)),
+
+                    ],
+                  )
+                ],
               )
-            ]
-          ),           
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-              ),
-              
-                // alignment: Alignment.topLeft,
-              Text(
-                companyName,
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-              ),
-              
-              const Spacer(), 
-
-              Text(
-                '\$$price',
-                style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
-              //more item
-            ],
           )
-        )
-      );
+      ),
+    );
   }
 }

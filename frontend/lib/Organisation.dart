@@ -52,11 +52,14 @@ class _OrganisationPageState extends State<OrganisationPage> {
   }
 
   List<OrganisationModel> organisations = [];
+  final _managersByOrganisation = <int, List<({int userId, String name})>>{};
+  final _managerErrors = <int, String>{};
   static const _avatarColors = [Colors.pink, Colors.teal, Colors.red];
 
   String _query = '';
   bool _isCreating = false;
   bool _isSubmitting = false;
+  int? _renamingOrganisationId;
 
   @override
   void initState() {
@@ -92,6 +95,9 @@ class _OrganisationPageState extends State<OrganisationPage> {
         setState(() {
           organisations = parsedOrganisations;
         });
+        for (final organisation in parsedOrganisations) {
+          _fetchManagers(organisation.organizationId);
+        }
         debugPrint('Organisations loaded: ${organisations.length}');
       } else {
         debugPrint('Failed to load organisations: ${response.statusCode}');
@@ -101,59 +107,88 @@ class _OrganisationPageState extends State<OrganisationPage> {
     }
   }
 
+  Future<void> _fetchManagers(int organisationId) async {
+    try {
+      final managers = await fetchOrganisationManagers(organisationId);
+      if (!mounted) return;
+      setState(() {
+        _managersByOrganisation[organisationId] = managers;
+        _managerErrors.remove(organisationId);
+        if (managers.isEmpty) _managerErrors[organisationId] = 'No managers';
+      });
+    } catch (error) {
+      debugPrint(
+        'Failed to load managers for organisation $organisationId: $error',
+      );
+      if (!mounted) return;
+      setState(() {
+        _managersByOrganisation.remove(organisationId);
+        _managerErrors[organisationId] = 'Managers unavailable';
+      });
+    }
+  }
+
+  Future<String?> _showOrganisationNameDialog({String? initialName}) {
+    final formKey = GlobalKey<FormState>();
+    var organisationName = '';
+    var submitted = false;
+    return showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        void submit() {
+          if (submitted || !formKey.currentState!.validate()) return;
+          formKey.currentState!.save();
+          submitted = true;
+          Navigator.pop(dialogContext, organisationName);
+        }
+
+        return AlertDialog(
+          title: Text(
+            initialName == null ? 'Create Organisation' : 'Rename Organisation',
+          ),
+          content: Form(
+            key: formKey,
+            child: TextFormField(
+              initialValue: initialName,
+              autofocus: true,
+              maxLength: 200,
+              textCapitalization: TextCapitalization.words,
+              textInputAction: TextInputAction.done,
+              decoration: const InputDecoration(labelText: 'Organisation name'),
+              validator: (value) {
+                final trimmedName = value?.trim() ?? '';
+                if (trimmedName.isEmpty) {
+                  return 'Please enter an organisation name.';
+                }
+                if (trimmedName.length > 200) {
+                  return 'Name must be 200 characters or fewer.';
+                }
+                return null;
+              },
+              onSaved: (value) => organisationName = value!.trim(),
+              onFieldSubmitted: (_) => submit(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: submit,
+              child: Text(initialName == null ? 'Create' : 'Save'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Future<void> _createOrganisation() async {
     if (_isCreating) return;
     setState(() => _isCreating = true);
     try {
-      final formKey = GlobalKey<FormState>();
-      var organisationName = '';
-      var submitted = false;
-      final name = await showDialog<String>(
-        context: context,
-        builder: (dialogContext) {
-          void submit() {
-            if (submitted || !formKey.currentState!.validate()) return;
-            formKey.currentState!.save();
-            submitted = true;
-            Navigator.pop(dialogContext, organisationName);
-          }
-
-          return AlertDialog(
-            title: const Text('Create Organisation'),
-            content: Form(
-              key: formKey,
-              child: TextFormField(
-                autofocus: true,
-                maxLength: 200,
-                textCapitalization: TextCapitalization.words,
-                textInputAction: TextInputAction.done,
-                decoration: const InputDecoration(
-                  labelText: 'Organisation name',
-                ),
-                validator: (value) {
-                  final trimmedName = value?.trim() ?? '';
-                  if (trimmedName.isEmpty) {
-                    return 'Please enter an organisation name.';
-                  }
-                  if (trimmedName.length > 200) {
-                    return 'Name must be 200 characters or fewer.';
-                  }
-                  return null;
-                },
-                onSaved: (value) => organisationName = value!.trim(),
-                onFieldSubmitted: (_) => submit(),
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: const Text('Cancel'),
-              ),
-              FilledButton(onPressed: submit, child: const Text('Create')),
-            ],
-          );
-        },
-      );
+      final name = await _showOrganisationNameDialog();
       if (name == null || !mounted) return;
 
       setState(() => _isSubmitting = true);
@@ -182,7 +217,7 @@ class _OrganisationPageState extends State<OrganisationPage> {
             content: Text(
               response.statusCode == 201
                   ? 'Organisation created successfully.'
-                  : _createOrganisationError(response),
+                  : _organisationError(response, action: 'create'),
             ),
           ),
         );
@@ -205,7 +240,74 @@ class _OrganisationPageState extends State<OrganisationPage> {
     }
   }
 
-  String _createOrganisationError(http.Response response) {
+  Future<void> _renameOrganisation(OrganisationModel organisation) async {
+    if (!organisation.canManage || _renamingOrganisationId != null) return;
+    setState(() => _renamingOrganisationId = organisation.organizationId);
+    try {
+      final name = await _showOrganisationNameDialog(
+        initialName: organisation.name,
+      );
+      if (!mounted || name == null || name == organisation.name) return;
+
+      final response = await http
+          .patch(
+            Uri.parse('http://127.0.0.1:8080/organization/updateOrganization'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'actorUserId': widget.userId,
+              'organizationId': organisation.organizationId,
+              'name': name,
+            }),
+          )
+          .timeout(const Duration(seconds: 30));
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final updated = OrganisationModel.fromJson(
+          jsonDecode(response.body) as Map<String, dynamic>,
+        );
+        setState(() {
+          organisations = organisations
+              .map(
+                (item) => item.organizationId == updated.organizationId
+                    ? updated
+                    : item,
+              )
+              .toList();
+        });
+      }
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              response.statusCode == 200
+                  ? 'Organisation renamed successfully.'
+                  : _organisationError(response, action: 'rename'),
+            ),
+          ),
+        );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Unable to rename organisation. Please try again.'),
+          ),
+        );
+    } finally {
+      if (mounted) setState(() => _renamingOrganisationId = null);
+    }
+  }
+
+  String _organisationError(http.Response response, {required String action}) {
+    if (response.statusCode == 403) {
+      return 'Only an organisation manager can $action this organisation.';
+    }
+    if (response.statusCode == 404) {
+      return 'The organisation no longer exists. Please refresh.';
+    }
     try {
       final decoded = jsonDecode(response.body);
       if (decoded is Map<String, dynamic>) {
@@ -220,7 +322,7 @@ class _OrganisationPageState extends State<OrganisationPage> {
     if (response.statusCode == 400 || response.statusCode == 409) {
       return 'Check the organisation name. It may already exist.';
     }
-    return 'Unable to create organisation (HTTP ${response.statusCode}). Please try again.';
+    return 'Unable to $action organisation (HTTP ${response.statusCode}). Please try again.';
   }
 
   void _openTeams(
@@ -241,8 +343,11 @@ class _OrganisationPageState extends State<OrganisationPage> {
     );
   }
 
-  void _openAdmin(BuildContext context, OrganisationModel organisation) {
-    Navigator.push<void>(
+  Future<void> _openAdmin(
+    BuildContext context,
+    OrganisationModel organisation,
+  ) async {
+    await Navigator.push<void>(
       context,
       MaterialPageRoute<void>(
         builder: (context) => AdminPage(
@@ -252,6 +357,7 @@ class _OrganisationPageState extends State<OrganisationPage> {
         ),
       ),
     );
+    if (mounted) await _fetchManagers(organisation.organizationId);
   }
 
   @override
@@ -371,10 +477,17 @@ class _OrganisationPageState extends State<OrganisationPage> {
                     organizationId: organisation.organizationId,
                     name: organisation.name,
                     members: organisation.memberCount,
+                    managers:
+                        _managersByOrganisation[organisation.organizationId] ??
+                        const [],
+                    managerError: _managerErrors[organisation.organizationId],
                     avatarColor:
                         _avatarColors[organisations.indexOf(organisation) %
                             _avatarColors.length],
                     onManage: () => _openAdmin(context, organisation),
+                    onRename: _renamingOrganisationId == null
+                        ? () => _renameOrganisation(organisation)
+                        : null,
                     onOpenTeams: (id, name) => _openTeams(context, id, name),
                   );
                 },
@@ -445,111 +558,150 @@ class OrganizationCard extends StatelessWidget {
     required this.onManage,
     required this.onOpenTeams,
     required this.isManager,
+    this.onRename,
+    this.managers = const [],
+    this.managerError,
   });
 
   final int organizationId;
   final bool isManager;
   final String name;
   final int members;
+  final List<({int userId, String name})> managers;
+  final String? managerError;
   final Color avatarColor;
   final VoidCallback onManage;
+  final VoidCallback? onRename;
   final void Function(int organisationId, String organisationName) onOpenTeams;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        side: const BorderSide(color: Color(0xFFE5E7EB)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => onOpenTeams(organizationId, name),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: avatarColor,
-                child: Text(
-                  name.isEmpty ? '' : name.substring(0, 1).toUpperCase(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: avatarColor,
+                    child: Text(
+                      name.isEmpty ? '' : name.substring(0, 1).toUpperCase(),
                       style: const TextStyle(
-                        color: Color(0xFF111827),
-                        fontSize: 18,
+                        color: Colors.white,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    // Preserve the subtitle line's spacing without a mock link.
-                    const Text(
-                      '',
-                      style: TextStyle(color: Color(0xFF6B7280), fontSize: 14),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                name,
+                                style: const TextStyle(
+                                  color: Color(0xFF111827),
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            if (isManager)
+                              IconButton(
+                                tooltip: 'Rename organisation',
+                                onPressed: onRename,
+                                icon: const Icon(Icons.edit, size: 18),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        ManagerPreview(
+                          managers: managers,
+                          managerError: managerError,
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: isManager ? onManage : null,
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFF065F46),
+                      backgroundColor: const Color(0xFFD1FAE5),
+                      disabledForegroundColor: const Color(0xFF9CA3AF),
+                      disabledBackgroundColor: const Color(0xFFF3F4F6),
+                      shape: const StadiumBorder(),
+                    ),
+                    child: const Text(
+                      'Manage',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              TextButton(
-                onPressed: isManager ? onManage : null,
-                style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFF065F46),
-                  backgroundColor: const Color(0xFFD1FAE5),
-                  disabledForegroundColor: const Color(0xFF9CA3AF),
-                  disabledBackgroundColor: const Color(0xFFF3F4F6),
-                  shape: const StadiumBorder(),
-                ),
-                child: const Text(
-                  'Manage',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
+              const Divider(height: 28, color: Color(0xFFE5E7EB)),
+              Row(
+                children: [
+                  SizedBox(
+                    width: 52,
+                    height: 20,
+                    child: Stack(
+                      children: [
+                        for (var index = 0; index < 3; index++)
+                          Positioned(
+                            left: index * 16.0,
+                            child: CircleAvatar(
+                              radius: 10,
+                              backgroundColor: Colors.white,
+                              child: CircleAvatar(
+                                radius: 9,
+                                backgroundColor: const [
+                                  Color(0xFFFCE7F3),
+                                  Color(0xFFCCFBF1),
+                                  Color(0xFFDBEAFE),
+                                ][index],
+                                child: const Icon(
+                                  Icons.person,
+                                  size: 13,
+                                  color: Color(0xFF6B7280),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '$members members',
+                      style: const TextStyle(
+                        color: Color(0xFF6B7280),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-          const Divider(height: 28, color: Color(0xFFE5E7EB)),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  '$members members',
-                  style: const TextStyle(
-                    color: Color(0xFF6B7280),
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-              Material(
-                type: MaterialType.transparency,
-                child: InkResponse(
-                  onTap: () => onOpenTeams(organizationId, name),
-                  radius: 20,
-                  child: Tooltip(
-                    message: 'View teams in $name',
-                    child: const Icon(
-                      Icons.chevron_right,
-                      size: 20,
-                      color: Color(0xFF6B7280),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }

@@ -153,7 +153,6 @@
       fetchFirstUserData();
       fetchPostedTickets('');
       fetchCompletedTickets('');
-
     }
 
     void _showEditDescriptionDialog() {
@@ -564,7 +563,7 @@
         return InkWell(
             onTap: (){
               print('check your posted jobs');
-              Navigator.push(context, MaterialPageRoute(builder: (context) => PostAJobDetailUser(ticketId: ticketId, title: title, company: companyName, price: price, description: description, date: datePosted, currentUserId: currentUserId ,)));
+              Navigator.push(context, MaterialPageRoute(builder: (context) => PostAJobDetailUser(ticketId: ticketId, title: title, company: companyName, price: price, description: description, date: datePosted, currentUserId: currentUserId,)));
             },
             borderRadius: BorderRadius.circular(12),
             child: Container(
