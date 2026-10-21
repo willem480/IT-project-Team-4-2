@@ -923,7 +923,7 @@ class _AdminPageState extends State<AdminPage> {
               ),
               const SizedBox(height: 16),
               const Text(
-                'Select a manager action for organizations or teams',
+                'Select a manager action',
                 style: TextStyle(
                   color: Color(0xFF111827),
                   fontSize: 28,
