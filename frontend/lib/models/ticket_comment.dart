@@ -1,37 +1,43 @@
 import 'dart:convert';
 
-ticketComment welcomeFromJson(String str) => ticketComment.fromJson(json.decode(str));
-
-String welcomeToJson(ticketComment data) => json.encode(data.toJson());
-
 class ticketComment {
     final int idticketComment;
-    final int ticketIdticket;
-    final int userIduser;
+    final int ticketId;
+    final int posterId;
     final DateTime date;
     final String content;
+    final bool ownedByCurUser;
+    final String userName;
 
     ticketComment({
         required this.idticketComment,
-        required this.ticketIdticket,
-        required this.userIduser,
+        required this.ticketId,
+        required this.posterId,
         required this.date,
         required this.content,
+        required this.ownedByCurUser,
+        required this.userName,
     });
 
-    factory ticketComment.fromJson(Map<String, dynamic> json) => ticketComment(
-        idticketComment: json["idticketComment"],
-        ticketIdticket: json["ticketIdticket"],
-        userIduser: json["userIduser"],
-        date: DateTime.parse(json["date"]),
-        content: json["content"],
-    );
+    factory ticketComment.fromJson(Map<String, dynamic> json) {
+        return ticketComment(
+            idticketComment: json['idticketComment'] as int? ?? 0,
+            ticketId: json['ticketId'] as int? ?? 0,
+            posterId: json['posterId'] as int? ?? 0,
+            date: json['date'] != null ? DateTime.parse(json['date'].toString()) : DateTime.now(),
+            content: json['content']?.toString() ?? '',
+            ownedByCurUser: json['ownedByCurUser'] as bool? ?? false,
+            userName: json['userName']?.toString() ?? 'User',
+        );
+    }
 
     Map<String, dynamic> toJson() => {
         "idticketComment": idticketComment,
-        "ticketIdticket": ticketIdticket,
-        "userIduser": userIduser,
-        "date": "${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}",
+        "ticketId": ticketId,
+        "posterId": posterId,
+        "date": date.toIso8601String(),
         "content": content,
+        "ownedByCurUser": ownedByCurUser,
+        "userName": userName,
     };
 }
