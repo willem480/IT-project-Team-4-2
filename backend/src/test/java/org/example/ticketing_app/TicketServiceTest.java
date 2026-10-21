@@ -474,11 +474,6 @@ public class TicketServiceTest {
 
     @Test
     void reportTest() throws Exception {
-        System.out.println(
-                teamMemberMapper.selectCount(null));
-
-        System.out.println(
-                ticketAssignmentMapper.selectCount(null));
         MemberReport report =
                 memberReportService.generateTeamMemberReport(
                         1001, 2001,
@@ -486,7 +481,7 @@ public class TicketServiceTest {
                 false);
         TeamReport teamReport = teamReportService.generateReport(1001, 4, false);
         OrganizationReport organizationReport = organizationReportService.generateReport(1001, 1, false);
-        System.out.println(organizationReport.getBody());
+        System.out.println(teamReport.getBody());
     }
 
 @Test

@@ -16,6 +16,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
@@ -77,7 +78,8 @@ public class MemberReportServiceImpl extends ServiceImpl<MemberReportMapper, Mem
 
         DateTimeFormatter formatter =
                 DateTimeFormatter.ofPattern(
-                        "EEEE, dd MMMM yyyy 'at' hh:mm:ss a");
+                        "EEEE, dd MMMM yyyy 'at' hh:mm:ss a",
+                        Locale.ENGLISH);
 
         body.append("Generated: ")
                 .append(LocalDateTime.now().format(formatter))

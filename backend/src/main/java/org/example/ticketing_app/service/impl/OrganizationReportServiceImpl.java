@@ -15,10 +15,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.example.ticketing_app.entity.OrganizationReport;
@@ -113,7 +110,8 @@ public class OrganizationReportServiceImpl
 
         DateTimeFormatter formatter =
                 DateTimeFormatter.ofPattern(
-                        "EEEE, dd MMMM yyyy 'at' hh:mm:ss a");
+                        "EEEE, dd MMMM yyyy 'at' hh:mm:ss a",
+                        Locale.ENGLISH);
 
         body.append("Generated: ")
                 .append(LocalDateTime.now().format(formatter))
