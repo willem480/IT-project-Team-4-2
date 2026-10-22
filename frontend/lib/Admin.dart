@@ -3,8 +3,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-import 'Profile.dart';
-
 class AdminPage extends StatefulWidget {
   const AdminPage({
     super.key,
@@ -12,7 +10,6 @@ class AdminPage extends StatefulWidget {
     this.organisationId,
     this.teamId,
     this.teamMemberId,
-    this.userName = '',
   });
 
   final int userId;
@@ -20,62 +17,12 @@ class AdminPage extends StatefulWidget {
   // Null when managing an organisation without a selected team.
   final int? teamId;
   final int? teamMemberId;
-  final String userName;
 
   @override
   State<AdminPage> createState() => _AdminPageState();
 }
 
 class _AdminPageState extends State<AdminPage> {
-  String _userName = '';
-
-  String get _displayName => _userName.isEmpty ? 'Loading...' : _userName;
-
-  Future<void> _fetchUserName() async {
-    // Reuse the current user's name when a parent page has already loaded it.
-    if (_userName.isNotEmpty) return;
-    final userId = widget.userId;
-    try {
-      final response = await http
-          .post(
-            Uri.parse(
-              'http://127.0.0.1:8080/profilePage/getUser?userId=$userId',
-            ),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({}),
-          )
-          .timeout(const Duration(seconds: 30));
-      if (response.statusCode != 200) {
-        throw Exception('User profile request failed (${response.statusCode})');
-      }
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      final name = (data['name'] as String?)?.trim() ?? '';
-      if (!mounted || widget.userId != userId || _userName.isNotEmpty) return;
-      setState(() => _userName = name.isEmpty ? 'User' : name);
-    } catch (error) {
-      debugPrint('Failed to load greeting name for user $userId: $error');
-      if (!mounted || widget.userId != userId || _userName.isNotEmpty) return;
-      setState(() => _userName = 'User');
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _userName = widget.userName.trim();
-    _fetchUserName();
-  }
-
-  @override
-  void didUpdateWidget(covariant AdminPage oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.userId != widget.userId ||
-        oldWidget.userName != widget.userName) {
-      _userName = widget.userName.trim();
-      _fetchUserName();
-    }
-  }
-
   bool _isGeneratingReport = false;
 
   void _goBack(BuildContext context) {
@@ -352,12 +299,14 @@ class _AdminPageState extends State<AdminPage> {
 
   @override
   Widget build(BuildContext context) {
-    final displayName = _displayName;
     final isOrganisationManagement =
         widget.teamId == null && widget.teamMemberId == null;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
+      appBar: AppBar(
+        leading: BackButton(onPressed: () => _goBack(context)),
+      ),
       body: SafeArea(
         // Allow the entire page to scroll in short windows or with large text.
         child: SingleChildScrollView(
@@ -365,65 +314,6 @@ class _AdminPageState extends State<AdminPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(
-                children: [
-                  BackButton(
-                    color: Colors.black,
-                    onPressed: () => _goBack(context),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Align(
-                      alignment: Alignment.center,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Good morning,',
-                            style: TextStyle(
-                              color: Color(0xFF6B7280),
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            displayName,
-                            style: const TextStyle(
-                              color: Color(0xFF111827),
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    tooltip: 'Open profile',
-                    onPressed: () => Navigator.push<void>(
-                      context,
-                      MaterialPageRoute<void>(
-                        builder: (context) => Profile(userId: widget.userId),
-                      ),
-                    ),
-                    icon: CircleAvatar(
-                      radius: 16,
-                      backgroundColor: Colors.blue,
-                      child: Text(
-                        displayName.characters.first.toUpperCase(),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
               const Text(
                 'Select a manager action',
                 style: TextStyle(
