@@ -778,7 +778,7 @@ class JobCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  '${job.title ?? ''} - ${job.location ?? ''}',
+                  job.title ?? '',
                   style: const TextStyle(
                     color: _ink,
                     fontSize: 20,
@@ -820,37 +820,19 @@ class JobCard extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const CircleAvatar(
-                radius: 13,
-                backgroundColor: Color(0xFFEFF6FF),
-                child: Icon(
-                  Icons.business_outlined,
-                  size: 17,
-                  color: Color(0xFF64748B),
-                ),
-              ),
-              const SizedBox(width: 8),
+              const Icon(Icons.business, size: 14, color: Colors.grey),
+              const SizedBox(width: 4),
               Expanded(
                 child: Text(
-                  job.organizationName ?? '',
-                  style: const TextStyle(
-                    color: Color(0xFF374151),
-                    fontSize: 14,
-                    height: 1.7,
-                  ),
+                  job.location ?? '',
+                  style: const TextStyle(fontSize: 13, color: Colors.grey),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
-          if (job.idTicket != null) ...[
-            const SizedBox(height: 10),
-            Text(
-              'Ticket #${job.idTicket}',
-              style: const TextStyle(color: _muted, fontSize: 14),
-            ),
-          ],
         ],
       ),
     );
