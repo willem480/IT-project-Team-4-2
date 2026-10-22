@@ -348,8 +348,8 @@ class _AdminPageState extends State<AdminPage> {
   }
 }
 
-/// Organisation roles are independent of team membership. Teams only help the
-/// manager locate a user; removal requires that user's manager record ID.
+/// Organisation roles are independent of team membership. Adding uses team
+/// members; removal lists all organisation managers and uses their role IDs.
 class _OrganisationManagerActions extends StatefulWidget {
   const _OrganisationManagerActions({
     super.key,
@@ -372,6 +372,7 @@ class _OrganisationManagerActionsState
   final _addMenu = MenuController();
   final _deleteMenu = MenuController();
   List<Map<String, dynamic>> _teams = [];
+  List<Map<String, dynamic>> _managers = [];
   Map<int, int> _managerIds = {};
   final _members = <int, List<Map<String, dynamic>>>{};
   final _loadingMembers = <int>{};
@@ -446,12 +447,13 @@ class _OrganisationManagerActionsState
     return value.cast<Map<String, dynamic>>();
   }
 
-  Future<void> _loadMenu() async {
+  Future<void> _loadMenu(bool deleting) async {
     final generation = ++_generation;
     setState(() {
       _loading = true;
       _error = null;
       _teams = [];
+      _managers = [];
       _managerIds = {};
       _members.clear();
       _loadingMembers.clear();
@@ -459,28 +461,43 @@ class _OrganisationManagerActionsState
     });
     try {
       final results = await Future.wait([
-        _get('/organization/getOrganizationTeams', {
-          'organizationId': '${widget.organisationId}',
-          'viewerUserId': '${widget.actorUserId}',
-        }),
         _get('/organization/getOrganizationManagers', {
           'organizationId': '${widget.organisationId}',
         }),
+        if (!deleting)
+          _get('/organization/getOrganizationTeams', {
+            'organizationId': '${widget.organisationId}',
+            'viewerUserId': '${widget.actorUserId}',
+          }),
       ]);
       if (!mounted || generation != _generation) return;
-      final teamData = results[0];
-      if (teamData is! Map<String, dynamic>) {
-        throw const FormatException('The server returned invalid team data.');
-      }
-      if (teamData['canManage'] != true) {
+      final managers = _items(results[0], [
+        'userId',
+        'managerId',
+        'userName',
+        'email',
+      ]);
+      if (!managers.any((manager) => manager['userId'] == widget.actorUserId)) {
         throw const FormatException(
           'Only an organisation manager can manage manager access.',
         );
       }
-      final teams = _items(teamData['teams'], ['teamId', 'name']);
-      final managers = _items(results[1], ['userId', 'managerId']);
+      List<Map<String, dynamic>> teams = [];
+      if (!deleting) {
+        final teamData = results[1];
+        if (teamData is! Map<String, dynamic>) {
+          throw const FormatException('The server returned invalid team data.');
+        }
+        if (teamData['canManage'] != true) {
+          throw const FormatException(
+            'Only an organisation manager can manage manager access.',
+          );
+        }
+        teams = _items(teamData['teams'], ['teamId', 'name']);
+      }
       setState(() {
         _teams = teams;
+        _managers = managers;
         _managerIds = {
           for (final manager in managers)
             manager['userId'] as int: manager['managerId'] as int,
@@ -493,7 +510,9 @@ class _OrganisationManagerActionsState
     } catch (_) {
       if (mounted && generation == _generation) {
         setState(
-          () => _error = 'Unable to load teams and managers. Please retry.',
+          () => _error = deleting
+              ? 'Unable to load managers. Please retry.'
+              : 'Unable to load teams and managers. Please retry.',
         );
       }
     } finally {
@@ -644,7 +663,7 @@ class _OrganisationManagerActionsState
   Widget _menuText(String text) =>
       MenuItemButton(child: SizedBox(width: 240, child: Text(text)));
 
-  List<Widget> _memberItems(int teamId, bool deleting) {
+  List<Widget> _memberItems(int teamId) {
     if (_memberErrors[teamId] case final String error) {
       return [
         _menuText(error),
@@ -659,51 +678,40 @@ class _OrganisationManagerActionsState
     if (members == null) return [_menuText('Loading members...')];
     if (members.isEmpty) return [_menuText('No members in this team.')];
     final eligible = members
-        .where(
-          (member) => _managerIds.containsKey(member['userId']) == deleting,
-        )
+        .where((member) => !_managerIds.containsKey(member['userId']))
         .toList();
     if (eligible.isEmpty) {
-      return [
-        _menuText(
-          deleting
-              ? 'No managers in this team.'
-              : 'All members are already managers.',
-        ),
-      ];
+      return [_menuText('All members are already managers.')];
     }
-    return [
-      for (final member in eligible)
-        MenuItemButton(
-          onPressed: _busy || (deleting && _managerIds.length <= 1)
-              ? null
-              : () => _changeManager(member, deleting),
-          leadingIcon: Icon(
-            deleting
-                ? Icons.person_remove_outlined
-                : Icons.person_add_alt_1_outlined,
-          ),
-          child: SizedBox(
-            width: 210,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(member['userName'] as String),
-                Text(
-                  member['email'] as String,
-                  style: const TextStyle(fontSize: 12),
-                ),
-                if (deleting && _managerIds.length <= 1)
-                  const Text(
-                    'Last manager — cannot delete',
-                    style: TextStyle(fontSize: 12),
-                  ),
-              ],
-            ),
-          ),
-        ),
-    ];
+    return [for (final member in eligible) _personItem(member, false)];
   }
+
+  Widget _personItem(
+    Map<String, dynamic> member,
+    bool deleting,
+  ) => MenuItemButton(
+    onPressed: _busy || (deleting && _managerIds.length <= 1)
+        ? null
+        : () => _changeManager(member, deleting),
+    leadingIcon: Icon(
+      deleting ? Icons.person_remove_outlined : Icons.person_add_alt_1_outlined,
+    ),
+    child: SizedBox(
+      width: 210,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(member['userName'] as String),
+          Text(member['email'] as String, style: const TextStyle(fontSize: 12)),
+          if (deleting && _managerIds.length <= 1)
+            const Text(
+              'Last manager — cannot delete',
+              style: TextStyle(fontSize: 12),
+            ),
+        ],
+      ),
+    ),
+  );
 
   Widget _button(bool deleting) {
     final controller = deleting ? _deleteMenu : _addMenu;
@@ -711,17 +719,19 @@ class _OrganisationManagerActionsState
       controller: controller,
       style: _menuStyle,
       consumeOutsideTap: true,
-      onOpen: _loadMenu,
+      onOpen: () => _loadMenu(deleting),
       menuChildren: [
         if (_loading)
-          _menuText('Loading teams...')
+          _menuText(deleting ? 'Loading managers...' : 'Loading teams...')
         else if (_error != null) ...[
           _menuText(_error!),
           MenuItemButton(
             closeOnActivate: false,
-            onPressed: _loadMenu,
+            onPressed: () => _loadMenu(deleting),
             child: const Text('Retry'),
           ),
+        ] else if (deleting) ...[
+          for (final manager in _managers) _personItem(manager, true),
         ] else if (_teams.isEmpty)
           _menuText('No teams in this organisation.')
         else
@@ -731,7 +741,7 @@ class _OrganisationManagerActionsState
               menuStyle: _menuStyle,
               leadingIcon: const Icon(Icons.groups_outlined),
               onOpen: () => _loadMembers(team['teamId'] as int),
-              menuChildren: _memberItems(team['teamId'] as int, deleting),
+              menuChildren: _memberItems(team['teamId'] as int),
               child: SizedBox(width: 190, child: Text(team['name'] as String)),
             ),
       ],
