@@ -304,12 +304,25 @@
                       child: Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            CircleAvatar(
-                              radius: 40,
-                              backgroundColor: Colors.blue,
-                              child: Text(
-                                userName.isNotEmpty? userName.substring(0,1).toUpperCase():'U',
-                                style: TextStyle(fontSize: 32, color:Colors.white, fontWeight:FontWeight.bold),),
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                CircleAvatar(
+                                  radius: 40,
+                                  backgroundColor: Colors.blue,
+                                  child: Text(
+                                    userName.isNotEmpty? userName.substring(0,1).toUpperCase():'U',
+                                    style: TextStyle(fontSize: 32, color:Colors.white, fontWeight:FontWeight.bold),),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'User ID: ${widget.userId}',
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
                             ),
                             const SizedBox(width: 24),
                             Expanded(
