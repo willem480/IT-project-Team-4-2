@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 
 import 'Admin.dart';
 import 'Profile.dart';
+import 'adminSearch.dart';
 import 'models/team_members_model.dart';
 
 typedef _MemberEntry = ({
@@ -86,6 +87,12 @@ class _MembersPageState extends State<MembersPage> {
   ];
 
   String _query = '';
+  bool _isAddingMembers = false;
+  int? _removingMemberId;
+  bool _isSubmittingRemoval = false;
+
+  bool get _memberActionInProgress =>
+      _isAddingMembers || _removingMemberId != null;
 
   @override
   void initState() {
@@ -105,23 +112,25 @@ class _MembersPageState extends State<MembersPage> {
     }
   }
 
-  void fetchMembers() async {
+  Future<void> fetchMembers() async {
     final url = Uri.parse(
       'http://127.0.0.1:8080/team/getTeamMembers?teamId=${widget.teamId}&viewerUserId=${widget.userId}',
     );
 
     try {
-      final response = await http.get(
-        url,
-        headers: {'Content-Type': 'application/json'},
-      );
+      final response = await http
+          .get(url, headers: {'Content-Type': 'application/json'})
+          .timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 200) {
-        final parsedResponse = json.decode(response.body);
+        final parsedResponse = jsonDecode(utf8.decode(response.bodyBytes));
         if (parsedResponse is! Map<String, dynamic>) {
           throw const FormatException('Invalid members response.');
         }
         final teamResponse = TeamMembersResponse.fromJson(parsedResponse);
+        if (teamResponse.teamId != widget.teamId) {
+          throw const FormatException('Invalid members response.');
+        }
         final managersResponse = await http
             .get(
               Uri.parse(
@@ -136,7 +145,7 @@ class _MembersPageState extends State<MembersPage> {
         // Organisation roles are display-only here; only getTeamMembers supplies
         // membership IDs and entries for the Team Members section.
         final managers =
-            (jsonDecode(managersResponse.body) as List)
+            (jsonDecode(utf8.decode(managersResponse.bodyBytes)) as List)
                 .map<_MemberEntry>(
                   (manager) => (
                     teamMemberId: null,
@@ -146,7 +155,14 @@ class _MembersPageState extends State<MembersPage> {
                   ),
                 )
                 .toList()
-              ..sort(_comparePeople);
+              ..sort((a, b) {
+                final aIsCurrentUser = a.userId == widget.userId;
+                final bIsCurrentUser = b.userId == widget.userId;
+                if (aIsCurrentUser != bIsCurrentUser) {
+                  return aIsCurrentUser ? -1 : 1;
+                }
+                return _comparePeople(a, b);
+              });
         final managerUserIds = managers
             .map((manager) => manager.userId)
             .toSet();
@@ -162,6 +178,11 @@ class _MembersPageState extends State<MembersPage> {
                 )
                 .toList()
               ..sort((a, b) {
+                final aIsCurrentUser = a.userId == widget.userId;
+                final bIsCurrentUser = b.userId == widget.userId;
+                if (aIsCurrentUser != bIsCurrentUser) {
+                  return aIsCurrentUser ? -1 : 1;
+                }
                 final aIsManager = managerUserIds.contains(a.userId);
                 final bIsManager = managerUserIds.contains(b.userId);
                 if (aIsManager != bIsManager) return aIsManager ? -1 : 1;
@@ -197,6 +218,129 @@ class _MembersPageState extends State<MembersPage> {
     }
   }
 
+  Future<void> _addMembers() async {
+    if (!canManage || _memberActionInProgress) return;
+    setState(() => _isAddingMembers = true);
+    try {
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => MemberSearchDialog(
+          actorUserId: widget.userId,
+          teamId: widget.teamId,
+          onMemberAdded: fetchMembers,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isAddingMembers = false);
+    }
+  }
+
+  Future<void> _removeMember(_MemberEntry member) async {
+    final membershipId = member.teamMemberId;
+    if (!canManage || membershipId == null || _memberActionInProgress) return;
+    setState(() => _removingMemberId = membershipId);
+    try {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Remove this member?'),
+          content: Text(
+            'Are you sure to remove "${member.name}" from this team? '
+      
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Remove'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+
+      setState(() => _isSubmittingRemoval = true);
+      final url = Uri.parse('http://127.0.0.1:8080/team/removeTeamMember')
+          .replace(
+            queryParameters: {
+              'actorUserId': '${widget.userId}',
+              'teamId': '${widget.teamId}',
+              'teamMemberId': '$membershipId',
+            },
+          );
+      final response = await http
+          .delete(url, headers: {'Content-Type': 'application/json'})
+          .timeout(const Duration(seconds: 30));
+      if (!mounted) return;
+
+      final succeeded = response.statusCode >= 200 && response.statusCode < 300;
+      if (succeeded) {
+        setState(() {
+          members.removeWhere((item) => item.teamMemberId == membershipId);
+        });
+        await fetchMembers();
+        if (!mounted) return;
+      }
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              succeeded
+                  ? 'Member removed from the team successfully.'
+                  : _removeMemberError(response),
+            ),
+          ),
+        );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Unable to remove member. Please try again.'),
+          ),
+        );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _removingMemberId = null;
+          _isSubmittingRemoval = false;
+        });
+      }
+    }
+  }
+
+  String _removeMemberError(http.Response response) {
+    if (response.statusCode == 403) {
+      return 'Only an organisation manager can remove team members.';
+    }
+    if (response.statusCode == 404) {
+      return 'The team or membership no longer exists. Please refresh.';
+    }
+    final body = utf8.decode(response.bodyBytes).trim();
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map<String, dynamic>) {
+        for (final key in ['message', 'detail', 'error']) {
+          final message = decoded[key];
+          if (message is String && message.trim().isNotEmpty) return message;
+        }
+      }
+    } on FormatException {
+      if (body.isNotEmpty && !body.startsWith('<')) return body;
+    }
+    return 'Unable to remove member (HTTP ${response.statusCode}). Please try again.';
+  }
+
   Future<void> _openAdmin(int teamMemberId) async {
     final organisationId = _organizationId;
     if (organisationId == null) {
@@ -227,20 +371,42 @@ class _MembersPageState extends State<MembersPage> {
     return nameOrder != 0 ? nameOrder : a.userId.compareTo(b.userId);
   }
 
-  Widget _sectionHeader(String title, String count) {
+  Widget _sectionHeader(String title, String count, {bool showAdd = false}) {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Flexible(
-            child: Text(
-              title,
-              style: const TextStyle(
-                color: Color(0xFF111827),
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-              ),
+          Expanded(
+            child: Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      color: Color(0xFF111827),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                if (showAdd && canManage) ...[
+                  const SizedBox(width: 4),
+                  IconButton(
+                    tooltip: 'Add member',
+                    onPressed: _memberActionInProgress ? null : _addMembers,
+                    iconSize: 26,
+                    style: IconButton.styleFrom(
+                      foregroundColor: Colors.blue,
+                      backgroundColor: Colors.transparent,
+                      fixedSize: const Size(40, 40),
+                      padding: const EdgeInsets.all(7),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    icon: const Icon(Icons.add_circle_outline),
+                  ),
+                ],
+              ],
             ),
           ),
           const SizedBox(width: 12),
@@ -263,8 +429,12 @@ class _MembersPageState extends State<MembersPage> {
       child: MemberCard(
         canManage: canManage,
         isManager: _managerUserIds.contains(person.userId),
+        isCurrentUser: person.userId == widget.userId,
         teamMemberId: person.teamMemberId,
         onManage: _openAdmin,
+        onRemove: !_memberActionInProgress ? () => _removeMember(person) : null,
+        isRemoving:
+            _isSubmittingRemoval && _removingMemberId == person.teamMemberId,
         name: person.name,
         email: person.email,
         avatarColor: _avatarColors[index % _avatarColors.length],
@@ -320,19 +490,6 @@ class _MembersPageState extends State<MembersPage> {
             ),
           ],
         ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: CircleAvatar(
-              radius: 20,
-              backgroundColor: Color(0xFF111827),
-              child: Text(
-                _displayName.characters.first.toUpperCase(),
-                style: const TextStyle(color: Colors.white),
-              ),
-            ),
-          ),
-        ],
       ),
       body: SafeArea(
         child: Column(
@@ -390,6 +547,7 @@ class _MembersPageState extends State<MembersPage> {
                         _sectionHeader(
                           'Team Members',
                           '${visibleMembers.length} results',
+                          showAdd: true,
                         ),
                         if (visibleMembers.isEmpty)
                           _emptySection(
@@ -497,6 +655,9 @@ class MemberCard extends StatelessWidget {
     required this.avatarColor,
     required this.isManager,
     required this.canManage,
+    this.isCurrentUser = false,
+    this.onRemove,
+    this.isRemoving = false,
   });
 
   final int? teamMemberId;
@@ -506,6 +667,9 @@ class MemberCard extends StatelessWidget {
   final Color avatarColor;
   final bool isManager;
   final bool canManage;
+  final bool isCurrentUser;
+  final VoidCallback? onRemove;
+  final bool isRemoving;
 
   String get _initials {
     final words = name.trim().split(RegExp(r'\s+'));
@@ -582,13 +746,43 @@ class MemberCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    color: Color(0xFF111827),
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        name,
+                        maxLines: isCurrentUser ? 1 : null,
+                        overflow: isCurrentUser ? TextOverflow.ellipsis : null,
+                        style: const TextStyle(
+                          color: Color(0xFF111827),
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    if (isCurrentUser) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE5E7EB),
+                          border: Border.all(color: const Color(0xFFE5E7EB)),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: const Text(
+                          'You',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -601,25 +795,48 @@ class MemberCard extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 8),
-          TextButton(
-            onPressed: canManage && teamMemberId != null
-                ? () => onManage(teamMemberId!)
-                : null,
-            style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFF065F46),
-              backgroundColor: const Color(0xFFD1FAE5),
-              disabledForegroundColor: const Color(0xFF9CA3AF),
-              disabledBackgroundColor: const Color(0xFFF3F4F6),
-              minimumSize: const Size(0, 28),
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              shape: const StadiumBorder(),
+          if (teamMemberId != null) const SizedBox(width: 8),
+          if (canManage && teamMemberId != null)
+            IconButton(
+              tooltip: 'Remove member',
+              onPressed: onRemove,
+              iconSize: 26,
+              style: IconButton.styleFrom(
+                foregroundColor: Colors.red,
+                backgroundColor: Colors.transparent,
+                fixedSize: const Size(40, 40),
+                padding: const EdgeInsets.all(7),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              icon: isRemoving
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.red,
+                        semanticsLabel: 'Removing member',
+                      ),
+                    )
+                  : const Icon(Icons.remove_circle_outline),
             ),
-            child: const Text(
-              'Manage',
-              style: TextStyle(fontWeight: FontWeight.bold),
+          if (teamMemberId != null)
+            TextButton(
+              onPressed: canManage ? () => onManage(teamMemberId!) : null,
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF065F46),
+                backgroundColor: const Color(0xFFD1FAE5),
+                disabledForegroundColor: const Color(0xFF9CA3AF),
+                disabledBackgroundColor: const Color(0xFFF3F4F6),
+                minimumSize: const Size(0, 28),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                shape: const StadiumBorder(),
+              ),
+              child: const Text(
+                'Manage',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
-          ),
         ],
       ),
     );

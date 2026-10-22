@@ -160,7 +160,7 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
                   //intro
                   Container(
                     height: 250,
-                    width: 800,
+                    width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: Colors.white,

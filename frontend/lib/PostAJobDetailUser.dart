@@ -241,7 +241,7 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                        height: 300,
+                        height: 250,
                         width: double.infinity,
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
@@ -322,7 +322,7 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Description', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        const Text('Description', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 25)),
         const SizedBox(height: 8),
         Text(currentDescription, style: const TextStyle(color: Colors.black54)),
         const SizedBox(height: 80),
