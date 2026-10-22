@@ -93,6 +93,26 @@ class _AcceptedJobDetailState extends State<AcceptedJobDetail> {
   Future<void> _completeTicket() async {
     final ticketId = widget.ticket.idTicket;
     if (_isBusy || _isClosed || ticketId == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        content: const Text(
+          'Are you sure you want to mark this ticket as completed? This can not be undo and will close ticket',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Yes'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || confirmed != true || _isBusy || _isClosed) return;
     setState(() => _isCompleting = true);
 
     // The backend mapping contains a literal space. Uri encodes the path safely.
@@ -275,24 +295,30 @@ class _AcceptedJobDetailState extends State<AcceptedJobDetail> {
       ),
 
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildActionButton(
-              label: _isClosed ? 'Completed' : 'Mark as Complete',
-              color: Colors.lightGreen,
-              isLoading: _isCompleting,
-              onPressed: _completeTicket,
-            ),
-            const SizedBox(height: 12),
-            _buildActionButton(
-              label: 'Deallocate',
-              color: Colors.red,
-              isLoading: _isDeallocating,
-              onPressed: _deallocateTicket,
-            ),
-          ],
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 412),
+          child: Row(
+            children: [
+              Expanded(
+                child: _buildActionButton(
+                  label: _isClosed ? 'Completed' : 'Mark as Complete',
+                  color: Colors.lightGreen,
+                  isLoading: _isCompleting,
+                  onPressed: _completeTicket,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildActionButton(
+                  label: 'Deallocate',
+                  color: Colors.red,
+                  isLoading: _isDeallocating,
+                  onPressed: _deallocateTicket,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
 

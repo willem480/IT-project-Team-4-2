@@ -419,9 +419,6 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
 
   @override
   Widget build(BuildContext context) {
-    final openCount = _tickets
-        .where((ticket) => _normalizeStatus(ticket.status) == 'OPEN')
-        .length;
     final inProgressCount = _tickets
         .where((ticket) => _normalizeStatus(ticket.status) == 'INPROGRESS')
         .length;
@@ -521,18 +518,11 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
                             children: [
                               Expanded(
                                 child: _StatusSummaryCard(
-                                  label: 'Open',
-                                  count: '$openCount',
-                                ),
-                              ),
-                              SizedBox(width: 12),
-                              Expanded(
-                                child: _StatusSummaryCard(
                                   label: 'In Progress',
                                   count: '$inProgressCount',
                                 ),
                               ),
-                              SizedBox(width: 12),
+                              const SizedBox(width: 12),
                               Expanded(
                                 child: _StatusSummaryCard(
                                   label: 'Closed',
@@ -749,9 +739,16 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
 String _normalizeStatus(String? status) =>
     (status ?? '').toUpperCase().replaceAll(RegExp(r'[\s_-]+'), '');
 
+String _formatStatus(String? status) => switch (_normalizeStatus(status)) {
+  'CLOSED' => 'CLOSE',
+  'INPROGRESS' => 'IN PROGRESS',
+  _ => status ?? '',
+};
+
 Color _statusColor(String? status) => switch (_normalizeStatus(status)) {
   'OPEN' => const Color(0xFF10B981),
   'INPROGRESS' => const Color(0xFFF59E0B),
+  'CLOSED' => Colors.red,
   _ => Colors.grey,
 };
 
@@ -803,7 +800,7 @@ class JobCard extends StatelessWidget {
                     const SizedBox(width: 6),
                     Flexible(
                       child: Text(
-                        job.status ?? '',
+                        _formatStatus(job.status),
                         style: const TextStyle(
                           color: _muted,
                           fontSize: 14,
