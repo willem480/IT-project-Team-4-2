@@ -305,12 +305,16 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
         if (ticket == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "no ticket found for this ticketId " + ticketId);
         }
+
         ticketAssignmentMapper.deleteById(ticketAssignment.getIdTicketAssignment());
+
         if (Objects.equals(ticket.getStatus(), TicketStatus.CLOSED.name())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "you cannot deallocate a closed ticket");
         }
         else if (Objects.equals(ticket.getStatus(), TicketStatus.IN_PROGRESS.name())) {
             ticket.setStatus(TicketStatus.OPEN.name());
+            ticketMapper.insertOrUpdate(ticket);
         }
+
     }
 }
