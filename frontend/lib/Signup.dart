@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:html' as html;
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:ticketing_app/SignIn.dart';
+import 'package:ticketing_app/global.dart';
+import 'package:ticketing_app/main.dart';
 
 
 class SignUp extends StatelessWidget {
@@ -84,6 +87,7 @@ class _SignUpPageState extends State<SignUpPage> {
     }
 
     setState(() => _isSigningUp = true);
+    var accountCreated = false;
     try {
       final response = await http.post(
         Uri.parse(
@@ -95,10 +99,39 @@ class _SignUpPageState extends State<SignUpPage> {
 
       if (!mounted) return;
       if (response.statusCode == 201) {
+        accountCreated = true;
+        final signInResponse = await http.post(
+          Uri.parse('http://127.0.0.1:8080/user/signin'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'email': email}),
+        ).timeout(const Duration(seconds: 30));
+
+        if (!mounted) return;
+        if (signInResponse.statusCode != 200) {
+          _showError('Account created, but automatic sign in failed. Please sign in using the link below.');
+          return;
+        }
+
+        final responseData = jsonDecode(signInResponse.body);
+        final userId = responseData is Map<String, dynamic>
+            ? responseData['idUser']
+            : null;
+        if (userId is! int || userId <= 0) {
+          _showError('Account created, but automatic sign in failed. Please sign in using the link below.');
+          return;
+        }
+
+        html.window.localStorage['currentUserId'] = userId.toString();
+        Global.currentUserId = userId;
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const SignIn()),
+          MaterialPageRoute(
+            builder: (context) => MyHomePage(
+              title: 'Find a job',
+              currentUserId: userId,
+            ),
+          ),
         );
       } else {
         var message = 'Signup failed (HTTP ${response.statusCode}). Please try again.';
@@ -116,9 +149,13 @@ class _SignUpPageState extends State<SignUpPage> {
         _showError(message);
       }
     } on TimeoutException {
-      _showError('Signup request timed out. Please try again.');
+      _showError(accountCreated
+          ? 'Account created, but automatic sign in timed out. Please sign in using the link below.'
+          : 'Signup request timed out. Please try again.');
     } catch (_) {
-      _showError('Unable to sign up. Please check your connection and try again.');
+      _showError(accountCreated
+          ? 'Account created, but automatic sign in failed. Please sign in using the link below.'
+          : 'Unable to sign up. Please check your connection and try again.');
     } finally {
       if (mounted) {
         setState(() => _isSigningUp = false);
@@ -230,13 +267,13 @@ class _SignUpPageState extends State<SignUpPage> {
       floatingActionButton: Padding(
         padding: EdgeInsets.only(bottom: 50),
         child: SizedBox(
-          width: 200,
+          width: 240,
           height: 50,
           child: FloatingActionButton(
             onPressed: _isSigningUp ? null : _signUp,
             backgroundColor: Colors.green,
-            tooltip: 'Sign up',
-            child: const Text('Sign up & back to sign in', style: TextStyle(color: Colors.white))),
+            tooltip: 'Create account and sign in',
+            child: const Text('Create account and sign in', style: TextStyle(color: Colors.white))),
         )
       ),
 
