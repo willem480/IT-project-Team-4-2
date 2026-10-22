@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:ticketing_app/SuccessPage.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'config.dart';
+
+
 class PostJob extends StatefulWidget {
   final int currentUserId;
   const PostJob({
@@ -27,7 +30,7 @@ class _PostJobPageState extends State<PostJob> {
   final TextEditingController descriptionController = TextEditingController();
 
   Future<void> fetchUserData() async {
-    final url = Uri.parse('http://127.0.0.1:8080/profilePage/getUser?userId=${widget.currentUserId}');
+    final url = Uri.parse(ApiConfig.getUser(widget.currentUserId));
     final response = await http.post(url);
     if (response.statusCode == 200) {
       final Map<String, dynamic> jsonData = jsonDecode(response.body);
@@ -70,7 +73,7 @@ class _PostJobPageState extends State<PostJob> {
       return;
     }
 
-    final url = Uri.parse('http://127.0.0.1:8080/ticket/createTicket');
+    final url = Uri.parse(ApiConfig.createTicket);
     Map<String, dynamic> requestData = {
       'posterId': widget.currentUserId,
       "title": titleController.text,

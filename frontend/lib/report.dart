@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'config.dart';
 
 final _activeReports = Expando<bool>('activeReports');
 
@@ -76,7 +77,7 @@ class _ReportFlow {
     Map<String, String> parameters, {
     bool generate = false,
   }) async {
-    final url = Uri.parse('http://127.0.0.1:8080$path')
+    final url = Uri.parse('${ApiConfig.baseUrl}$path')
         .replace(queryParameters: parameters);
     final response = await (generate ? http.post(url) : http.get(url)).timeout(
       const Duration(seconds: 30),

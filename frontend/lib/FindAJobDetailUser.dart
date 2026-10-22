@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:ticketing_app/OrganizationSelection.dart';
 import 'package:ticketing_app/Profile.dart';
 import 'package:ticketing_app/TeamSelectionForTeamDelegatePage.dart';
-
+import 'config.dart';
 
 class FindAJobDetailUser extends StatefulWidget {
   final String title;
@@ -45,7 +45,7 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
 
   Future<void> _deleteComment(int commentId) async {
 
-    final url = Uri.parse("http://127.0.0.1:8080/ticketComment/deleteComment?operatorId=${widget.currentUserId}&ticketCommentId=$commentId");
+    final url = Uri.parse(ApiConfig.deleteComment(widget.currentUserId, commentId));
 
     try {
       final response = await http.delete(
@@ -69,7 +69,7 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
     }
   }
   Future<void> fetchComment() async {
-    final url = Uri.parse("http://127.0.0.1:8080/ticketComment/getTicketComments?ticketId=${widget.ticketId}&operatorId=${widget.currentUserId}");
+    final url = Uri.parse("${ApiConfig.baseUrl}/ticketComment/getTicketComments?ticketId=${widget.ticketId}&operatorId=${widget.currentUserId}");
 
     try {
       final response = await http.post(
@@ -101,7 +101,7 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
     if (commentController.text.trim().isEmpty) return;
 
 
-    final url = Uri.parse("http://127.0.0.1:8080/ticketComment/postComment?userId=${widget.currentUserId}&ticketId=${widget.ticketId}&comment=${commentController.text}");
+    final url = Uri.parse("${ApiConfig.baseUrl}/ticketComment/postComment?userId=${widget.currentUserId}&ticketId=${widget.ticketId}&comment=${commentController.text}");
 
     try {
       final response = await http.post(
@@ -234,7 +234,7 @@ class _FindAJobDetailUserPage extends State<FindAJobDetailUser> {
                   heroTag: "btn_accept", //
                   onPressed: () async {
 
-                    final url = Uri.parse("http://127.0.0.1:8080/ticketAssignment/delegateJobIndividual?ticketId=${widget.ticketId}&assigneeId=${widget.currentUserId}");
+                    final url = Uri.parse(ApiConfig.delegateJobIndividual(widget.ticketId, widget.currentUserId));
 
                     try {
                       final response = await http.post(

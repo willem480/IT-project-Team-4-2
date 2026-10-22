@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'main.dart';
+import 'config.dart';
 
 class PersonnelSelectionPage extends StatefulWidget {
   final int ticketId;
@@ -31,7 +32,8 @@ class _PersonnelSelectionPageState extends State<PersonnelSelectionPage> {
   }
 
   Future<void> fetchTeamMembers() async {
-    final url = Uri.parse("http://127.0.0.1:8080/team/getTeamMembers?teamId=${widget.teamId}&viewerUserId=${widget.currentUserId}");
+    final url = Uri.parse("${ApiConfig.baseUrl}/team/getTeamMembers?teamId="
+        "${widget.teamId}&viewerUserId=${widget.currentUserId}");
 
     print("team member list: $url =====");
 
@@ -59,7 +61,7 @@ class _PersonnelSelectionPageState extends State<PersonnelSelectionPage> {
   Future<void> _submitDelegation() async {
     if (selectedUserId == null) return;
 
-    final url = Uri.parse("http://127.0.0.1:8080/ticketAssignment/delegateJobIndividual?ticketId=${widget.ticketId}&assigneeId=$selectedUserId&teamId=${widget.teamId}");
+    final url = Uri.parse("${ApiConfig.baseUrl}/ticketAssignment/delegateJobIndividual?ticketId=${widget.ticketId}&assigneeId=$selectedUserId&teamId=${widget.teamId}");
 
 
     try {

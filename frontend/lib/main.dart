@@ -11,6 +11,7 @@ import 'package:ticketing_app/models/ticket_model.dart';
 import 'package:ticketing_app/models/user_profile.dart';
 import 'dart:html' as html; //
 import 'package:ticketing_app/global.dart';
+import 'config.dart';
 void main() {
   String? savedUserIdStr = html.window.localStorage['currentUserId'];
   int? savedUserId = savedUserIdStr != null ? int.tryParse(savedUserIdStr) : null;
@@ -65,7 +66,7 @@ class _MyHomePageState extends State<MyHomePage> {
   bool isPayActive = false;
 
   Future<void> checkManagerStatus() async{
-    final url = Uri.parse('http://127.0.0.1:8080/organization/getOrganizations?viewerUserId=${widget.currentUserId}');
+    final url = Uri.parse(ApiConfig.getOrganization(widget.currentUserId));
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
@@ -99,7 +100,7 @@ class _MyHomePageState extends State<MyHomePage> {
       fetchOpenTickets('');
       return;
     }
-    final url = Uri.parse('http://127.0.0.1:8080/ticket/getOpenTicketsByKeyword?keyword=$keyword');
+    final url = Uri.parse(ApiConfig.getOpenTicketsByKeyword(keyword));
 
     try {
       final response = await http.post(
@@ -128,7 +129,7 @@ class _MyHomePageState extends State<MyHomePage> {
   //getting organization
   void fetchOpenTickets(String filterType) async {
       
-      final url = Uri.parse('http://127.0.0.1:8080/ticket/getOpenTickets?filter=$filterType');
+      final url = Uri.parse('${ApiConfig.baseUrl}/ticket/getOpenTickets?filter=$filterType');
 
       try {
         final response = await http.post(
@@ -156,7 +157,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
 void fetchAssignTickets() async {
       
-      final url = Uri.parse('http://127.0.0.1:8080/ticketAssignment/getAcceptedJobsWithFilter?assigneeID=${widget.currentUserId}');
+      final url = Uri.parse(ApiConfig.getAcceptedJobsWithFilter(widget.currentUserId));
 
       try {
         final response = await http.post(
@@ -183,7 +184,7 @@ void fetchAssignTickets() async {
     }
 
   void fetchUserData() async {
-    final url = Uri.parse('http://127.0.0.1:8080/profilePage/getUser?userId=${widget.currentUserId}');
+    final url = Uri.parse(ApiConfig.getUser(widget.currentUserId));
 
     try {
       final response = await http.post(

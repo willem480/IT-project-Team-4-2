@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:ticketing_app/config.dart';
 import 'dart:convert';
 import 'PersonalSelection.dart';
 
@@ -30,7 +31,7 @@ class _TeamSelectionPageState extends State<TeamSelectionPage> {
   }
 
   Future<void> fetchManagedTeams() async {
-    final url = Uri.parse("http://127.0.0.1:8080/organization/getOrganizationTeams?organizationId=${widget.orgId}&viewerUserId=${widget.currentUserId}");
+    final url = Uri.parse(ApiConfig.getOrganizationTeams(widget.orgId, widget.currentUserId));
 
     print("request team list $url =====");
 

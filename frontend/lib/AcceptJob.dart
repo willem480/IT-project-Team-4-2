@@ -9,6 +9,7 @@ import 'PostJob.dart';
 import 'Profile.dart';
 import 'SignIn.dart';
 import 'main.dart' show MyHomePage;
+import 'config.dart';
 
 const _ink = Color(0xFF111827);
 const _muted = Color(0xFF6B7280);
@@ -61,8 +62,7 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
       final response = await http
           .post(
             Uri.parse(
-              'http://127.0.0.1:8080/profilePage/getUser?userId=$userId',
-            ),
+              ApiConfig.getUser(userId)),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({}),
           )
@@ -143,8 +143,10 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
   }
 
   Future<dynamic> _getJson(String path, Map<String, String> parameters) async {
+    final url = Uri.parse('${ApiConfig.baseUrl}$path').replace(queryParameters: parameters);
+
     final response = await http
-        .get(Uri.http('127.0.0.1:8080', path, parameters))
+        .get(url)
         .timeout(const Duration(seconds: 30));
     if (response.statusCode != 200) {
       throw Exception('Team lookup failed (${response.statusCode})');
@@ -315,11 +317,7 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
       parameters['filter'] =
           '${_sortBy!.name}${_isAscending ? 'Ascending' : 'Descending'}';
     }
-    final url = Uri.http(
-      '127.0.0.1:8080',
-      '/ticketAssignment/$endpoint',
-      parameters,
-    );
+    final url = Uri.parse('${ApiConfig.baseUrl}/ticketAssignment/$endpoint');
     http.Response? response;
 
     try {

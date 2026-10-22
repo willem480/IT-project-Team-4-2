@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'config.dart';
 
 class MemberSearchDialog extends StatefulWidget {
   const MemberSearchDialog({
@@ -90,11 +91,11 @@ class _MemberSearchDialogState extends State<MemberSearchDialog> {
     if (keyword.isEmpty) return;
 
     try {
-      final url = Uri.parse('http://127.0.0.1:8080/user/getUsersByEmail')
+      final url = Uri.parse('${ApiConfig.baseUrl}/user/getUsersByEmail')
           .replace(queryParameters: {'keyword': keyword});
       final existingUsersUrl =
           Uri.parse(
-            'http://127.0.0.1:8080${_isManagerMode ? '/organization/getOrganizationManagers' : '/team/getTeamMembers'}',
+            '${ApiConfig.baseUrl}${_isManagerMode ? '/organization/getOrganizationManagers' : '/team/getTeamMembers'}',
           ).replace(
             queryParameters: _isManagerMode
                 ? {'organizationId': '${widget.organisationId}'}
@@ -201,7 +202,7 @@ class _MemberSearchDialogState extends State<MemberSearchDialog> {
       final response = await http
           .post(
             Uri.parse(
-              'http://127.0.0.1:8080${_isManagerMode ? '/organization/addManager' : '/team/addTeamMember'}',
+              '${ApiConfig.baseUrl}${_isManagerMode ? '/organization/addManager' : '/team/addTeamMember'}',
             ),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({

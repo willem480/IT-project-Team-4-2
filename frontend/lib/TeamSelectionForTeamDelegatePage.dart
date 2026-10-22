@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:ticketing_app/config.dart';
 import 'dart:convert';
 import 'package:ticketing_app/main.dart';
 
@@ -31,7 +32,7 @@ class _TeamSelectionForTeamDelegatePageState extends State<TeamSelectionForTeamD
   }
 
   Future<void> _delegateToTeam(int teamId) async {
-    final url = Uri.parse("http://127.0.0.1:8080/ticketAssignment/delegateJobTeam?ticketId=${widget.ticketId}&teamId=$teamId");
+    final url = Uri.parse("${ApiConfig.baseUrl}/ticketAssignment/delegateJobTeam?ticketId=${widget.ticketId}&teamId=$teamId");
 
     try {
       final response = await http.post(
@@ -60,7 +61,7 @@ class _TeamSelectionForTeamDelegatePageState extends State<TeamSelectionForTeamD
   }
 
   Future<void> fetchManagedTeams() async {
-    final url = Uri.parse("http://127.0.0.1:8080/organization/getOrganizationTeams?organizationId=${widget.orgId}&viewerUserId=${widget.currentUserId}");
+    final url = Uri.parse(ApiConfig.getOrganizationTeams(widget.orgId, widget.currentUserId));
 
     print("===== team list: $url =====");
 

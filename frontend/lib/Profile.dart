@@ -8,6 +8,7 @@
   import 'dart:convert';
   import 'package:ticketing_app/global.dart';
   import 'dart:html' as html;
+  import 'config.dart';
 
 
 
@@ -50,7 +51,7 @@
     bool isSubscribed = false;
 
     Future<void> toggleSubscribe(bool value) async {
-      final url = Uri.parse('http://127.0.0.1:8080/user/subscribeToEmail?userId=${widget.userId}&isSubscribed=$value');
+      final url = Uri.parse('${ApiConfig.baseUrl}/user/subscribeToEmail?userId=${widget.userId}&isSubscribed=$value');
 
       try {
         final response = await http.post(
@@ -77,7 +78,7 @@
 
     void fetchFirstUserData() async {
 
-      final url = Uri.parse('http://127.0.0.1:8080/profilePage/getUser?userId=${widget.userId}');
+      final url = Uri.parse(ApiConfig.getUser(widget.userId));
 
         //Post
         final response = await http.post(
@@ -103,7 +104,7 @@
 
     Future<void> updateProfileDescription(String newDescription) async{
         final url = Uri.parse(
-            'http://127.0.0.1:8080/user/updateUser?id=${widget.userId}&name=${Uri.encodeComponent(userName)}&email=${Uri.encodeComponent(userEmail)}&description=${Uri.encodeComponent(newDescription)}'
+            '${ApiConfig.baseUrl}/user/updateUser?id=${widget.userId}&name=${Uri.encodeComponent(userName)}&email=${Uri.encodeComponent(userEmail)}&description=${Uri.encodeComponent(newDescription)}'
         );
 
       try{
@@ -135,7 +136,7 @@
 
     void fetchPostedTickets(String filterType) async {
 
-      final url = Uri.parse('http://127.0.0.1:8080/profilePage/getPostedTickets?userId=${widget.userId}&filter=$filterType');
+      final url = Uri.parse('${ApiConfig.baseUrl}/profilePage/getPostedTickets?userId=${widget.userId}&filter=$filterType');
 
       try{
         //Post
@@ -158,7 +159,7 @@
 
     void fetchCompletedTickets(String filterType) async {
 
-      final url = Uri.parse('http://127.0.0.1:8080/profilePage/getCompletedTickets?userId=${widget.userId}&filter=$filterType');
+      final url = Uri.parse('${ApiConfig.baseUrl}/profilePage/getCompletedTickets?userId=${widget.userId}&filter=$filterType');
 
         //Post
         final response = await http.post(

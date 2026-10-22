@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:ticketing_app/SignIn.dart';
 import 'package:ticketing_app/global.dart';
 import 'package:ticketing_app/main.dart';
+import 'config.dart';
 
 
 class SignUp extends StatelessWidget {
@@ -91,7 +92,7 @@ class _SignUpPageState extends State<SignUpPage> {
     try {
       final response = await http.post(
         Uri.parse(
-          'http://127.0.0.1:8080/user/signup',
+          '${ApiConfig.baseUrl}/user/signup',
         ),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'name': name, 'email': email}),
@@ -101,7 +102,7 @@ class _SignUpPageState extends State<SignUpPage> {
       if (response.statusCode == 201) {
         accountCreated = true;
         final signInResponse = await http.post(
-          Uri.parse('http://127.0.0.1:8080/user/signin'),
+          Uri.parse('${ApiConfig.baseUrl}/user/signin'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({'email': email}),
         ).timeout(const Duration(seconds: 30));

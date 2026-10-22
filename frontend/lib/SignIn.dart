@@ -5,6 +5,7 @@ import 'package:ticketing_app/Signup.dart';
 import 'package:ticketing_app/main.dart';
 import 'dart:html' as html;
 import 'package:ticketing_app/global.dart';
+import 'config.dart';
 
 class SignIn extends StatelessWidget {
   const SignIn({super.key});
@@ -55,7 +56,7 @@ class _SignInPageState extends State<SignInPage> {
     });
 
 
-    final url = Uri.parse('http://127.0.0.1:8080/user/signin');
+    final url = Uri.parse('${ApiConfig.baseUrl}/user/signin');
 
     try {
       final response = await http.post(

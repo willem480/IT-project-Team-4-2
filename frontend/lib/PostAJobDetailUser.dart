@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:ticketing_app/config.dart';
 import 'package:ticketing_app/main.dart';
 import 'package:ticketing_app/models/ticket_comment.dart';
 import 'dart:convert';
 import 'package:ticketing_app/Profile.dart';
 import 'package:http/http.dart' as http;
+import 'config.dart';
 
 class PostAJobDetailUser extends StatefulWidget {
   final String title;
@@ -41,7 +43,7 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
 
   Future<void> _updateTicketData(String newTitle, String newCompany, String newPrice, String newDesc) async {
     final url = Uri.parse(
-        'http://127.0.0.1:8080/ticket/updatePostedTicket'
+        '${ApiConfig.baseUrl}/ticket/updatePostedTicket'
             '?ticketId=${widget.ticketId}'
             '&title=${Uri.encodeComponent(newTitle)}'
             '&location=${Uri.encodeComponent(newCompany)}'
@@ -119,7 +121,7 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
 
 
   Future<void> fetchComment() async {
-    final url = Uri.parse("http://127.0.0.1:8080/ticketComment/getTicketComments?ticketId=${widget.ticketId}&operatorId=${widget.currentUserId}");
+    final url = Uri.parse("${ApiConfig.baseUrl}/ticketComment/getTicketComments?ticketId=${widget.ticketId}&operatorId=${widget.currentUserId}");
 
     try {
       final response = await http.post(
@@ -150,7 +152,7 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
   Future<void> postNewComment() async {
     if (commentController.text.trim().isEmpty) return;
 
-    final url = Uri.parse("http://127.0.0.1:8080/ticketComment/postComment?userId=${widget.currentUserId}&ticketId=${widget.ticketId}&comment=${commentController.text}");
+    final url = Uri.parse("${ApiConfig.baseUrl}/ticketComment/postComment?userId=${widget.currentUserId}&ticketId=${widget.ticketId}&comment=${commentController.text}");
 
     try {
       final response = await http.post(
@@ -176,7 +178,7 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
   }
 
   Future<void> _deleteComment(int commentId) async {
-    final url = Uri.parse("http://127.0.0.1:8080/ticketComment/deleteComment?operatorId=${widget.currentUserId}&ticketCommentId=$commentId");
+    final url = Uri.parse("${ApiConfig.baseUrl}/ticketComment/deleteComment?operatorId=${widget.currentUserId}&ticketCommentId=$commentId");
 
     try {
       final response = await http.delete(
@@ -292,7 +294,7 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
             height: 56,
             child: FloatingActionButton(
               onPressed: () async {
-                final url = Uri.parse("http://127.0.0.1:8080/ticket/complete ticket?ticketId=${widget.ticketId}");
+                final url = Uri.parse(ApiConfig.completeTicket(widget.ticketId));
                 try{
                   final response = await http.get(url);
                   if (response.statusCode == 200){
