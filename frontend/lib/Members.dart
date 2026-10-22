@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import 'Admin.dart';
+import 'Organisation.dart';
 import 'Profile.dart';
 import 'adminSearch.dart';
 import 'models/team_members_model.dart';
@@ -35,38 +36,6 @@ class MembersPage extends StatefulWidget {
 }
 
 class _MembersPageState extends State<MembersPage> {
-  String _userName = '';
-
-  String get _displayName => _userName.isEmpty ? 'Loading...' : _userName;
-
-  Future<void> _fetchUserName() async {
-    // Reuse the current user's name when a parent page has already loaded it.
-    if (_userName.isNotEmpty) return;
-    final userId = widget.userId;
-    try {
-      final response = await http
-          .post(
-            Uri.parse(
-              'http://127.0.0.1:8080/profilePage/getUser?userId=$userId',
-            ),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({}),
-          )
-          .timeout(const Duration(seconds: 30));
-      if (response.statusCode != 200) {
-        throw Exception('User profile request failed (${response.statusCode})');
-      }
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      final name = (data['name'] as String?)?.trim() ?? '';
-      if (!mounted || widget.userId != userId || _userName.isNotEmpty) return;
-      setState(() => _userName = name.isEmpty ? 'User' : name);
-    } catch (error) {
-      debugPrint('Failed to load greeting name for user $userId: $error');
-      if (!mounted || widget.userId != userId || _userName.isNotEmpty) return;
-      setState(() => _userName = 'User');
-    }
-  }
-
   List<_MemberEntry> members = [];
   List<_MemberEntry> _managers = [];
   Set<int> _managerUserIds = {};
@@ -97,8 +66,7 @@ class _MembersPageState extends State<MembersPage> {
   @override
   void initState() {
     super.initState();
-    _userName = widget.userName.trim();
-    _fetchUserName();
+    organisationGreeting.load(userId: widget.userId, userName: widget.userName);
     fetchMembers();
   }
 
@@ -107,8 +75,10 @@ class _MembersPageState extends State<MembersPage> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.userId != widget.userId ||
         oldWidget.userName != widget.userName) {
-      _userName = widget.userName.trim();
-      _fetchUserName();
+      organisationGreeting.load(
+        userId: widget.userId,
+        userName: widget.userName,
+      );
     }
   }
 
@@ -355,7 +325,6 @@ class _MembersPageState extends State<MembersPage> {
       MaterialPageRoute<void>(
         builder: (context) => AdminPage(
           userId: widget.userId,
-          userName: _userName,
           organisationId: organisationId,
           teamId: widget.teamId,
           teamMemberId: teamMemberId,
@@ -462,35 +431,7 @@ class _MembersPageState extends State<MembersPage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF9FAFB),
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        leading: BackButton(
-          color: Colors.black,
-          onPressed: () => Navigator.pop(context),
-        ),
-        centerTitle: true,
-        toolbarHeight: 72,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Good morning,',
-              style: TextStyle(color: Color(0xFF6B7280), fontSize: 14),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              _displayName,
-              style: const TextStyle(
-                color: Color(0xFF111827),
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      ),
+      appBar: organisationGreeting.appBar(),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

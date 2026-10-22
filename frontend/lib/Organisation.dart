@@ -8,25 +8,40 @@ import 'Profile.dart';
 import 'Teams.dart';
 import 'models/organisation_model.dart';
 
-class OrganisationPage extends StatefulWidget {
-  const OrganisationPage({super.key, required this.userId, this.userName = ''});
+// Shared greeting data and UI for organisation, team and member pages.
+final organisationGreeting = OrganisationGreeting();
 
-  final int userId;
-  final String userName;
+class OrganisationGreeting extends ValueNotifier<String> {
+  OrganisationGreeting() : super('Loading...');
 
-  @override
-  State<OrganisationPage> createState() => _OrganisationPageState();
-}
+  static const prefix = 'Hello!';
+  static const style = TextStyle(fontWeight: FontWeight.bold, fontSize: 16);
 
-class _OrganisationPageState extends State<OrganisationPage> {
-  String _userName = '';
+  int? _userId;
+  int _revision = 0;
+  Future<void>? _loading;
 
-  String get _displayName => _userName.isEmpty ? 'Loading...' : _userName;
+  Future<void> load({required int userId, String userName = ''}) {
+    if (_userId != userId) {
+      _userId = userId;
+      _revision++;
+      _loading = null;
+      value = 'Loading...';
+    }
 
-  Future<void> _fetchUserName() async {
-    // Reuse the current user's name when a parent page has already loaded it.
-    if (_userName.isNotEmpty) return;
-    final userId = widget.userId;
+    final name = userName.trim();
+    if (name.isNotEmpty) {
+      // A supplied name takes priority over an earlier in-flight request.
+      _revision++;
+      _loading = null;
+      value = name;
+      return Future<void>.value();
+    }
+    if (value != 'Loading...') return Future<void>.value();
+    return _loading ??= _fetchUserName(userId, _revision);
+  }
+
+  Future<void> _fetchUserName(int userId, int revision) async {
     try {
       final response = await http
           .post(
@@ -40,17 +55,44 @@ class _OrganisationPageState extends State<OrganisationPage> {
       if (response.statusCode != 200) {
         throw Exception('User profile request failed (${response.statusCode})');
       }
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final data =
+          jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
       final name = (data['name'] as String?)?.trim() ?? '';
-      if (!mounted || widget.userId != userId || _userName.isNotEmpty) return;
-      setState(() => _userName = name.isEmpty ? 'User' : name);
+      if (_revision != revision) return;
+      value = name.isEmpty ? 'User' : name;
     } catch (error) {
       debugPrint('Failed to load greeting name for user $userId: $error');
-      if (!mounted || widget.userId != userId || _userName.isNotEmpty) return;
-      setState(() => _userName = 'User');
+      if (_revision != revision) return;
+      value = 'User';
+    } finally {
+      if (_revision == revision) _loading = null;
     }
   }
 
+  AppBar appBar({VoidCallback? onBack, List<Widget>? actions}) {
+    return AppBar(
+      leading: BackButton(onPressed: onBack),
+      title: ValueListenableBuilder<String>(
+        valueListenable: this,
+        builder: (context, userName, child) =>
+            Text('$prefix $userName', style: style),
+      ),
+      actions: actions,
+    );
+  }
+}
+
+class OrganisationPage extends StatefulWidget {
+  const OrganisationPage({super.key, required this.userId, this.userName = ''});
+
+  final int userId;
+  final String userName;
+
+  @override
+  State<OrganisationPage> createState() => _OrganisationPageState();
+}
+
+class _OrganisationPageState extends State<OrganisationPage> {
   List<OrganisationModel> organisations = [];
   final _managersByOrganisation = <int, List<({int userId, String name})>>{};
   final _managerErrors = <int, String>{};
@@ -71,8 +113,7 @@ class _OrganisationPageState extends State<OrganisationPage> {
   @override
   void initState() {
     super.initState();
-    _userName = widget.userName.trim();
-    _fetchUserName();
+    organisationGreeting.load(userId: widget.userId, userName: widget.userName);
     fetchOrganisations();
   }
 
@@ -81,8 +122,10 @@ class _OrganisationPageState extends State<OrganisationPage> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.userId != widget.userId ||
         oldWidget.userName != widget.userName) {
-      _userName = widget.userName.trim();
-      _fetchUserName();
+      organisationGreeting.load(
+        userId: widget.userId,
+        userName: widget.userName,
+      );
     }
   }
 
@@ -445,7 +488,6 @@ class _OrganisationPageState extends State<OrganisationPage> {
       MaterialPageRoute<void>(
         builder: (context) => TeamsPage(
           userId: widget.userId,
-          userName: _userName,
           organizationId: organisationId,
           organisationName: organisationName,
         ),
@@ -463,7 +505,6 @@ class _OrganisationPageState extends State<OrganisationPage> {
       MaterialPageRoute<void>(
         builder: (context) => AdminPage(
           userId: widget.userId,
-          userName: _userName,
           organisationId: organisation.organizationId,
         ),
       ),
@@ -490,25 +531,11 @@ class _OrganisationPageState extends State<OrganisationPage> {
     });
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF9FAFB),
-        elevation: 0,
-        title: Text(
-          'Good morning, $_displayName',
-          style: const TextStyle(color: Colors.black),
-        ),
-      ),
+      appBar: organisationGreeting.appBar(),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                'Good morning, $_displayName',
-                style: const TextStyle(fontSize: 20),
-              ),
-            ),
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: TextField(
