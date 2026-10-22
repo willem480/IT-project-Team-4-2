@@ -107,9 +107,6 @@ class _OrganisationPageState extends State<OrganisationPage> {
   bool _isSubmittingRemoval = false;
   int? _renamingOrganisationId;
 
-  bool get _isManager =>
-      organisations.any((organisation) => organisation.canManage);
-
   @override
   void initState() {
     super.initState();
@@ -235,7 +232,7 @@ class _OrganisationPageState extends State<OrganisationPage> {
   }
 
   Future<void> _createOrganisation() async {
-    if (!_isManager || _isCreating || _isRemoving) return;
+    if (_isCreating || _isRemoving) return;
     setState(() => _isCreating = true);
     try {
       final name = await _showOrganisationNameDialog();
@@ -584,33 +581,31 @@ class _OrganisationPageState extends State<OrganisationPage> {
                             ),
                           ),
                         ),
-                        if (_isManager) ...[
-                          const SizedBox(width: 4),
-                          IconButton(
-                            tooltip: 'Create organisation',
-                            onPressed: _isCreating || _isRemoving
-                                ? null
-                                : _createOrganisation,
-                            iconSize: 26,
-                            style: IconButton.styleFrom(
-                              foregroundColor: Colors.blue,
-                              backgroundColor: Colors.transparent,
-                              fixedSize: const Size(40, 40),
-                              padding: const EdgeInsets.all(7),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            icon: _isSubmitting
-                                ? const SizedBox(
-                                    width: 22,
-                                    height: 22,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.blue,
-                                    ),
-                                  )
-                                : const Icon(Icons.add_circle_outline),
+                        const SizedBox(width: 4),
+                        IconButton(
+                          tooltip: 'Create organisation',
+                          onPressed: _isCreating || _isRemoving
+                              ? null
+                              : _createOrganisation,
+                          iconSize: 26,
+                          style: IconButton.styleFrom(
+                            foregroundColor: Colors.blue,
+                            backgroundColor: Colors.transparent,
+                            fixedSize: const Size(40, 40),
+                            padding: const EdgeInsets.all(7),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
-                        ],
+                          icon: _isSubmitting
+                              ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.blue,
+                                  ),
+                                )
+                              : const Icon(Icons.add_circle_outline),
+                        ),
                       ],
                     ),
                   ),
