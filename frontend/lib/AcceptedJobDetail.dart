@@ -7,7 +7,11 @@ import 'package:ticketing_app/models/ticket_model.dart';
 
 class AcceptedJobDetail extends StatefulWidget {
   final int userId;
-  const AcceptedJobDetail({super.key, required this.ticket, required this.userId});
+  const AcceptedJobDetail({
+    super.key,
+    required this.ticket,
+    required this.userId,
+  });
 
   final TicketModel ticket;
 
@@ -18,6 +22,9 @@ class AcceptedJobDetail extends StatefulWidget {
 class _AcceptedJobDetailState extends State<AcceptedJobDetail> {
   bool isDetailTab = true;
   bool _isCompleting = false;
+  bool _isDeallocating = false;
+
+  bool get _isBusy => _isCompleting || _isDeallocating;
   List<ticketComment> commentList = [];
   final TextEditingController commentController = TextEditingController();
 
@@ -62,9 +69,7 @@ class _AcceptedJobDetailState extends State<AcceptedJobDetail> {
         commentController.text.trim().isEmpty) {
       return;
     }
-    final url = Uri.parse(
-      'http://127.0.0.1:8080/ticketComment/postComment',
-    );
+    final url = Uri.parse('http://127.0.0.1:8080/ticketComment/postComment');
     try {
       final response = await http.post(
         url,
@@ -87,15 +92,14 @@ class _AcceptedJobDetailState extends State<AcceptedJobDetail> {
 
   Future<void> _completeTicket() async {
     final ticketId = widget.ticket.idTicket;
-    if (_isCompleting || _isClosed || ticketId == null) return;
+    if (_isBusy || _isClosed || ticketId == null) return;
     setState(() => _isCompleting = true);
 
     // The backend mapping contains a literal space. Uri encodes the path safely.
-    final url = Uri.parse('http://127.0.0.1:8080/')
-        .replace(
-          path: '/ticket/complete ticket',
-          queryParameters: {'ticketId': '$ticketId'},
-        );
+    final url = Uri.parse('http://127.0.0.1:8080/').replace(
+      path: '/ticket/complete ticket',
+      queryParameters: {'ticketId': '$ticketId'},
+    );
     try {
       final response = await http.get(url).timeout(const Duration(seconds: 30));
       if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -111,6 +115,57 @@ class _AcceptedJobDetailState extends State<AcceptedJobDetail> {
         ),
       );
       setState(() => _isCompleting = false);
+    }
+  }
+
+  Future<void> _deallocateTicket() async {
+    final ticketId = widget.ticket.idTicket;
+    if (_isBusy || _isClosed || ticketId == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        content: const Text('Are you sure to deallocate this ticket?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('yes'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || confirmed != true || _isBusy) return;
+    setState(() => _isDeallocating = true);
+
+    final url =
+        Uri.parse('http://127.0.0.1:8080/ticketAssignment/deallocateTicket')
+            .replace(
+              queryParameters: {
+                'ticketId': '$ticketId',
+                'operatorId': '${widget.userId}',
+              },
+            );
+    try {
+      final response = await http
+          .post(url)
+          .timeout(const Duration(seconds: 30));
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw Exception('Deallocate ticket request failed');
+      }
+      if (!mounted) return;
+      Navigator.pop(context, true);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to deallocate this ticket. Please try again.'),
+        ),
+      );
+      setState(() => _isDeallocating = false);
     }
   }
 
@@ -142,7 +197,7 @@ class _AcceptedJobDetailState extends State<AcceptedJobDetail> {
         children: [
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(100),
+              padding: const EdgeInsets.fromLTRB(100, 100, 100, 180),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -176,9 +231,7 @@ class _AcceptedJobDetailState extends State<AcceptedJobDetail> {
                         ),
                         if (widget.ticket.datePosted != null)
                           Text(
-                            "Posted on: ${widget.ticket.datePosted.
-                            toString().length >= 10 ?widget.ticket.datePosted.
-                            toString().substring(0,10) : widget.ticket.datePosted}",
+                            "Posted on: ${widget.ticket.datePosted.toString().length >= 10 ? widget.ticket.datePosted.toString().substring(0, 10) : widget.ticket.datePosted}",
                             style: TextStyle(fontSize: 16),
                           ),
                         const Spacer(),
@@ -222,41 +275,65 @@ class _AcceptedJobDetailState extends State<AcceptedJobDetail> {
       ),
 
       floatingActionButton: Padding(
-        padding: EdgeInsets.only(bottom: 20),
-        child: SizedBox(
-          width: 200,
-          height: 56,
-          child: FloatingActionButton(
-            onPressed:
-                _isCompleting || _isClosed || widget.ticket.idTicket == null
-                ? null
-                : _completeTicket,
-            backgroundColor: Colors.lightGreen,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(32),
+        padding: const EdgeInsets.only(bottom: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildActionButton(
+              label: _isClosed ? 'Completed' : 'Mark as Complete',
+              color: Colors.lightGreen,
+              isLoading: _isCompleting,
+              onPressed: _completeTicket,
             ),
-            child: _isCompleting
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                : Text(
-                    _isClosed ? 'Completed' : 'Mark as Complete',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-          ),
+            const SizedBox(height: 12),
+            _buildActionButton(
+              label: 'Deallocate',
+              color: Colors.red,
+              isLoading: _isDeallocating,
+              onPressed: _deallocateTicket,
+            ),
+          ],
         ),
       ),
 
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+    );
+  }
+
+  Widget _buildActionButton({
+    required String label,
+    required Color color,
+    required bool isLoading,
+    required VoidCallback onPressed,
+  }) {
+    return SizedBox(
+      width: 200,
+      height: 56,
+      child: FloatingActionButton(
+        heroTag: label,
+        onPressed: _isBusy || _isClosed || widget.ticket.idTicket == null
+            ? null
+            : onPressed,
+        backgroundColor: color,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
+        child: isLoading
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+      ),
     );
   }
 
@@ -275,7 +352,6 @@ class _AcceptedJobDetailState extends State<AcceptedJobDetail> {
           style: TextStyle(color: Colors.black54),
         ),
         const SizedBox(height: 20),
-
       ],
     );
   }
