@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'Admin.dart';
 import 'Profile.dart';
 import 'Teams.dart';
+import 'adminSearch.dart';
 import 'models/organisation_model.dart';
 
 // Shared greeting data and UI for organisation, team and member pages.
@@ -759,6 +760,20 @@ class _OrganisationPageState extends State<OrganisationPage> {
   }
 }
 
+ButtonStyle _organisationFooterButtonStyle(Color foreground, Color background) {
+  return TextButton.styleFrom(
+    foregroundColor: foreground,
+    backgroundColor: background,
+    disabledForegroundColor: const Color(0xFF9CA3AF),
+    disabledBackgroundColor: const Color(0xFFF3F4F6),
+    minimumSize: const Size(64, 40),
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+    shape: const StadiumBorder(),
+    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+  );
+}
+
 class OrganizationCard extends StatelessWidget {
   const OrganizationCard({
     super.key,
@@ -908,79 +923,86 @@ class OrganizationCard extends StatelessWidget {
               ),
               const Divider(height: 28, color: Color(0xFFE5E7EB)),
               LayoutBuilder(
-                builder: (context, constraints) => Row(
-                  children: [
-                    SizedBox(
-                      width: 52,
-                      height: 20,
-                      child: Stack(
-                        children: [
-                          for (var index = 0; index < 3; index++)
-                            Positioned(
-                              left: index * 16.0,
-                              child: CircleAvatar(
-                                radius: 10,
-                                backgroundColor: Colors.white,
+                builder: (context, constraints) {
+                  final memberSummary = Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 52,
+                        height: 20,
+                        child: Stack(
+                          children: [
+                            for (var index = 0; index < 3; index++)
+                              Positioned(
+                                left: index * 16.0,
                                 child: CircleAvatar(
-                                  radius: 9,
-                                  backgroundColor: const [
-                                    Color(0xFFFCE7F3),
-                                    Color(0xFFCCFBF1),
-                                    Color(0xFFDBEAFE),
-                                  ][index],
-                                  child: const Icon(
-                                    Icons.person,
-                                    size: 13,
-                                    color: Color(0xFF6B7280),
+                                  radius: 10,
+                                  backgroundColor: Colors.white,
+                                  child: CircleAvatar(
+                                    radius: 9,
+                                    backgroundColor: const [
+                                      Color(0xFFFCE7F3),
+                                      Color(0xFFCCFBF1),
+                                      Color(0xFFDBEAFE),
+                                    ][index],
+                                    child: const Icon(
+                                      Icons.person,
+                                      size: 13,
+                                      color: Color(0xFF6B7280),
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
+                      const SizedBox(width: 8),
+                      Text(
                         '$members members',
                         style: const TextStyle(
                           color: Color(0xFF6B7280),
                           fontSize: 14,
                         ),
                       ),
-                    ),
-                    if (isManager) ...[
-                      _OrganisationManagerActions(
-                        key: ValueKey((actorUserId, organizationId)),
-                        actorUserId: actorUserId,
-                        organisationId: organizationId,
-                        onChanged: onManagersChanged,
-                        compact: constraints.maxWidth < 600,
-                        enabled: managerActionsEnabled,
-                      ),
-                      const SizedBox(width: 8),
                     ],
-                    GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: isManager ? null : () {},
-                      excludeFromSemantics: true,
-                      child: TextButton(
-                        onPressed: isManager ? () {} : null,
-                        style: TextButton.styleFrom(
-                          foregroundColor: const Color(0xFF1D4ED8),
-                          backgroundColor: const Color(0xFFDBEAFE),
-                          disabledForegroundColor: const Color(0xFF9CA3AF),
-                          disabledBackgroundColor: const Color(0xFFF3F4F6),
-                          shape: const StadiumBorder(),
-                        ),
-                        child: const Text(
-                          'Report',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
+                  );
+                  final reportButton = GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: isManager ? null : () {},
+                    excludeFromSemantics: true,
+                    child: TextButton(
+                      onPressed: isManager ? () {} : null,
+                      style: _organisationFooterButtonStyle(
+                        const Color(0xFF1D4ED8),
+                        const Color(0xFFDBEAFE),
                       ),
+                      child: const Text('Report'),
                     ),
-                  ],
-                ),
+                  );
+                  final actions = isManager
+                      ? _OrganisationManagerActions(
+                          key: ValueKey((actorUserId, organizationId)),
+                          actorUserId: actorUserId,
+                          organisationId: organizationId,
+                          onChanged: onManagersChanged,
+                          enabled: managerActionsEnabled,
+                          trailing: reportButton,
+                        )
+                      : reportButton;
+                  if (constraints.maxWidth < 600) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        memberSummary,
+                        const SizedBox(height: 12),
+                        Align(alignment: Alignment.centerRight, child: actions),
+                      ],
+                    );
+                  }
+                  return Row(
+                    children: [memberSummary, const Spacer(), actions],
+                  );
+                },
               ),
             ],
           ),
@@ -990,22 +1012,21 @@ class OrganizationCard extends StatelessWidget {
   }
 }
 
-/// Organisation roles are independent of team membership. Adding uses team
-/// members; removal lists all organisation managers and uses their role IDs.
+/// Adding searches all users; removal lists the current organisation's managers.
 class _OrganisationManagerActions extends StatefulWidget {
   const _OrganisationManagerActions({
     super.key,
     required this.actorUserId,
     required this.organisationId,
     required this.onChanged,
-    this.compact = false,
+    required this.trailing,
     this.enabled = true,
   });
 
   final int actorUserId;
   final int? organisationId;
   final Future<void> Function(bool removedSelf) onChanged;
-  final bool compact;
+  final Widget trailing;
   final bool enabled;
 
   @override
@@ -1015,14 +1036,9 @@ class _OrganisationManagerActions extends StatefulWidget {
 
 class _OrganisationManagerActionsState
     extends State<_OrganisationManagerActions> {
-  final _addMenu = MenuController();
   final _deleteMenu = MenuController();
-  List<Map<String, dynamic>> _teams = [];
   List<Map<String, dynamic>> _managers = [];
   Map<int, int> _managerIds = {};
-  final _members = <int, List<Map<String, dynamic>>>{};
-  final _loadingMembers = <int>{};
-  final _memberErrors = <int, String>{};
   bool _loading = false;
   bool _busy = false;
   bool _deleting = false;
@@ -1095,31 +1111,20 @@ class _OrganisationManagerActionsState
     return value.cast<Map<String, dynamic>>();
   }
 
-  Future<void> _loadMenu(bool deleting) async {
+  Future<void> _loadMenu() async {
     final generation = ++_generation;
     setState(() {
       _loading = true;
       _error = null;
-      _teams = [];
       _managers = [];
       _managerIds = {};
-      _members.clear();
-      _loadingMembers.clear();
-      _memberErrors.clear();
     });
     try {
-      final results = await Future.wait([
-        _get('/organization/getOrganizationManagers', {
-          'organizationId': '${widget.organisationId}',
-        }),
-        if (!deleting)
-          _get('/organization/getOrganizationTeams', {
-            'organizationId': '${widget.organisationId}',
-            'viewerUserId': '${widget.actorUserId}',
-          }),
-      ]);
+      final data = await _get('/organization/getOrganizationManagers', {
+        'organizationId': '${widget.organisationId}',
+      });
       if (!mounted || generation != _generation) return;
-      final managers = _items(results[0], [
+      final managers = _items(data, [
         'userId',
         'managerId',
         'userName',
@@ -1130,21 +1135,7 @@ class _OrganisationManagerActionsState
           'Only an organisation manager can manage manager access.',
         );
       }
-      List<Map<String, dynamic>> teams = [];
-      if (!deleting) {
-        final teamData = results[1];
-        if (teamData is! Map<String, dynamic>) {
-          throw const FormatException('The server returned invalid team data.');
-        }
-        if (teamData['canManage'] != true) {
-          throw const FormatException(
-            'Only an organisation manager can manage manager access.',
-          );
-        }
-        teams = _items(teamData['teams'], ['teamId', 'name']);
-      }
       setState(() {
-        _teams = teams;
         _managers = managers;
         _managerIds = {
           for (final manager in managers)
@@ -1157,11 +1148,7 @@ class _OrganisationManagerActionsState
       }
     } catch (_) {
       if (mounted && generation == _generation) {
-        setState(
-          () => _error = deleting
-              ? 'Unable to load managers. Please retry.'
-              : 'Unable to load teams and managers. Please retry.',
-        );
+        setState(() => _error = 'Unable to load managers. Please retry.');
       }
     } finally {
       if (mounted && generation == _generation) {
@@ -1170,75 +1157,52 @@ class _OrganisationManagerActionsState
     }
   }
 
-  Future<void> _loadMembers(int teamId) async {
-    if (_loadingMembers.contains(teamId) || _members.containsKey(teamId)) {
-      return;
-    }
-    final generation = _generation;
-    setState(() {
-      _loadingMembers.add(teamId);
-      _memberErrors.remove(teamId);
-    });
-    try {
-      final data = await _get('/team/getTeamMembers', {
-        'teamId': '$teamId',
-        'viewerUserId': '${widget.actorUserId}',
-      });
-      if (!mounted || generation != _generation) return;
-      if (data is! Map<String, dynamic> ||
-          data['organizationId'] != widget.organisationId) {
-        throw const FormatException('The server returned invalid team data.');
-      }
-      final members = _items(data['members'], ['userId', 'userName', 'email']);
-      setState(() => _members[teamId] = members);
-    } on FormatException catch (error) {
-      if (mounted && generation == _generation) {
-        setState(() => _memberErrors[teamId] = error.message);
-      }
-    } catch (_) {
-      if (mounted && generation == _generation) {
-        setState(
-          () => _memberErrors[teamId] = 'Unable to load members. Please retry.',
-        );
-      }
-    } finally {
-      if (mounted && generation == _generation) {
-        setState(() => _loadingMembers.remove(teamId));
-      }
-    }
-  }
-
-  Future<void> _changeManager(
-    Map<String, dynamic> member,
-    bool deleting,
-  ) async {
-    if (_busy) return;
-    final userId = member['userId'] as int;
-    final managerId = _managerIds[userId];
-    if (deleting && (managerId == null || _managerIds.length <= 1)) {
-      _message('This organisation must retain at least one manager.');
-      return;
-    }
-    _addMenu.close();
+  Future<void> _openManagerSearch() async {
+    final organisationId = widget.organisationId;
+    if (_busy || !widget.enabled || organisationId == null) return;
     _deleteMenu.close();
     setState(() {
       _busy = true;
-      _deleting = deleting;
+      _deleting = false;
+    });
+    try {
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => MemberSearchDialog.addManager(
+          actorUserId: widget.actorUserId,
+          organisationId: organisationId,
+          onManagerAdded: () => widget.onChanged(false),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _removeManager(Map<String, dynamic> member) async {
+    if (_busy) return;
+    final userId = member['userId'] as int;
+    final managerId = _managerIds[userId];
+    if (managerId == null || _managerIds.length <= 1) {
+      _message('This organisation must retain at least one manager.');
+      return;
+    }
+    _deleteMenu.close();
+    setState(() {
+      _busy = true;
+      _deleting = true;
     });
     final name = member['userName'] as String;
-    final removingSelf = deleting && userId == widget.actorUserId;
+    final removingSelf = userId == widget.actorUserId;
     try {
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (dialogContext) => AlertDialog(
-          title: Text(deleting ? 'Delete Manager' : 'Add Manager'),
+          title: const Text('Delete Manager'),
           content: Text(
-            (deleting
-                    ? 'Are you sure you want to remove "$name"\'s manager access to this organisation?'
-                    : 'Are you sure you want to grant "$name" manager access to this organisation?') +
-                (removingSelf
-                    ? '\n\nYou will lose access to this admin page.'
-                    : ''),
+            'Are you sure you want to remove "$name"\'s manager access to this organisation?'
+            '${removingSelf ? '\n\nYou will lose access to this admin page.' : ''}',
           ),
           actions: [
             TextButton(
@@ -1246,62 +1210,39 @@ class _OrganisationManagerActionsState
               child: const Text('Cancel'),
             ),
             FilledButton(
-              style: deleting
-                  ? FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFFDC2626),
-                    )
-                  : null,
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFDC2626),
+              ),
               onPressed: () => Navigator.pop(dialogContext, true),
-              child: Text(deleting ? 'Delete Manager' : 'Add Manager'),
+              child: const Text('Delete Manager'),
             ),
           ],
         ),
       );
       if (confirmed != true || !mounted) return;
-      final response =
-          await (deleting
-                  ? http.delete(
-                      Uri.parse(
-                        'http://127.0.0.1:8080/organization/removeManager',
-                      ).replace(
-                        queryParameters: {
-                          'actorUserId': '${widget.actorUserId}',
-                          'organizationId': '${widget.organisationId}',
-                          'managerId': '$managerId',
-                        },
-                      ),
-                    )
-                  : http.post(
-                      Uri.parse(
-                        'http://127.0.0.1:8080/organization/addManager',
-                      ),
-                      headers: {'Content-Type': 'application/json'},
-                      body: jsonEncode({
-                        'actorUserId': widget.actorUserId,
-                        'organizationId': widget.organisationId,
-                        'userId': userId,
-                      }),
-                    ))
-              .timeout(const Duration(seconds: 30));
+      final response = await http
+          .delete(
+            Uri.parse('http://127.0.0.1:8080/organization/removeManager')
+                .replace(
+                  queryParameters: {
+                    'actorUserId': '${widget.actorUserId}',
+                    'organizationId': '${widget.organisationId}',
+                    'managerId': '$managerId',
+                  },
+                ),
+          )
+          .timeout(const Duration(seconds: 30));
       if (!mounted) return;
-      if (response.statusCode != (deleting ? 204 : 201)) {
-        _message(
-          _requestError(response, deleting ? 'delete manager' : 'add manager'),
-        );
+      if (response.statusCode != 204) {
+        _message(_requestError(response, 'delete manager'));
         return;
       }
-      // Reopening either menu reloads roles from the server after every change.
-      _message(
-        deleting
-            ? 'Manager access removed successfully.'
-            : 'Manager added successfully.',
-      );
+      // Reopening the menu reloads roles from the server after every change.
+      _message('Manager access removed successfully.');
       await widget.onChanged(removingSelf);
     } catch (_) {
       if (mounted) {
-        _message(
-          'Unable to ${deleting ? 'delete' : 'add'} manager. Please refresh and try again.',
-        );
+        _message('Unable to delete manager. Please refresh and try again.');
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -1311,39 +1252,11 @@ class _OrganisationManagerActionsState
   Widget _menuText(String text) =>
       MenuItemButton(child: SizedBox(width: 240, child: Text(text)));
 
-  List<Widget> _memberItems(int teamId) {
-    if (_memberErrors[teamId] case final String error) {
-      return [
-        _menuText(error),
-        MenuItemButton(
-          closeOnActivate: false,
-          onPressed: () => _loadMembers(teamId),
-          child: const Text('Retry'),
-        ),
-      ];
-    }
-    final members = _members[teamId];
-    if (members == null) return [_menuText('Loading members...')];
-    if (members.isEmpty) return [_menuText('No members in this team.')];
-    final eligible = members
-        .where((member) => !_managerIds.containsKey(member['userId']))
-        .toList();
-    if (eligible.isEmpty) {
-      return [_menuText('All members are already managers.')];
-    }
-    return [for (final member in eligible) _personItem(member, false)];
-  }
-
-  Widget _personItem(
-    Map<String, dynamic> member,
-    bool deleting,
-  ) => MenuItemButton(
-    onPressed: _busy || (deleting && _managerIds.length <= 1)
+  Widget _personItem(Map<String, dynamic> member) => MenuItemButton(
+    onPressed: _busy || _managerIds.length <= 1
         ? null
-        : () => _changeManager(member, deleting),
-    leadingIcon: Icon(
-      deleting ? Icons.person_remove_outlined : Icons.person_add_alt_1_outlined,
-    ),
+        : () => _removeManager(member),
+    leadingIcon: const Icon(Icons.person_remove_outlined),
     child: SizedBox(
       width: 210,
       child: Column(
@@ -1351,7 +1264,7 @@ class _OrganisationManagerActionsState
         children: [
           Text(member['userName'] as String),
           Text(member['email'] as String, style: const TextStyle(fontSize: 12)),
-          if (deleting && _managerIds.length <= 1)
+          if (_managerIds.length <= 1)
             const Text(
               'Last manager — cannot delete',
               style: TextStyle(fontSize: 12),
@@ -1362,97 +1275,60 @@ class _OrganisationManagerActionsState
   );
 
   Widget _button(bool deleting) {
-    final controller = deleting ? _deleteMenu : _addMenu;
+    if (!deleting) {
+      return _actionButton(false, _openManagerSearch);
+    }
     return MenuAnchor(
-      controller: controller,
+      controller: _deleteMenu,
       style: _menuStyle,
       consumeOutsideTap: true,
-      onOpen: () => _loadMenu(deleting),
+      onOpen: _loadMenu,
       menuChildren: [
         if (_loading)
-          _menuText(deleting ? 'Loading managers...' : 'Loading teams...')
+          _menuText('Loading managers...')
         else if (_error != null) ...[
           _menuText(_error!),
           MenuItemButton(
             closeOnActivate: false,
-            onPressed: () => _loadMenu(deleting),
+            onPressed: _loadMenu,
             child: const Text('Retry'),
           ),
-        ] else if (deleting) ...[
-          for (final manager in _managers) _personItem(manager, true),
-        ] else if (_teams.isEmpty)
-          _menuText('No teams in this organisation.')
-        else
-          for (final team in _teams)
-            SubmenuButton(
-              key: ValueKey(team['teamId']),
-              menuStyle: _menuStyle,
-              leadingIcon: const Icon(Icons.groups_outlined),
-              onOpen: () => _loadMembers(team['teamId'] as int),
-              menuChildren: _memberItems(team['teamId'] as int),
-              child: SizedBox(width: 190, child: Text(team['name'] as String)),
-            ),
+        ] else ...[
+          for (final manager in _managers) _personItem(manager),
+        ],
       ],
-      builder: (context, menuController, child) {
-        final label = deleting ? 'Delete Manager' : 'Add Manager';
-        final icon = Icon(
-          deleting
-              ? Icons.person_remove_outlined
-              : Icons.person_add_alt_1_outlined,
-          size: 16,
-        );
-        final VoidCallback? onPressed =
-            _busy || !widget.enabled || widget.organisationId == null
-            ? null
-            : () {
-                if (menuController.isOpen) {
-                  menuController.close();
-                } else {
-                  (deleting ? _addMenu : _deleteMenu).close();
-                  menuController.open();
-                }
-              };
-        final color = deleting
-            ? const Color(0xFFDC2626)
-            : const Color(0xFF2563EB);
-        if (widget.compact) {
-          return IconButton.outlined(
-            tooltip: label,
-            onPressed: onPressed,
-            icon: icon,
-            style: IconButton.styleFrom(
-              foregroundColor: color,
-              minimumSize: const Size(34, 34),
-              fixedSize: const Size(34, 34),
-              padding: const EdgeInsets.all(8),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-          );
+      builder: (context, menuController, child) => _actionButton(true, () {
+        if (menuController.isOpen) {
+          menuController.close();
+        } else {
+          menuController.open();
         }
-        return OutlinedButton.icon(
-          style: OutlinedButton.styleFrom(
-            foregroundColor: color,
-            minimumSize: const Size(0, 34),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            textStyle: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          ),
-          onPressed: onPressed,
-          icon: icon,
-          label: Text(
-            _busy && _deleting == deleting ? 'Please wait...' : label,
-          ),
-        );
-      },
+      }),
+    );
+  }
+
+  Widget _actionButton(bool deleting, VoidCallback onAction) {
+    final label = deleting ? 'Delete Manager' : 'Add Manager';
+    final VoidCallback? onPressed =
+        _busy || !widget.enabled || widget.organisationId == null
+        ? null
+        : onAction;
+    return TextButton(
+      style: _organisationFooterButtonStyle(
+        deleting ? const Color(0xFFB91C1C) : const Color(0xFF065F46),
+        deleting ? const Color(0xFFFEE2E2) : const Color(0xFFD1FAE5),
+      ),
+      onPressed: onPressed,
+      child: Text(_busy && _deleting == deleting ? 'Please wait...' : label),
     );
   }
 
   @override
-  Widget build(BuildContext context) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [_button(false), const SizedBox(width: 6), _button(true)],
+  Widget build(BuildContext context) => Wrap(
+    spacing: 8,
+    runSpacing: 8,
+    alignment: WrapAlignment.end,
+    crossAxisAlignment: WrapCrossAlignment.center,
+    children: [_button(false), _button(true), widget.trailing],
   );
 }

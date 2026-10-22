@@ -8,12 +8,21 @@ class MemberSearchDialog extends StatefulWidget {
   const MemberSearchDialog({
     super.key,
     required this.actorUserId,
-    required this.teamId,
+    required int this.teamId,
     required this.onMemberAdded,
-  });
+  }) : organisationId = null;
+
+  const MemberSearchDialog.addManager({
+    super.key,
+    required this.actorUserId,
+    required int this.organisationId,
+    required Future<void> Function() onManagerAdded,
+  }) : teamId = null,
+       onMemberAdded = onManagerAdded;
 
   final int actorUserId;
-  final int teamId;
+  final int? teamId;
+  final int? organisationId;
   final Future<void> Function() onMemberAdded;
 
   @override
@@ -27,11 +36,13 @@ class _MemberSearchDialogState extends State<MemberSearchDialog> {
   String _searchQuery = '';
   final Set<int> _addingUserIds = {};
   final Set<int> _addedUserIds = {};
-  final Set<int> _teamMemberUserIds = {};
+  final Set<int> _existingUserIds = {};
   List<({int idUser, String name, String email})>? _users;
   String? _errorMessage;
   String? _additionMessage;
   bool _additionFailed = false;
+
+  bool get _isManagerMode => widget.organisationId != null;
 
   static const _avatarColors = [
     Color(0xFFEC4899),
@@ -81,35 +92,54 @@ class _MemberSearchDialogState extends State<MemberSearchDialog> {
     try {
       final url = Uri.parse('http://127.0.0.1:8080/user/getUsersByEmail')
           .replace(queryParameters: {'keyword': keyword});
-      final membersUrl = Uri.parse('http://127.0.0.1:8080/team/getTeamMembers')
-          .replace(
-            queryParameters: {
-              'teamId': '${widget.teamId}',
-              'viewerUserId': '${widget.actorUserId}',
-            },
+      final existingUsersUrl =
+          Uri.parse(
+            'http://127.0.0.1:8080${_isManagerMode ? '/organization/getOrganizationManagers' : '/team/getTeamMembers'}',
+          ).replace(
+            queryParameters: _isManagerMode
+                ? {'organizationId': '${widget.organisationId}'}
+                : {
+                    'teamId': '${widget.teamId}',
+                    'viewerUserId': '${widget.actorUserId}',
+                  },
           );
       final responses = await Future.wait([
         http.post(url, headers: {'Content-Type': 'application/json'}),
-        http.get(membersUrl),
+        http.get(existingUsersUrl),
       ]).timeout(const Duration(seconds: 30));
       if (!mounted || requestId != _searchRequestId) return;
       if (responses.any((response) => response.statusCode != 200)) {
-        throw Exception('Failed to load users or team members');
+        throw Exception('Failed to load users or existing roles');
       }
 
-      final membersData = jsonDecode(utf8.decode(responses[1].bodyBytes));
-      if (membersData is! Map<String, dynamic> ||
-          membersData['members'] is! List ||
-          membersData['teamId'] != widget.teamId ||
-          membersData['canManage'] != true) {
-        throw const FormatException('Expected a list of team members');
-      }
-      final memberIds = (membersData['members'] as List).map((member) {
-        if (member is! Map<String, dynamic> || member['userId'] is! int) {
-          throw const FormatException('Invalid team member response');
+      final existingData = jsonDecode(utf8.decode(responses[1].bodyBytes));
+      final List<dynamic> existingUsers;
+      if (_isManagerMode) {
+        if (existingData is! List) {
+          throw const FormatException('Expected a list of managers');
         }
-        return member['userId'] as int;
-      }).toSet()..addAll(_addedUserIds);
+        existingUsers = existingData;
+      } else {
+        if (existingData is! Map<String, dynamic> ||
+            existingData['members'] is! List ||
+            existingData['teamId'] != widget.teamId ||
+            existingData['canManage'] != true) {
+          throw const FormatException('Expected a list of team members');
+        }
+        existingUsers = existingData['members'] as List;
+      }
+      final existingIds = existingUsers.map((user) {
+        if (user is! Map<String, dynamic> || user['userId'] is! int) {
+          throw const FormatException('Invalid existing user response');
+        }
+        return user['userId'] as int;
+      }).toSet();
+      if (_isManagerMode && !existingIds.contains(widget.actorUserId)) {
+        throw const FormatException(
+          'Only an organisation manager can add managers.',
+        );
+      }
+      existingIds.addAll(_addedUserIds);
 
       final decoded = jsonDecode(utf8.decode(responses[0].bodyBytes));
       if (decoded is! List) {
@@ -136,18 +166,21 @@ class _MemberSearchDialogState extends State<MemberSearchDialog> {
                 user.email.toLowerCase().contains(search),
           )
           .toList();
-      // Keep the backend's name-first order and mark existing members.
+      // Keep the backend's name-first order and mark existing roles.
       setState(() {
         _users = users;
-        _teamMemberUserIds
+        _existingUserIds
           ..clear()
-          ..addAll(memberIds);
+          ..addAll(existingIds);
       });
-    } catch (_) {
+    } catch (error) {
       if (!mounted || requestId != _searchRequestId) return;
       setState(() {
-        _errorMessage =
-            'Failed to load users or team members. Please try again.';
+        _errorMessage = error is FormatException
+            ? error.message
+            : _isManagerMode
+            ? 'Failed to load users or managers. Please try again.'
+            : 'Failed to load users or team members. Please try again.';
       });
     } finally {
       if (mounted && requestId == _searchRequestId) {
@@ -156,10 +189,8 @@ class _MemberSearchDialogState extends State<MemberSearchDialog> {
     }
   }
 
-  Future<void> _addMember(
-    ({int idUser, String name, String email}) user,
-  ) async {
-    if (_addingUserIds.isNotEmpty || _teamMemberUserIds.contains(user.idUser)) {
+  Future<void> _addUser(({int idUser, String name, String email}) user) async {
+    if (_addingUserIds.isNotEmpty || _existingUserIds.contains(user.idUser)) {
       return;
     }
     setState(() {
@@ -169,31 +200,50 @@ class _MemberSearchDialogState extends State<MemberSearchDialog> {
     try {
       final response = await http
           .post(
-            Uri.parse('http://127.0.0.1:8080/team/addTeamMember'),
+            Uri.parse(
+              'http://127.0.0.1:8080${_isManagerMode ? '/organization/addManager' : '/team/addTeamMember'}',
+            ),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({
               'actorUserId': widget.actorUserId,
-              'teamId': widget.teamId,
+              if (_isManagerMode)
+                'organizationId': widget.organisationId
+              else
+                'teamId': widget.teamId,
               'userId': user.idUser,
             }),
           )
           .timeout(const Duration(seconds: 30));
       if (!mounted) return;
+      if (_isManagerMode && response.statusCode == 409) {
+        setState(() {
+          _addedUserIds.add(user.idUser);
+          _existingUserIds.add(user.idUser);
+          _additionMessage = 'Already is manager';
+          _additionFailed = false;
+        });
+        await _notifyAdded();
+        return;
+      }
       if (response.statusCode != 201) {
         throw FormatException(_addError(response));
       }
       setState(() {
         _addedUserIds.add(user.idUser);
-        _teamMemberUserIds.add(user.idUser);
-        _additionMessage = '${user.name} added to the team.';
+        _existingUserIds.add(user.idUser);
+        _additionMessage = _isManagerMode
+            ? '${user.name} added as a manager.'
+            : '${user.name} added to the team.';
         _additionFailed = false;
       });
-      await widget.onMemberAdded();
+      await _notifyAdded();
     } catch (error) {
       if (!mounted) return;
       setState(() {
         _additionMessage = error is FormatException
             ? error.message
+            : _isManagerMode
+            ? 'Unable to add manager. Please try again.'
             : 'Unable to add member. Please try again.';
         _additionFailed = true;
       });
@@ -202,12 +252,30 @@ class _MemberSearchDialogState extends State<MemberSearchDialog> {
     }
   }
 
+  Future<void> _notifyAdded() async {
+    try {
+      await widget.onMemberAdded();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _additionMessage = _isManagerMode
+            ? 'Manager added, but unable to refresh the organisation. Please refresh.'
+            : 'Member added, but unable to refresh the team. Please refresh.';
+        _additionFailed = true;
+      });
+    }
+  }
+
   String _addError(http.Response response) {
     if (response.statusCode == 403) {
-      return 'Only an organisation manager can add team members.';
+      return _isManagerMode
+          ? 'Only an organisation manager can add managers.'
+          : 'Only an organisation manager can add team members.';
     }
     if (response.statusCode == 404) {
-      return 'The team or user no longer exists.';
+      return _isManagerMode
+          ? 'The organisation or user no longer exists.'
+          : 'The team or user no longer exists.';
     }
     try {
       final decoded = jsonDecode(utf8.decode(response.bodyBytes));
@@ -220,7 +288,7 @@ class _MemberSearchDialogState extends State<MemberSearchDialog> {
     } on FormatException {
       // Fall back to the HTTP status for non-JSON responses.
     }
-    return 'Unable to add member (HTTP ${response.statusCode}). Please try again.';
+    return 'Unable to add ${_isManagerMode ? 'manager' : 'member'} (HTTP ${response.statusCode}). Please try again.';
   }
 
   Widget _buildUserCard(
@@ -229,7 +297,10 @@ class _MemberSearchDialogState extends State<MemberSearchDialog> {
   ) {
     final name = user.name.trim();
     final isAdding = _addingUserIds.contains(user.idUser);
-    final isMember = _teamMemberUserIds.contains(user.idUser);
+    final alreadyAdded = _existingUserIds.contains(user.idUser);
+    final buttonLabel = _isManagerMode
+        ? (alreadyAdded ? 'Already is manager' : 'Add Manager')
+        : (alreadyAdded ? 'Added' : 'Add');
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -276,11 +347,15 @@ class _MemberSearchDialogState extends State<MemberSearchDialog> {
           ),
           const SizedBox(width: 8),
           Tooltip(
-            message: isMember ? 'Already a team member' : 'Add to this team',
+            message: _isManagerMode
+                ? buttonLabel
+                : alreadyAdded
+                ? 'Already a team member'
+                : 'Add to this team',
             child: TextButton(
-              onPressed: _addingUserIds.isNotEmpty || isMember
+              onPressed: _addingUserIds.isNotEmpty || alreadyAdded
                   ? null
-                  : () => _addMember(user),
+                  : () => _addUser(user),
               style: TextButton.styleFrom(
                 foregroundColor: const Color(0xFF065F46),
                 backgroundColor: const Color(0xFFD1FAE5),
@@ -296,7 +371,7 @@ class _MemberSearchDialogState extends State<MemberSearchDialog> {
                       height: 16,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : Text(isMember ? 'Added' : 'Add'),
+                  : Text(buttonLabel),
             ),
           ),
         ],
@@ -347,7 +422,7 @@ class _MemberSearchDialogState extends State<MemberSearchDialog> {
     return PopScope(
       canPop: !isAdding,
       child: AlertDialog(
-        title: const Text('Add team members'),
+        title: Text(_isManagerMode ? 'Add Manager' : 'Add team members'),
         content: SizedBox(
           width: 520,
           height: 400,
