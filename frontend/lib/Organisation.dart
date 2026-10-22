@@ -3,11 +3,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-import 'Admin.dart';
 import 'Profile.dart';
 import 'Teams.dart';
 import 'adminSearch.dart';
 import 'models/organisation_model.dart';
+import 'report.dart';
 
 // Shared greeting data and UI for organisation, team and member pages.
 final organisationGreeting = OrganisationGreeting();
@@ -493,23 +493,6 @@ class _OrganisationPageState extends State<OrganisationPage> {
     );
   }
 
-  Future<void> _openAdmin(
-    BuildContext context,
-    OrganisationModel organisation,
-  ) async {
-    if (!organisation.canManage) return;
-    await Navigator.push<void>(
-      context,
-      MaterialPageRoute<void>(
-        builder: (context) => AdminPage(
-          userId: widget.userId,
-          organisationId: organisation.organizationId,
-        ),
-      ),
-    );
-    if (mounted) await _fetchManagers(organisation.organizationId);
-  }
-
   Future<void> _managersChanged(int organisationId, bool removedSelf) async {
     if (!mounted) return;
     if (removedSelf) {
@@ -529,6 +512,127 @@ class _OrganisationPageState extends State<OrganisationPage> {
     await fetchOrganisations();
   }
 
+  Widget _organisationSectionHeader(
+    String title,
+    int count, {
+    bool showAdd = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Expanded(
+            child: Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      color: Color(0xFF111827),
+                      fontSize: showAdd ? 24 : 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                if (showAdd) ...[
+                  const SizedBox(width: 4),
+                  IconButton(
+                    tooltip: 'Create organisation',
+                    onPressed: _isCreating || _isRemoving
+                        ? null
+                        : _createOrganisation,
+                    iconSize: 26,
+                    style: IconButton.styleFrom(
+                      foregroundColor: Colors.blue,
+                      backgroundColor: Colors.transparent,
+                      fixedSize: const Size(40, 40),
+                      padding: const EdgeInsets.all(7),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    icon: _isSubmitting
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.blue,
+                            ),
+                          )
+                        : const Icon(Icons.add_circle_outline),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            '$count results',
+            style: const TextStyle(
+              color: Color(0xFF6B7280),
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _emptyOrganisationSection(String message) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Center(
+        child: Text(message, style: const TextStyle(color: Color(0xFF6B7280))),
+      ),
+    );
+  }
+
+  Widget _organisationCard(
+    BuildContext context,
+    OrganisationModel organisation,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: OrganizationCard(
+        key: ValueKey(organisation.organizationId),
+        actorUserId: widget.userId,
+        onManagersChanged: (removedSelf) =>
+            _managersChanged(organisation.organizationId, removedSelf),
+        managerActionsEnabled:
+            !_isCreating && !_isRemoving && _renamingOrganisationId == null,
+        isManager: organisation.canManage,
+        organizationId: organisation.organizationId,
+        name: organisation.name,
+        members: organisation.memberCount,
+        managers:
+            _managersByOrganisation[organisation.organizationId] ?? const [],
+        managerError: _managerErrors[organisation.organizationId],
+        avatarColor:
+            _avatarColors[organisations.indexOf(organisation) %
+                _avatarColors.length],
+        onReport: () {
+          if (!organisation.canManage) return;
+          openReport(
+            this.context,
+            userId: widget.userId,
+            organisationId: organisation.organizationId,
+          );
+        },
+        onRemove:
+            !_isRemoving && !_isCreating && _renamingOrganisationId == null
+            ? () => _removeOrganisation(organisation)
+            : null,
+        isRemoving:
+            _isSubmittingRemoval &&
+            _removingOrganisationId == organisation.organizationId,
+        onRename: _renamingOrganisationId == null && !_isRemoving
+            ? () => _renameOrganisation(organisation)
+            : null,
+        onOpenTeams: (id, name) => _openTeams(context, id, name),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final visibleOrganisations = organisations
@@ -546,6 +650,13 @@ class _OrganisationPageState extends State<OrganisationPage> {
           ? caseOrder
           : a.organizationId.compareTo(b.organizationId);
     });
+
+    final managedOrganisations = visibleOrganisations
+        .where((organisation) => organisation.canManage)
+        .toList();
+    final otherOrganisations = visibleOrganisations
+        .where((organisation) => !organisation.canManage)
+        .toList();
 
     return Scaffold(
       appBar: organisationGreeting.appBar(),
@@ -583,112 +694,42 @@ class _OrganisationPageState extends State<OrganisationPage> {
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Row(
-                      children: [
-                        const Flexible(
-                          child: Text(
-                            'Organizations',
-                            style: TextStyle(
-                              color: Color(0xFF111827),
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        IconButton(
-                          tooltip: 'Create organisation',
-                          onPressed: _isCreating || _isRemoving
-                              ? null
-                              : _createOrganisation,
-                          iconSize: 26,
-                          style: IconButton.styleFrom(
-                            foregroundColor: Colors.blue,
-                            backgroundColor: Colors.transparent,
-                            fixedSize: const Size(40, 40),
-                            padding: const EdgeInsets.all(7),
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          icon: _isSubmitting
-                              ? const SizedBox(
-                                  width: 22,
-                                  height: 22,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.blue,
-                                  ),
-                                )
-                              : const Icon(Icons.add_circle_outline),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    '${visibleOrganisations.length} results',
-                    style: const TextStyle(
-                      color: Color(0xFF6B7280),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
+            _organisationSectionHeader(
+              'Oranisation',
+              visibleOrganisations.length,
+              showAdd: true,
             ),
             Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: ListView(
+                padding: const EdgeInsets.only(bottom: 16),
                 keyboardDismissBehavior:
                     ScrollViewKeyboardDismissBehavior.onDrag,
-                itemCount: visibleOrganisations.length,
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  final organisation = visibleOrganisations[index];
-                  return OrganizationCard(
-                    key: ValueKey(organisation.organizationId),
-                    actorUserId: widget.userId,
-                    onManagersChanged: (removedSelf) => _managersChanged(
-                      organisation.organizationId,
-                      removedSelf,
+                children: [
+                  _organisationSectionHeader(
+                    'Organisations you manage',
+                    managedOrganisations.length,
+                  ),
+                  if (managedOrganisations.isEmpty)
+                    _emptyOrganisationSection(
+                      _query.isEmpty
+                          ? 'You do not manage any organisations yet.'
+                          : 'No organisations you manage match your search.',
                     ),
-                    managerActionsEnabled:
-                        !_isCreating &&
-                        !_isRemoving &&
-                        _renamingOrganisationId == null,
-                    isManager: organisation.canManage,
-                    organizationId: organisation.organizationId,
-                    name: organisation.name,
-                    members: organisation.memberCount,
-                    managers:
-                        _managersByOrganisation[organisation.organizationId] ??
-                        const [],
-                    managerError: _managerErrors[organisation.organizationId],
-                    avatarColor:
-                        _avatarColors[organisations.indexOf(organisation) %
-                            _avatarColors.length],
-                    onManage: () => _openAdmin(context, organisation),
-                    onRemove:
-                        !_isRemoving &&
-                            !_isCreating &&
-                            _renamingOrganisationId == null
-                        ? () => _removeOrganisation(organisation)
-                        : null,
-                    isRemoving:
-                        _isSubmittingRemoval &&
-                        _removingOrganisationId == organisation.organizationId,
-                    onRename: _renamingOrganisationId == null && !_isRemoving
-                        ? () => _renameOrganisation(organisation)
-                        : null,
-                    onOpenTeams: (id, name) => _openTeams(context, id, name),
-                  );
-                },
+                  for (final organisation in managedOrganisations)
+                    _organisationCard(context, organisation),
+                  _organisationSectionHeader(
+                    'Other organisations you’ve joined',
+                    otherOrganisations.length,
+                  ),
+                  if (otherOrganisations.isEmpty)
+                    _emptyOrganisationSection(
+                      _query.isEmpty
+                          ? 'No other organisations.'
+                          : 'No other organisations match your search.',
+                    ),
+                  for (final organisation in otherOrganisations)
+                    _organisationCard(context, organisation),
+                ],
               ),
             ),
           ],
@@ -784,7 +825,7 @@ class OrganizationCard extends StatelessWidget {
     required this.name,
     required this.members,
     required this.avatarColor,
-    required this.onManage,
+    required this.onReport,
     required this.onOpenTeams,
     required this.isManager,
     this.onRename,
@@ -804,7 +845,7 @@ class OrganizationCard extends StatelessWidget {
   final List<({int userId, String name})> managers;
   final String? managerError;
   final Color avatarColor;
-  final VoidCallback onManage;
+  final VoidCallback onReport;
   final VoidCallback? onRename;
   final VoidCallback? onRemove;
   final bool isRemoving;
@@ -899,26 +940,6 @@ class OrganizationCard extends StatelessWidget {
                             )
                           : const Icon(Icons.remove_circle_outline),
                     ),
-                  GestureDetector(
-                    // Consume taps across the disabled button's entire bounds.
-                    behavior: HitTestBehavior.opaque,
-                    onTap: isManager ? null : () {},
-                    excludeFromSemantics: true,
-                    child: TextButton(
-                      onPressed: isManager ? onManage : null,
-                      style: TextButton.styleFrom(
-                        foregroundColor: const Color(0xFF065F46),
-                        backgroundColor: const Color(0xFFD1FAE5),
-                        disabledForegroundColor: const Color(0xFF9CA3AF),
-                        disabledBackgroundColor: const Color(0xFFF3F4F6),
-                        shape: const StadiumBorder(),
-                      ),
-                      child: const Text(
-                        'Manage',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ),
                 ],
               ),
               const Divider(height: 28, color: Color(0xFFE5E7EB)),
@@ -971,7 +992,7 @@ class OrganizationCard extends StatelessWidget {
                     onTap: isManager ? null : () {},
                     excludeFromSemantics: true,
                     child: TextButton(
-                      onPressed: isManager ? () {} : null,
+                      onPressed: isManager ? onReport : null,
                       style: _organisationFooterButtonStyle(
                         const Color(0xFF1D4ED8),
                         const Color(0xFFDBEAFE),

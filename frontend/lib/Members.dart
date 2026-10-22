@@ -3,11 +3,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-import 'Admin.dart';
 import 'Organisation.dart';
 import 'Profile.dart';
 import 'adminSearch.dart';
 import 'models/team_members_model.dart';
+import 'report.dart';
 
 typedef _MemberEntry = ({
   int? teamMemberId,
@@ -42,8 +42,6 @@ class _MembersPageState extends State<MembersPage> {
   bool canManage = false;
   bool _isLoading = true;
   String? _errorMessage;
-  // Used for Team Member Admin navigation.
-  int? _organizationId;
 
   static const _avatarColors = [
     Color(0xFFEC4899),
@@ -165,7 +163,6 @@ class _MembersPageState extends State<MembersPage> {
           _managers = managers;
           _managerUserIds = managerUserIds;
           canManage = teamResponse.canManage;
-          _organizationId = teamResponse.organizationId;
           _isLoading = false;
           _errorMessage = null;
         });
@@ -216,8 +213,7 @@ class _MembersPageState extends State<MembersPage> {
         builder: (dialogContext) => AlertDialog(
           title: const Text('Remove this member?'),
           content: Text(
-            'Are you sure to remove "${member.name}" from this team? '
-      
+            'Are you sure to remove "${member.name}" from this team? ',
           ),
           actions: [
             TextButton(
@@ -311,25 +307,13 @@ class _MembersPageState extends State<MembersPage> {
     return 'Unable to remove member (HTTP ${response.statusCode}). Please try again.';
   }
 
-  Future<void> _openAdmin(int teamMemberId) async {
-    final organisationId = _organizationId;
-    if (organisationId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unable to determine the organisation.')),
-      );
-      return;
-    }
-
-    await Navigator.push<void>(
+  Future<void> _openReport(int teamMemberId) async {
+    if (!canManage) return;
+    await openReport(
       context,
-      MaterialPageRoute<void>(
-        builder: (context) => AdminPage(
-          userId: widget.userId,
-          organisationId: organisationId,
-          teamId: widget.teamId,
-          teamMemberId: teamMemberId,
-        ),
-      ),
+      userId: widget.userId,
+      teamId: widget.teamId,
+      teamMemberId: teamMemberId,
     );
   }
 
@@ -400,7 +384,7 @@ class _MembersPageState extends State<MembersPage> {
         isManager: _managerUserIds.contains(person.userId),
         isCurrentUser: person.userId == widget.userId,
         teamMemberId: person.teamMemberId,
-        onManage: _openAdmin,
+        onReport: _openReport,
         onRemove: !_memberActionInProgress ? () => _removeMember(person) : null,
         isRemoving:
             _isSubmittingRemoval && _removingMemberId == person.teamMemberId,
@@ -590,7 +574,7 @@ class MemberCard extends StatelessWidget {
   const MemberCard({
     super.key,
     required this.teamMemberId,
-    required this.onManage,
+    required this.onReport,
     required this.name,
     required this.email,
     required this.avatarColor,
@@ -602,7 +586,7 @@ class MemberCard extends StatelessWidget {
   });
 
   final int? teamMemberId;
-  final ValueChanged<int> onManage;
+  final ValueChanged<int> onReport;
   final String name;
   final String email;
   final Color avatarColor;
@@ -737,6 +721,24 @@ class MemberCard extends StatelessWidget {
             ),
           ),
           if (teamMemberId != null) const SizedBox(width: 8),
+          if (teamMemberId != null)
+            TextButton(
+              onPressed: canManage ? () => onReport(teamMemberId!) : null,
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF1D4ED8),
+                backgroundColor: const Color(0xFFDBEAFE),
+                disabledForegroundColor: const Color(0xFF9CA3AF),
+                disabledBackgroundColor: const Color(0xFFF3F4F6),
+                minimumSize: const Size(0, 28),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                shape: const StadiumBorder(),
+              ),
+              child: const Text(
+                'Report',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          if (canManage && teamMemberId != null) const SizedBox(width: 8),
           if (canManage && teamMemberId != null)
             IconButton(
               tooltip: 'Remove member',
@@ -760,23 +762,6 @@ class MemberCard extends StatelessWidget {
                       ),
                     )
                   : const Icon(Icons.remove_circle_outline),
-            ),
-          if (teamMemberId != null)
-            TextButton(
-              onPressed: canManage ? () => onManage(teamMemberId!) : null,
-              style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFF065F46),
-                backgroundColor: const Color(0xFFD1FAE5),
-                disabledForegroundColor: const Color(0xFF9CA3AF),
-                disabledBackgroundColor: const Color(0xFFF3F4F6),
-                minimumSize: const Size(0, 28),
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                shape: const StadiumBorder(),
-              ),
-              child: const Text(
-                'Manage',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
             ),
         ],
       ),

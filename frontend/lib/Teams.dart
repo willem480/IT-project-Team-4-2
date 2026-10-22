@@ -4,11 +4,11 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-import 'Admin.dart';
 import 'Organisation.dart';
 import 'Profile.dart';
 import 'Members.dart';
 import 'models/Teams_model.dart';
+import 'report.dart';
 
 Future<List<({int userId, String name})>> fetchOrganisationManagers(
   int organisationId,
@@ -438,16 +438,6 @@ class _TeamsPageState extends State<TeamsPage> {
     );
   }
 
-  void _openAdmin(BuildContext context, int teamId) {
-    if (!canManage) return;
-    Navigator.push<void>(
-      context,
-      MaterialPageRoute<void>(
-        builder: (context) => AdminPage(userId: widget.userId, teamId: teamId),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final visibleTeams = teams
@@ -592,7 +582,14 @@ class _TeamsPageState extends State<TeamsPage> {
                     avatarColor:
                         _avatarColors[teams.indexOf(team) %
                             _avatarColors.length],
-                    onManage: () => _openAdmin(context, team.teamId),
+                    onReport: () {
+                      if (!canManage) return;
+                      openReport(
+                        this.context,
+                        userId: widget.userId,
+                        teamId: team.teamId,
+                      );
+                    },
                     onRemove: !_teamActionInProgress
                         ? () => _removeTeam(team)
                         : null,
@@ -685,7 +682,7 @@ class _TeamCard extends StatelessWidget {
     required this.managerError,
     required this.members,
     required this.avatarColor,
-    required this.onManage,
+    required this.onReport,
     required this.isManager,
     required this.isTeamMember,
     this.onRename,
@@ -703,7 +700,7 @@ class _TeamCard extends StatelessWidget {
   final String? managerError;
   final int members;
   final Color avatarColor;
-  final VoidCallback onManage;
+  final VoidCallback onReport;
   final VoidCallback? onRename;
   final VoidCallback? onRemove;
   final bool isRemoving;
@@ -797,26 +794,6 @@ class _TeamCard extends StatelessWidget {
                             )
                           : const Icon(Icons.remove_circle_outline),
                     ),
-                  GestureDetector(
-                    // Keep disabled button taps from opening the parent card.
-                    behavior: HitTestBehavior.opaque,
-                    onTap: isManager ? null : () {},
-                    excludeFromSemantics: true,
-                    child: TextButton(
-                      onPressed: isManager ? onManage : null,
-                      style: TextButton.styleFrom(
-                        foregroundColor: const Color(0xFF065F46),
-                        backgroundColor: const Color(0xFFD1FAE5),
-                        disabledForegroundColor: const Color(0xFF9CA3AF),
-                        disabledBackgroundColor: const Color(0xFFF3F4F6),
-                        shape: const StadiumBorder(),
-                      ),
-                      child: const Text(
-                        'Manage',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ),
                 ],
               ),
               const Divider(height: 28, color: Color(0xFFE5E7EB)),
@@ -880,7 +857,7 @@ class _TeamCard extends StatelessWidget {
                     onTap: isManager ? null : () {},
                     excludeFromSemantics: true,
                     child: TextButton(
-                      onPressed: isManager ? () {} : null,
+                      onPressed: isManager ? onReport : null,
                       style: TextButton.styleFrom(
                         foregroundColor: const Color(0xFF1D4ED8),
                         backgroundColor: const Color(0xFFDBEAFE),
