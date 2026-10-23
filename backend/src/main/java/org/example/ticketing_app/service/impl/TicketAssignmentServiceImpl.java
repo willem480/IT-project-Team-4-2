@@ -254,6 +254,11 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
             ticket.setStatus(TicketStatus.IN_PROGRESS.name());
             ticketMapper.insertOrUpdate(ticket);
             save(ticketAssignment);
+
+            User poster = userMapper.selectById(ticket.getPosterId());
+            if (poster != null && poster.getSubscribeEmail() == 1){
+                /// send email here
+            }
         }
         else{
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -289,6 +294,12 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
             }
 
         }
+
+        Ticket ticket = ticketMapper.selectById(ticketID);
+        User poster = userMapper.selectById(ticket.getPosterId());
+        if (poster != null && poster.getSubscribeEmail() == 1){
+            /// send email here
+        }
     }
 
     @Transactional
@@ -297,7 +308,7 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
         if (ticketAssignment == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "no ticket assignment found for this ticketId " + ticketId + " and operatorId " + operatorId);
         }
-        Ticket ticket = ticketMapper.selectById(ticketAssignment.getTicketId());
+        Ticket ticket = ticketMapper.selectById(ticketId);
         if (ticket == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "no ticket found for this ticketId " + ticketId);
         }
@@ -310,6 +321,10 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
         else if (Objects.equals(ticket.getStatus(), TicketStatus.IN_PROGRESS.name())) {
             ticket.setStatus(TicketStatus.OPEN.name());
             ticketMapper.insertOrUpdate(ticket);
+            User poster = userMapper.selectById(ticket.getPosterId());
+            if (poster != null && poster.getSubscribeEmail() == 1){
+                /// send email here
+            }
         }
 
     }
