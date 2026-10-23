@@ -9,10 +9,7 @@ import org.example.ticketing_app.entity.TicketAssignment;
 import org.example.ticketing_app.entity.TicketAttachment;
 import org.example.ticketing_app.entity.TicketComment;
 import org.example.ticketing_app.entity.User;
-import org.example.ticketing_app.mapper.TicketAssignmentMapper;
-import org.example.ticketing_app.mapper.TicketAttachmentMapper;
-import org.example.ticketing_app.mapper.TicketCommentMapper;
-import org.example.ticketing_app.mapper.TicketMapper;
+import org.example.ticketing_app.mapper.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.example.ticketing_app.service.emailServiceHelper.EmailData;
 import org.example.ticketing_app.service.ticketServiceHelper.CreateTicketRequest;
@@ -86,7 +83,7 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
     private final TicketAssignmentMapper ticketAssignmentMapper;
     private final TicketAttachmentMapper ticketAttachmentMapper;
     private final TicketCommentMapper ticketCommentMapper;
-
+    private final UserMapper userMapper;
     /**
      * Creates a ticket submitted manually from the app.
      * The server owns the posting time, poster email, and initial ticket status.
@@ -520,6 +517,11 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
         ticket.setStatus(TicketStatus.CLOSED.name());
         ticket.setDateCompleted(LocalDateTime.now());
         saveOrUpdate(ticket);
+
+        User poster = userMapper.selectById(ticket.getPosterId());
+        if (poster != null && poster.getSubscribeEmail() == 1){
+            /// send email here
+        }
     }
 
     public List<Ticket> getPostedTickets(int posterId, Filter filter) {

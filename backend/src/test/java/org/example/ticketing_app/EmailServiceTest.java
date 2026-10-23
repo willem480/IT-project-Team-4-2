@@ -101,7 +101,7 @@ class EmailServiceTest {
             System.out.println("Subject: " + email.getSubject());
             System.out.println("Body: " + email.getBody());
 
-            EmailServiceHelper.sendReply(
+            EmailServiceHelper.sendEmail(
                     "hyc018018@163.com", email.getSubject(),  "this is a dummy reply"
             );
         }

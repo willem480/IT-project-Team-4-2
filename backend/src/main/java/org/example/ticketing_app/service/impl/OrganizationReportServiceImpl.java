@@ -23,8 +23,6 @@ import org.example.ticketing_app.entity.OrganizationReport;
 import org.example.ticketing_app.mapper.OrganizationReportMapper;
 import org.springframework.web.server.ResponseStatusException;
 
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-
 /**
  * <p>
  * 服务实现类
@@ -279,7 +277,7 @@ public class OrganizationReportServiceImpl
                         userMapper.selectById(
                                 managerId);
 
-                EmailServiceHelper.sendReply(
+                EmailServiceHelper.sendEmail(
                         manager.getEmail(),
                         report.getTitle(),
                         report.getBody());
