@@ -391,8 +391,12 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "you cannot deallocate a closed ticket");
         }
         else if (Objects.equals(ticket.getStatus(), TicketStatus.IN_PROGRESS.name())) {
-            ticket.setStatus(TicketStatus.OPEN.name());
-            ticketMapper.insertOrUpdate(ticket);
+            List<TicketAssignment> ticketAssignments = lambdaQuery().eq(TicketAssignment::getTicketId, ticketId).list();
+            if (ticketAssignments.isEmpty()) {
+                ticket.setStatus(TicketStatus.OPEN.name());
+                ticketMapper.insertOrUpdate(ticket);
+            }
+
             User poster = userMapper.selectById(ticket.getPosterId());
             if (poster != null && poster.getSubscribeEmail() == 1){
                 ticketNotificationService.sendDeallocatedNotification(ticket, poster);
