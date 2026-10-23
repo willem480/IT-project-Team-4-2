@@ -182,7 +182,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> {
 
         user.setName(request.getName());
         user.setEmail(request.getEmail());
-
+        user.setSubscribeEmail((byte) 0);
         save(user);
 
 
