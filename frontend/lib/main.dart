@@ -64,6 +64,40 @@ class _MyHomePageState extends State<MyHomePage> {
   int? managerOrgId; //This is used to record company of a user managered
   bool isDateActive = false;
   bool isPayActive = false;
+  final Map<int, String> posterNameCache = {};
+
+  Future<void> fetchPosterNames(List<TicketModel> tickets) async {
+    final missingIds = tickets
+        .map((t) => t.posterId)
+        .where((id) => id != null && !posterNameCache.containsKey(id))
+        .cast<int>()
+        .toSet();
+
+    if (missingIds.isEmpty) return;
+
+    for (var id in missingIds) {
+      try {
+        final url = Uri.parse(ApiConfig.getUser(id));
+        final response = await http.post(
+          url,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({}),
+        );
+
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          final name = data['name']?.toString() ?? 'User $id';
+          if (mounted) {
+            setState(() {
+              posterNameCache[id] = name;
+            });
+          }
+        }
+      } catch (e) {
+        print("Failed to fetch poster name for id $id: $e");
+      }
+    }
+  }
 
   Future<void> checkManagerStatus() async{
     final url = Uri.parse(ApiConfig.getOrganization(widget.currentUserId));
@@ -112,13 +146,12 @@ class _MyHomePageState extends State<MyHomePage> {
       if (response.statusCode == 200) {
         
         List<TicketModel> parsedTickets = ticketFromJson(response.body);
-        
-        
-        setState(() {
-          
-          openTickets = parsedTickets;
 
+
+        setState(() {
+          openTickets = parsedTickets;
         });
+        fetchPosterNames(parsedTickets);
         print("ticket get successfully ${openTickets.length} ");
       }
     } catch (e) {
@@ -141,13 +174,11 @@ class _MyHomePageState extends State<MyHomePage> {
         if (response.statusCode == 200) {
           
           List<TicketModel> parsedTickets = ticketFromJson(response.body);
-          
-          
-          setState(() {
-            
-            openTickets = parsedTickets;
 
+          setState(() {
+            openTickets = parsedTickets;
           });
+          fetchPosterNames(parsedTickets);
           print("get tickte successfully， ${openTickets.length} ");
         }
       } catch (e) {
@@ -464,23 +495,31 @@ void fetchAssignTickets() async {
                     width: double.infinity,
                     child: Column(
                       crossAxisAlignment:CrossAxisAlignment.center,
-                      children: openTickets.isEmpty 
-                      ? [ const Padding(padding: EdgeInsets.all(20), child:Text("No Jobs yet"))]
-                      : openTickets.map((ticket) {
+                      children: openTickets.isEmpty
+                          ? [ const Padding(padding: EdgeInsets.all(20), child:Text("No Jobs yet"))]
+
+                          : openTickets.map((ticket) {
+                        final pId = ticket.posterId;
+                        final displayName = (pId != null && posterNameCache.containsKey(pId))
+                            ? posterNameCache[pId]!
+                            : (pId != null ? 'User ID: $pId' : 'Unknown User');
+
                         return _buildJobCard(
                           context,
                           ticket.title ?? "No title",
-                          ticket.location ?? ticket.posterName ?? "Unknown Location",
+                          ticket.location ?? "Unknown Location",
                           ticket.pay?.toString() ?? '0',
                           ticket.description ?? "No description",
                           ticket.idTicket ?? 0,
                           ticket.datePosted?.toString() ?? "no date",
-                      );
-                    }).toList(),
+                          displayName,
+                        );
+                      }).toList(),
+
+                    ),
+                    //jobs
                   ),
-                  //jobs
                 ),
-              ),
               ),
             ],
           ),
@@ -549,7 +588,7 @@ void fetchAssignTickets() async {
 
     );
   }
-  Widget _buildJobCard(BuildContext context, String title, String companyName, String price, String description, int ticketId, String date){
+  Widget _buildJobCard(BuildContext context, String title, String companyName, String price, String description, int ticketId, String date, String posterName){
     return Padding(
 
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -598,7 +637,7 @@ void fetchAssignTickets() async {
                           ],
                         ),
                         const SizedBox(height: 6),
-                        Text("Poster Name: $userName", style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                        Text("Poster Name: $posterName", style: const TextStyle(fontSize: 12, color: Colors.black54)),
 
                       ],
                     ),

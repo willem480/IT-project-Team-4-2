@@ -6,8 +6,10 @@ class ApiConfig {
 
   static String getUser(int userId) => '$baseUrl/profilePage/getUser?userId=$userId';
   static const String createTicket = '$baseUrl/ticket/createTicket';
-  static const String getTicketComment = '$baseUrl/ticketComment/getTicketComments';
-  static const String postTicketComment = '$baseUrl/ticketComment/postComment';
+  static String getTicketComment(int ticketId, int operatorId) =>
+      '$baseUrl/ticketComment/getTicketComments?ticketId=$ticketId&operatorId=$operatorId';
+  static String postTicketComment(int userId, int ticketId, String comment) =>
+      '$baseUrl/ticketComment/postComment?userId=$userId&ticketId=$ticketId&comment=$comment';
   static String completeTicket(int ticketId) => '$baseUrl/ticket/complete%20ticket?ticketId=$ticketId';
   static String deallocateTicket(int ticketId, int operatorId) =>
       '$baseUrl/ticketAssignment/deallocateTicket?ticketId=$ticketId&operatorId=$operatorId';

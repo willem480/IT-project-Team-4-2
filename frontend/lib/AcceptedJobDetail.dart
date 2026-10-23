@@ -37,12 +37,14 @@ class _AcceptedJobDetailState extends State<AcceptedJobDetail> {
 
   Future<void> fetchComment() async {
     if (widget.ticket.idTicket == null) return;
-    final url = Uri.parse(ApiConfig.getTicketComment);
+
+    final url = Uri.parse(ApiConfig.getTicketComment(widget.ticket.idTicket!, widget.userId));
+
     try {
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'ticketIdticket': widget.ticket.idTicket}),
+        body: jsonEncode({}),
       );
       if (response.statusCode == 200) {
         final decodedData = jsonDecode(response.body);
@@ -63,20 +65,15 @@ class _AcceptedJobDetailState extends State<AcceptedJobDetail> {
   }
 
   Future<void> postNewComment() async {
-    if (widget.ticket.idTicket == null ||
-        commentController.text.trim().isEmpty) {
-      return;
-    }
-    final url = Uri.parse(ApiConfig.postTicketComment);
+    if (widget.ticket.idTicket == null || commentController.text.trim().isEmpty) return;
+
+    final url = Uri.parse(ApiConfig.postTicketComment(widget.userId, widget.ticket.idTicket!, commentController.text));
+
     try {
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'ticketIdticket': widget.ticket.idTicket,
-          'userIduser': widget.userId,
-          'content': commentController.text,
-        }),
+        body: jsonEncode({}), // 💡 参数已经在 URL 里了，这里传空 JSON
       );
       if (!mounted) return;
       if (response.statusCode == 200) {
