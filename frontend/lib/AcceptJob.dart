@@ -317,7 +317,8 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
       parameters['filter'] =
           '${_sortBy!.name}${_isAscending ? 'Ascending' : 'Descending'}';
     }
-    final url = Uri.parse('${ApiConfig.baseUrl}/ticketAssignment/$endpoint');
+    final url = Uri.parse('${ApiConfig.baseUrl}/ticketAssignment/$endpoint')
+        .replace(queryParameters: parameters);
     http.Response? response;
 
     try {
