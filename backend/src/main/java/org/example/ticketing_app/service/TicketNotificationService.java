@@ -31,15 +31,28 @@ public class TicketNotificationService {
         sendToPoster(poster, subject, body);
     }
 
-    public void sendDeallocatedNotification(Ticket ticket, User poster) {
-        String subject = "Ticket Update - Ticket Deallocated (#" + ticket.getIdTicket() + ")";
+    public void sendDeallocatedNotification(
+            Ticket ticket,
+            User poster,
+            String deallocatorName
+    ) {
+        String subject =
+                "Ticket Update - Ticket Deallocated (#"
+                        + ticket.getIdTicket()
+                        + ")";
+
         String body =
-                "The assignment for your ticket has been removed.\n\n"
+                "Your ticket has been deallocated.\n\n"
                         + "Ticket ID: " + ticket.getIdTicket() + "\n"
                         + "Title: " + ticket.getTitle() + "\n"
+                        + "Deallocated by: " + deallocatorName + "\n"
                         + "Status: " + ticket.getStatus();
 
-        sendToPoster(poster, subject, body);
+        sendToPoster(
+                poster,
+                subject,
+                body
+        );
     }
 
     public void sendCommentNotification(

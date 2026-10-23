@@ -397,9 +397,27 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
                 ticketMapper.insertOrUpdate(ticket);
             }
 
-            User poster = userMapper.selectById(ticket.getPosterId());
-            if (poster != null && poster.getSubscribeEmail() == 1){
-                ticketNotificationService.sendDeallocatedNotification(ticket, poster);
+            User poster =
+                    userMapper.selectById(ticket.getPosterId());
+
+            User deallocator =
+                    userMapper.selectById(operatorId);
+
+            String deallocatorName =
+                    deallocator != null
+                            && deallocator.getName() != null
+                            ? deallocator.getName()
+                            : "User " + operatorId;
+
+            if (poster != null
+                    && Byte.valueOf((byte) 1)
+                    .equals(poster.getSubscribeEmail())) {
+
+                ticketNotificationService.sendDeallocatedNotification(
+                        ticket,
+                        poster,
+                        deallocatorName
+                );
             }
         }
 
