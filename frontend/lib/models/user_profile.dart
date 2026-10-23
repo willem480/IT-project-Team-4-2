@@ -42,7 +42,8 @@ class UserProfile {
         percentageEarningsCompareToLastMonth: (json["percentageEarningsCompareToLastMonth"] as num?)?.toInt() ?? 0,
 
         description: json["description"]?.toString() ?? 'no description',
-        isSubscribed: json["isSubscribed"] as bool? ?? false,
+
+        isSubscribed: json["subscribeEmail"] as bool? ?? false,
     );
 
     Map<String, dynamic> toJson() => {
