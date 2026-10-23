@@ -245,9 +245,9 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
 
     @Transactional
     public void delegateJobIndividual(Integer ticketID, Integer assigneeID, Integer teamId) {
-        TicketAssignment ticketAssignment = lambdaQuery().eq(TicketAssignment::getTicketId, ticketID).eq(TicketAssignment::getAssigneeId, assigneeID).one();
-        if (ticketAssignment == null) {
-            ticketAssignment = new TicketAssignment();
+        List<TicketAssignment> ticketAssignments = lambdaQuery().eq(TicketAssignment::getTicketId, ticketID).eq(TicketAssignment::getAssigneeId, assigneeID).list();
+        if (ticketAssignments.isEmpty()) {
+            TicketAssignment ticketAssignment = new TicketAssignment();
             ticketAssignment.setTicketId(ticketID);
             ticketAssignment.setAssigneeId(assigneeID);
             ticketAssignment.setRelatedTeamId(teamId);
@@ -282,9 +282,9 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
 
         for(TeamMember teamMember : teamMembers ){
             Integer assigneeID = teamMember.getUserId();
-            TicketAssignment ticketAssignment = lambdaQuery().eq(TicketAssignment::getTicketId, ticketID).eq(TicketAssignment::getAssigneeId, assigneeID).one();
-            if (ticketAssignment == null) {
-                ticketAssignment = new TicketAssignment();
+            List<TicketAssignment> ticketAssignments = lambdaQuery().eq(TicketAssignment::getTicketId, ticketID).eq(TicketAssignment::getAssigneeId, assigneeID).list();
+            if (ticketAssignments.isEmpty()) {
+                TicketAssignment ticketAssignment = new TicketAssignment();
                 ticketAssignment.setTicketId(ticketID);
                 ticketAssignment.setAssigneeId(assigneeID);
                 ticketAssignment.setRelatedTeamId(teamID);
