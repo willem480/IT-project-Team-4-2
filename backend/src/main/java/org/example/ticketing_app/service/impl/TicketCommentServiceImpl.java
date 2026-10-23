@@ -37,13 +37,20 @@ public class TicketCommentServiceImpl extends ServiceImpl<TicketCommentMapper, T
     }
 
     @Transactional
-    public void postComment(int userID, int ticketID, String content) {
+    public void postComment(int operatorId, int ticketID, String content) {
         TicketComment comment = new TicketComment();
         comment.setContent(content);
         comment.setDate(LocalDateTime.now());
         comment.setTicketIdticket(ticketID);
-        comment.setUserIduser(userID);
+        comment.setUserIduser(operatorId);
         save(comment);
+        Ticket ticket = ticketMapper.selectById(ticketID);
+        if (ticket != null) {
+            User ticketPoster = userMapper.selectById(ticket.getPosterId());
+            if ((ticketPoster != null) && (ticketPoster.getIdUser() != operatorId) && (ticketPoster.getSubscribeEmail() == 1)) {
+                ///send email here
+            }
+        }
     }
 
     public List<TicketCommentReturn> getTicketCommentByTicketID(int operatorId, int ticketID) {
