@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -196,15 +197,10 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
     }
 
     public List<TicketAssignmentReturn> getTicketAssignmentRelatedTo(Integer assigneeID, Integer teamID) {
-        List<TicketAssignment> ticketAssignments = lambdaQuery()
-                .eq(TicketAssignment::getAssigneeId, assigneeID).eq(TicketAssignment::getRelatedTeamId, teamID)
-                .list()
-                .stream()
-                .filter(ta -> {
-                    Ticket ticket = ticketMapper.selectById(ta.getTicketId());
-                    return TicketStatus.IN_PROGRESS.name().equals(ticket.getStatus()) || TicketStatus.CLOSED.name().equals(ticket.getStatus());
-                })
-                .toList();
+        List<TicketAssignment> ticketAssignments =
+                getAssignmentHelper(assigneeID)
+                        .stream()
+                        .filter(ticketAssignment -> Objects.equals(ticketAssignment.getRelatedTeamId(), teamID)).toList();
         List<TicketAssignmentReturn> ticketAssignmentReturns = new ArrayList<TicketAssignmentReturn>();
         setTicketAssignmentReturn(ticketAssignments, ticketAssignmentReturns);
         return ticketAssignmentReturns;

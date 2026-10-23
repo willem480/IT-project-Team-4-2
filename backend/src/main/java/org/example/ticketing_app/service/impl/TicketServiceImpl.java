@@ -523,7 +523,7 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
     }
 
     public List<Ticket> getPostedTickets(int posterId, Filter filter) {
-        List<Ticket> tickets = lambdaQuery().eq(Ticket::getPosterId, posterId).eq(Ticket::getStatus, TicketStatus.OPEN).list();
+        List<Ticket> tickets = lambdaQuery().eq(Ticket::getPosterId, posterId).list();
         if (filter != null){
             switch (filter) {
                 case timeAscending -> {
@@ -547,6 +547,29 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
                 case payDescending -> {
                     return tickets.stream()
                             .sorted(Comparator.comparing(Ticket::getPay).reversed())
+                            .toList();
+                }
+
+                case statusAscending -> {
+                    return tickets.stream()
+                            .sorted(Comparator.comparing(
+                                    t -> switch (TicketStatus.valueOf(t.getStatus())) {
+                                        case OPEN -> 0;
+                                        case IN_PROGRESS -> 1;
+                                        case CLOSED -> 2;
+                                        case CANCELLED -> 3;
+                                    }))
+                            .toList();
+                }
+                case statusDescending -> {
+                    return tickets.stream()
+                            .sorted(Comparator.comparing(
+                                    t -> switch (TicketStatus.valueOf(t.getStatus())) {
+                                        case CLOSED -> 0;
+                                        case IN_PROGRESS -> 1;
+                                        case OPEN -> 2;
+                                        case CANCELLED -> 3;
+                                    }))
                             .toList();
                 }
 
