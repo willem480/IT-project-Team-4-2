@@ -50,6 +50,43 @@
     bool isPayActive = false;
     bool isSubscribed = false;
 
+
+
+    final Map<int, String> posterNameCache = {};
+
+    Future<void> fetchPosterNames(List<TicketModel> tickets) async {
+      final missingIds = tickets
+          .map((t) => t.posterId)
+          .where((id) => id != null && !posterNameCache.containsKey(id))
+          .cast<int>()
+          .toSet();
+
+      if (missingIds.isEmpty) return;
+
+      for (var id in missingIds) {
+        try {
+          final url = Uri.parse(ApiConfig.getUser(id));
+          final response = await http.post(
+            url,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({}),
+          );
+
+          if (response.statusCode == 200) {
+            final data = jsonDecode(response.body);
+            final name = data['name']?.toString() ?? 'User $id';
+            if (mounted) {
+              setState(() {
+                posterNameCache[id] = name;
+              });
+            }
+          }
+        } catch (e) {
+          print("Failed to fetch poster name for id $id: $e");
+        }
+      }
+    }
+
     Future<void> toggleSubscribe(bool value) async {
       final url = Uri.parse('${ApiConfig.baseUrl}/user/subscribeToEmail?userId=${widget.userId}&isSubscribed=$value');
 
@@ -157,6 +194,7 @@
           setState(() {
             postedTickets = parsedTickets;
           });
+          fetchPosterNames(parsedTickets);
         }
       }catch(e){
         print("ticket crash");
@@ -179,6 +217,7 @@
           setState(() {
             completedTickets = parsedTickets;
           });
+          fetchPosterNames(parsedTickets);
         }
     }
 
@@ -592,23 +631,26 @@
             child: Text('No jobs yet.', style: TextStyle(color: Colors.grey)),
             );
         }
-      
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.center,
-        children: postedTickets.map((ticket){ // assign postedTicket to ticket
+        children: postedTickets.map((ticket){
+          final pId = ticket.posterId;
+          final displayName = (pId != null && posterNameCache.containsKey(pId))
+              ? posterNameCache[pId]!
+              : (pId != null ? 'User ID: $pId' : 'Unknown User');
+
           return _buildTicket(
-            context, 
-            ticket.title.toString() ?? 'No title', 
+            context,
+            ticket.title ?? 'No title',
             ticket.location ?? 'Unknown Location',
             ticket.pay?.toString() ?? '0',
             ticket.description ?? "No description",
             ticket.idTicket ?? 0,
             ticket.datePosted?.toString() ?? "No date",
             widget.userId,
-
-
-            );
-            
+            displayName,
+          );
         }).toList(),
       );
     }
@@ -622,22 +664,28 @@
             child: Text('No jobs yet.', style: TextStyle(color: Colors.grey)),
             );
         }
-      
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.center,
-        children: completedTickets.map((ticket){ // assign completedTicket to ticket
+        children: completedTickets.map((ticket){
+          // 💡 读取缓存
+          final pId = ticket.posterId;
+          final displayName = (pId != null && posterNameCache.containsKey(pId))
+              ? posterNameCache[pId]!
+              : (pId != null ? 'User ID: $pId' : 'Unknown User');
+
           return _buildTicket(
-            context, 
-            ticket.title.toString() ?? 'No title', 
+            context,
+            ticket.title ?? 'No title',
             ticket.location ?? 'Unknown Location',
             ticket.pay?.toString() ?? '0',
             ticket.description ?? "No description",
-            ticket.idTicket ?? 0, 
+            ticket.idTicket ?? 0,
             ticket.datePosted?.toString() ?? 'No date',
             widget.userId,
+            displayName,
             isReadOnly: true,
-            );
-            
+          );
         }).toList(),
       );
     }
@@ -662,7 +710,7 @@
       );
     }
 
-    Widget _buildTicket(BuildContext context, String title, String companyName, String price, String description, int ticketId, String datePosted, int currentUserId, {bool isReadOnly = false}){
+    Widget _buildTicket(BuildContext context, String title, String companyName, String price, String description, int ticketId, String datePosted, int currentUserId, String posterName, {bool isReadOnly = false}){
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
         child: InkWell(
@@ -718,7 +766,7 @@
                           const SizedBox(height: 8),
 
 
-                          Text("Poster Name: $userName", style: const TextStyle(fontSize: 13, color: Colors.grey)),
+                          Text("Poster Name: $posterName", style: const TextStyle(fontSize: 13, color: Colors.grey)),
                         ],
                       ),
                     ),
