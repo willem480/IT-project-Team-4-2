@@ -317,7 +317,7 @@ public final class EmailServiceHelper {
         }
     }
 
-    public static void sendReply(
+    public static void sendEmail(
             String recipient,
             String subject,
              String body
