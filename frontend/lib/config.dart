@@ -3,6 +3,8 @@
 class ApiConfig {
   //local url
   static const String baseUrl = 'http://127.0.0.1:8080';
+  static const String signup = '$baseUrl/user/signup';
+  static const String signin = '$baseUrl/user/signin';
 
   static String getUser(int userId) => '$baseUrl/profilePage/getUser?userId=$userId';
   static const String createTicket = '$baseUrl/ticket/createTicket';
