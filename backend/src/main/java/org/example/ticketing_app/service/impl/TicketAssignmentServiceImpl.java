@@ -303,11 +303,74 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
 
         Ticket ticket = ticketMapper.selectById(ticketID);
         User poster = userMapper.selectById(ticket.getPosterId());
-        if (poster != null && poster.getSubscribeEmail() == 1){
-            String teamName = team != null && team.getName() != null
-                    ? "Team: " + team.getName()
-                    : "Team " + teamID;
-            ticketNotificationService.sendAssignedNotification(ticket, poster, teamName);
+
+        if (poster != null
+                && Byte.valueOf((byte) 1).equals(poster.getSubscribeEmail())) {
+
+            // Team name
+            String teamName =
+                    team != null && team.getName() != null
+                            ? team.getName()
+                            : "Team " + teamID;
+
+            // Organisation name
+            String organizationName = "Unknown Organisation";
+
+            if (team != null && team.getOrganizationId() != null) {
+
+                Organization organization =
+                        organizationMapper.selectById(
+                                team.getOrganizationId()
+                        );
+
+                if (organization != null
+                        && organization.getName() != null) {
+
+                    organizationName =
+                            organization.getName();
+                }
+            }
+
+            // Team member names
+            List<String> memberNamesList =
+                    new ArrayList<>();
+
+            for (TeamMember teamMember : teamMembers) {
+
+                User member =
+                        userMapper.selectById(
+                                teamMember.getUserId()
+                        );
+
+                if (member != null
+                        && member.getName() != null) {
+
+                    memberNamesList.add(
+                            member.getName()
+                    );
+                }
+            }
+
+            String memberNames;
+
+            if (memberNamesList.isEmpty()) {
+                memberNames = "No members";
+            } else {
+                memberNames =
+                        String.join(
+                                ", ",
+                                memberNamesList
+                        );
+            }
+
+            ticketNotificationService
+                    .sendTeamAssignedNotification(
+                            ticket,
+                            poster,
+                            teamName,
+                            organizationName,
+                            memberNames
+                    );
         }
     }
 

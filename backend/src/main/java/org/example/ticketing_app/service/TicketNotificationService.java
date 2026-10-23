@@ -75,4 +75,32 @@ public class TicketNotificationService {
             System.err.println("Failed to send ticket notification: " + e.getMessage());
         }
     }
+
+    public void sendTeamAssignedNotification(
+            Ticket ticket,
+            User poster,
+            String teamName,
+            String organizationName,
+            String memberNames
+    ) {
+        String subject =
+                "Ticket Update - Ticket Assigned to Team (#"
+                        + ticket.getIdTicket()
+                        + ")";
+
+        String body =
+                "Your ticket has been assigned to a team.\n\n"
+                        + "Ticket ID: " + ticket.getIdTicket() + "\n"
+                        + "Title: " + ticket.getTitle() + "\n"
+                        + "Team: " + teamName + "\n"
+                        + "Organisation: " + organizationName + "\n"
+                        + "Team Members: " + memberNames + "\n"
+                        + "Status: " + ticket.getStatus();
+
+        sendToPoster(
+                poster,
+                subject,
+                body
+        );
+    }
 }
