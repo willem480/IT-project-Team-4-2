@@ -6,6 +6,7 @@ import org.apache.commons.text.similarity.JaroWinklerSimilarity;
 import org.example.ticketing_app.entity.*;
 import org.example.ticketing_app.mapper.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import org.example.ticketing_app.service.TicketNotificationService;
 import org.example.ticketing_app.service.ticketServiceHelper.Filter;
 import org.example.ticketing_app.service.ticketServiceHelper.TicketAssignmentReturn;
 import org.example.ticketing_app.service.ticketServiceHelper.TicketStatus;
@@ -38,6 +39,7 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
     private final TeamMapper teamMapper;
     private final TeamMemberMapper teamMemberMapper;
     private final TicketAssignmentMapper ticketAssignmentMapper;
+    private final TicketNotificationService ticketNotificationService;
 
     public List<TicketAssignmentReturn> getTicketAssignment(Integer assigneeID, Filter filter) {
         List<TicketAssignment> ticketAssignments = getAssignmentHelper(assigneeID);
@@ -257,7 +259,11 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
 
             User poster = userMapper.selectById(ticket.getPosterId());
             if (poster != null && poster.getSubscribeEmail() == 1){
-                /// send email here
+                User assignee = userMapper.selectById(assigneeID);
+                String assigneeName = assignee != null && assignee.getName() != null
+                        ? assignee.getName()
+                        : "User " + assigneeID;
+                ticketNotificationService.sendAssignedNotification(ticket, poster, assigneeName);
             }
         }
         else{
@@ -298,7 +304,10 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
         Ticket ticket = ticketMapper.selectById(ticketID);
         User poster = userMapper.selectById(ticket.getPosterId());
         if (poster != null && poster.getSubscribeEmail() == 1){
-            /// send email here
+            String teamName = team != null && team.getName() != null
+                    ? "Team: " + team.getName()
+                    : "Team " + teamID;
+            ticketNotificationService.sendAssignedNotification(ticket, poster, teamName);
         }
     }
 
@@ -323,7 +332,7 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
             ticketMapper.insertOrUpdate(ticket);
             User poster = userMapper.selectById(ticket.getPosterId());
             if (poster != null && poster.getSubscribeEmail() == 1){
-                /// send email here
+                ticketNotificationService.sendDeallocatedNotification(ticket, poster);
             }
         }
 

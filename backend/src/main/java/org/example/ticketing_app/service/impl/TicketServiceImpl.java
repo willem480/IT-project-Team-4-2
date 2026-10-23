@@ -11,6 +11,7 @@ import org.example.ticketing_app.entity.TicketComment;
 import org.example.ticketing_app.entity.User;
 import org.example.ticketing_app.mapper.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import org.example.ticketing_app.service.TicketNotificationService;
 import org.example.ticketing_app.service.emailServiceHelper.EmailData;
 import org.example.ticketing_app.service.ticketServiceHelper.CreateTicketRequest;
 import org.example.ticketing_app.service.ticketServiceHelper.Filter;
@@ -84,6 +85,7 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
     private final TicketAttachmentMapper ticketAttachmentMapper;
     private final TicketCommentMapper ticketCommentMapper;
     private final UserMapper userMapper;
+    private final TicketNotificationService ticketNotificationService;
     /**
      * Creates a ticket submitted manually from the app.
      * The server owns the posting time, poster email, and initial ticket status.
@@ -520,7 +522,7 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
 
         User poster = userMapper.selectById(ticket.getPosterId());
         if (poster != null && poster.getSubscribeEmail() == 1){
-            /// send email here
+            ticketNotificationService.sendCompletedNotification(ticket, poster);
         }
     }
 

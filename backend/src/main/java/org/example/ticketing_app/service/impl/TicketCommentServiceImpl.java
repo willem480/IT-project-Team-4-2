@@ -7,6 +7,7 @@ import org.example.ticketing_app.mapper.TicketCommentMapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.example.ticketing_app.mapper.TicketMapper;
 import org.example.ticketing_app.mapper.UserMapper;
+import org.example.ticketing_app.service.TicketNotificationService;
 import org.example.ticketing_app.service.ticketServiceHelper.TicketCommentReturn;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -30,10 +31,16 @@ import java.util.List;
 public class TicketCommentServiceImpl extends ServiceImpl<TicketCommentMapper, TicketComment> {
     private final TicketMapper ticketMapper;
     private final UserMapper userMapper;
+    private final TicketNotificationService ticketNotificationService;
 
-    public TicketCommentServiceImpl(TicketMapper ticketMapper, UserMapper userMapper) {
+    public TicketCommentServiceImpl(
+            TicketMapper ticketMapper,
+            UserMapper userMapper,
+            TicketNotificationService ticketNotificationService
+    ) {
         this.ticketMapper = ticketMapper;
         this.userMapper = userMapper;
+        this.ticketNotificationService = ticketNotificationService;
     }
 
     @Transactional
@@ -48,7 +55,16 @@ public class TicketCommentServiceImpl extends ServiceImpl<TicketCommentMapper, T
         if (ticket != null) {
             User ticketPoster = userMapper.selectById(ticket.getPosterId());
             if ((ticketPoster != null) && (ticketPoster.getIdUser() != operatorId) && (ticketPoster.getSubscribeEmail() == 1)) {
-                ///send email here
+                User commenter = userMapper.selectById(operatorId);
+                String commenterName = commenter != null && commenter.getName() != null
+                        ? commenter.getName()
+                        : "User " + operatorId;
+                ticketNotificationService.sendCommentNotification(
+                        ticket,
+                        ticketPoster,
+                        commenterName,
+                        content
+                );
             }
         }
     }
