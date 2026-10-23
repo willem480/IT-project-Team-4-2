@@ -50,12 +50,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> {
                         id,
                         null);
 
-        UserReturn userReturn = new UserReturn();
-
-        userReturn.setName(user.getName());
-        userReturn.setEmail(user.getEmail());
-        userReturn.setIdUser(user.getIdUser());
-        userReturn.setDescription(user.getDescription());
+        UserReturn userReturn = createBasicUserReturn(user);
 
         float totalEarnings = 0;
         float totalEarningsThisMonth = 0;
@@ -157,7 +152,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> {
         userReturn.setName(user.getName());
         userReturn.setEmail(user.getEmail());
         userReturn.setDescription(user.getDescription());
-
+        userReturn.setSubscribeEmail(user.getSubscribeEmail() == 1);
         return userReturn;
     }
 
