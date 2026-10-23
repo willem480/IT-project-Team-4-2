@@ -64,6 +64,9 @@
           setState(() {
             isSubscribed = value;
           });
+
+          html.window.localStorage['subscribe_${widget.userId}'] = value.toString();
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(value ? "Subscribed to email successfully!" : "Unsubscribed successfully!")),
           );
@@ -96,8 +99,12 @@
             totalEarnings = myUser.totalEarnings.toDouble() ?? 0.0;
             thisMonthEarnings = myUser.totalEarningsThisMonth.toDouble() ?? 0.0;
             thisMonthTimes = myUser.numberOfEarningsThisMonth.toInt() ?? 0;
-            userDescription= myUser.description ?? "No description";
-            isSubscribed = myUser.isSubscribed ?? false;
+            userDescription = myUser.description ?? "No description";
+
+            if (myUser.isSubscribed != null) {
+              isSubscribed = myUser.isSubscribed!;
+              html.window.localStorage['subscribe_${widget.userId}'] = isSubscribed.toString();
+            }
           });
         }
     }
@@ -180,6 +187,10 @@
     @override
     void initState() {
       super.initState();
+      String? savedSubscribe = html.window.localStorage['subscribe_${widget.userId}'];
+      if (savedSubscribe != null) {
+        isSubscribed = savedSubscribe == 'true';
+      }
       fetchFirstUserData();
       fetchPostedTickets('');
       fetchCompletedTickets('');
