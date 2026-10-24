@@ -143,9 +143,11 @@ class _OrganisationPageState extends State<OrganisationPage> {
         setState(() {
           organisations = parsedOrganisations;
         });
-        for (final organisation in parsedOrganisations) {
-          _fetchManagers(organisation.organizationId);
-        }
+        await Future.wait(
+          parsedOrganisations.map(
+            (organisation) => _fetchManagers(organisation.organizationId),
+          ),
+        );
         debugPrint('Organisations loaded: ${organisations.length}');
       } else {
         debugPrint('Failed to load organisations: ${response.statusCode}');
@@ -476,12 +478,12 @@ class _OrganisationPageState extends State<OrganisationPage> {
     return 'Unable to $action organisation (HTTP ${response.statusCode}). Please try again.';
   }
 
-  void _openTeams(
+  Future<void> _openTeams(
     BuildContext context,
     int organisationId,
     String organisationName,
-  ) {
-    Navigator.push(
+  ) async {
+    await Navigator.push(
       context,
       MaterialPageRoute<void>(
         builder: (context) => TeamsPage(
@@ -491,6 +493,8 @@ class _OrganisationPageState extends State<OrganisationPage> {
         ),
       ),
     );
+    if (!mounted || ModalRoute.of(this.context)?.isCurrent != true) return;
+    await fetchOrganisations();
   }
 
   Future<void> _managersChanged(int organisationId, bool removedSelf) async {

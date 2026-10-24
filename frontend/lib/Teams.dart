@@ -81,8 +81,7 @@ class _TeamsPageState extends State<TeamsPage> {
   void initState() {
     super.initState();
     organisationGreeting.load(userId: widget.userId, userName: widget.userName);
-    fetchTeams();
-    _fetchManagers();
+    _refreshTeams();
   }
 
   @override
@@ -95,6 +94,10 @@ class _TeamsPageState extends State<TeamsPage> {
         userName: widget.userName,
       );
     }
+  }
+
+  Future<void> _refreshTeams() async {
+    await Future.wait([fetchTeams(), _fetchManagers()]);
   }
 
   Future<void> fetchTeams() async {
@@ -424,9 +427,9 @@ class _TeamsPageState extends State<TeamsPage> {
     return 'Unable to $action team (HTTP ${response.statusCode}). Please try again.';
   }
 
-  void _openMembers(BuildContext context, int teamId) {
+  Future<void> _openMembers(BuildContext context, int teamId) async {
     if (!canManage && _teamMembership[teamId] != true) return;
-    Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute<void>(
         builder: (context) => MembersPage(
@@ -436,6 +439,8 @@ class _TeamsPageState extends State<TeamsPage> {
         ),
       ),
     );
+    if (!mounted || ModalRoute.of(this.context)?.isCurrent != true) return;
+    await _refreshTeams();
   }
 
   @override
