@@ -7,7 +7,6 @@ import org.example.ticketing_app.mapper.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.example.ticketing_app.service.emailServiceHelper.EmailServiceHelper;
 import org.example.ticketing_app.service.ticketServiceHelper.TicketStatus;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -222,7 +221,7 @@ public class MemberReportServiceImpl extends ServiceImpl<MemberReportMapper, Mem
         if (emailCopy) {
             try {
                 User manager = userMapper.selectById(managerId);
-                EmailServiceHelper.sendReply(manager.getEmail(), report.getTitle(), report.getBody());
+                EmailServiceHelper.sendEmail(manager.getEmail(), report.getTitle(), report.getBody());
             } catch (Exception e) {
                 throw new ResponseStatusException(BAD_REQUEST, e.getMessage());
             }

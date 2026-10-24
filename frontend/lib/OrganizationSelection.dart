@@ -3,6 +3,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:ticketing_app/TeamSelection.dart';
 import 'package:ticketing_app/TeamSelectionForTeamDelegatePage.dart';
+import 'package:ticketing_app/config.dart';
+import 'config.dart';
 
 class OrganizationSelectionPage extends StatefulWidget {
   final int ticketId;
@@ -31,7 +33,7 @@ class _OrganizationSelectionPageState extends State<OrganizationSelectionPage> {
   }
 
   Future<void> fetchOrganizations() async {
-    final url = Uri.parse("http://127.0.0.1:8080/organization/getOrganizations?viewerUserId=${widget.currentUserId}");
+    final url = Uri.parse(ApiConfig.getOrganization(widget.currentUserId));
 
     try {
       final response = await http.get(url);

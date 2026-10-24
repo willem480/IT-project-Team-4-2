@@ -2,12 +2,14 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:ticketing_app/config.dart';
 
 import 'Organisation.dart';
 import 'Profile.dart';
 import 'adminSearch.dart';
 import 'models/team_members_model.dart';
 import 'report.dart';
+import 'config.dart';
 
 typedef _MemberEntry = ({
   int? teamMemberId,
@@ -82,7 +84,7 @@ class _MembersPageState extends State<MembersPage> {
 
   Future<void> fetchMembers() async {
     final url = Uri.parse(
-      'http://127.0.0.1:8080/team/getTeamMembers?teamId=${widget.teamId}&viewerUserId=${widget.userId}',
+      '${ApiConfig.baseUrl}/team/getTeamMembers?teamId=${widget.teamId}&viewerUserId=${widget.userId}',
     );
 
     try {
@@ -101,8 +103,7 @@ class _MembersPageState extends State<MembersPage> {
         }
         final managersResponse = await http
             .get(
-              Uri.parse(
-                'http://127.0.0.1:8080/organization/getOrganizationManagers?organizationId=${teamResponse.organizationId}',
+              Uri.parse(ApiConfig.getOrganizationManagers(teamResponse.organizationId),
               ),
               headers: {'Content-Type': 'application/json'},
             )
@@ -234,7 +235,7 @@ class _MembersPageState extends State<MembersPage> {
       if (confirmed != true || !mounted) return;
 
       setState(() => _isSubmittingRemoval = true);
-      final url = Uri.parse('http://127.0.0.1:8080/team/removeTeamMember')
+      final url = Uri.parse('${ApiConfig.baseUrl}/team/removeTeamMember')
           .replace(
             queryParameters: {
               'actorUserId': '${widget.userId}',

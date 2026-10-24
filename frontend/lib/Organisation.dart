@@ -2,12 +2,14 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:ticketing_app/config.dart';
 
 import 'Profile.dart';
 import 'Teams.dart';
 import 'adminSearch.dart';
 import 'models/organisation_model.dart';
 import 'report.dart';
+import 'config.dart';
 
 // Shared greeting data and UI for organisation, team and member pages.
 final organisationGreeting = OrganisationGreeting();
@@ -47,7 +49,7 @@ class OrganisationGreeting extends ValueNotifier<String> {
       final response = await http
           .post(
             Uri.parse(
-              'http://127.0.0.1:8080/profilePage/getUser?userId=$userId',
+              ApiConfig.getUser(userId),
             ),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({}),
@@ -129,7 +131,7 @@ class _OrganisationPageState extends State<OrganisationPage> {
 
   Future<void> fetchOrganisations() async {
     final url = Uri.parse(
-      'http://127.0.0.1:8080/organization/getOrganizations?viewerUserId=${widget.userId}',
+      ApiConfig.getOrganization(widget.userId),
     );
 
     try {
@@ -244,7 +246,7 @@ class _OrganisationPageState extends State<OrganisationPage> {
       setState(() => _isSubmitting = true);
       final response = await http
           .post(
-            Uri.parse('http://127.0.0.1:8080/organization/createOrganization'),
+            Uri.parse('${ApiConfig.baseUrl}/organization/createOrganization'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({'actorUserId': widget.userId, 'name': name}),
           )
@@ -329,7 +331,7 @@ class _OrganisationPageState extends State<OrganisationPage> {
       setState(() => _isSubmittingRemoval = true);
       final response = await http
           .delete(
-            Uri.parse('http://127.0.0.1:8080/organization/removeOrganization')
+            Uri.parse('${ApiConfig.baseUrl}/organization/removeOrganization')
                 .replace(
                   queryParameters: {
                     'actorUserId': '${widget.userId}',
@@ -403,7 +405,7 @@ class _OrganisationPageState extends State<OrganisationPage> {
 
       final response = await http
           .patch(
-            Uri.parse('http://127.0.0.1:8080/organization/updateOrganization'),
+            Uri.parse('${ApiConfig.baseUrl}/organization/updateOrganization'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({
               'actorUserId': widget.userId,
@@ -1110,7 +1112,7 @@ class _OrganisationManagerActionsState
   Future<dynamic> _get(String path, Map<String, String> parameters) async {
     final response = await http
         .get(
-          Uri.parse('http://127.0.0.1:8080$path')
+          Uri.parse('${ApiConfig.baseUrl}$path')
               .replace(queryParameters: parameters),
         )
         .timeout(const Duration(seconds: 30));
@@ -1247,7 +1249,7 @@ class _OrganisationManagerActionsState
       if (confirmed != true || !mounted) return;
       final response = await http
           .delete(
-            Uri.parse('http://127.0.0.1:8080/organization/removeManager')
+            Uri.parse('${ApiConfig.baseUrl}/organization/removeManager')
                 .replace(
                   queryParameters: {
                     'actorUserId': '${widget.actorUserId}',

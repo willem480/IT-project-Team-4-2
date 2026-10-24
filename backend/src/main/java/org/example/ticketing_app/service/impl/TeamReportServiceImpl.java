@@ -241,7 +241,7 @@ public class TeamReportServiceImpl
         if (emailCopy) {
             try {
                 User manager = userMapper.selectById(managerId);
-                EmailServiceHelper.sendReply(manager.getEmail(), report.getTitle(), report.getBody());
+                EmailServiceHelper.sendEmail(manager.getEmail(), report.getTitle(), report.getBody());
             } catch (Exception e) {
                 throw new ResponseStatusException(BAD_REQUEST, e.getMessage());
             }

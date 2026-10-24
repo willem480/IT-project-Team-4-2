@@ -8,6 +8,7 @@
   import 'dart:convert';
   import 'package:ticketing_app/global.dart';
   import 'dart:html' as html;
+  import 'config.dart';
 
 
 
@@ -49,8 +50,45 @@
     bool isPayActive = false;
     bool isSubscribed = false;
 
+
+
+    final Map<int, String> posterNameCache = {};
+
+    Future<void> fetchPosterNames(List<TicketModel> tickets) async {
+      final missingIds = tickets
+          .map((t) => t.posterId)
+          .where((id) => id != null && !posterNameCache.containsKey(id))
+          .cast<int>()
+          .toSet();
+
+      if (missingIds.isEmpty) return;
+
+      for (var id in missingIds) {
+        try {
+          final url = Uri.parse(ApiConfig.getUser(id));
+          final response = await http.post(
+            url,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({}),
+          );
+
+          if (response.statusCode == 200) {
+            final data = jsonDecode(response.body);
+            final name = data['name']?.toString() ?? 'User $id';
+            if (mounted) {
+              setState(() {
+                posterNameCache[id] = name;
+              });
+            }
+          }
+        } catch (e) {
+          print("Failed to fetch poster name for id $id: $e");
+        }
+      }
+    }
+
     Future<void> toggleSubscribe(bool value) async {
-      final url = Uri.parse('http://127.0.0.1:8080/user/subscribeToEmail?userId=${widget.userId}&isSubscribed=$value');
+      final url = Uri.parse('${ApiConfig.baseUrl}/user/subscribeToEmail?userId=${widget.userId}&isSubscribed=$value');
 
       try {
         final response = await http.post(
@@ -63,6 +101,9 @@
           setState(() {
             isSubscribed = value;
           });
+
+          html.window.localStorage['subscribe_${widget.userId}'] = value.toString();
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(value ? "Subscribed to email successfully!" : "Unsubscribed successfully!")),
           );
@@ -77,7 +118,7 @@
 
     void fetchFirstUserData() async {
 
-      final url = Uri.parse('http://127.0.0.1:8080/profilePage/getUser?userId=${widget.userId}');
+      final url = Uri.parse(ApiConfig.getUser(widget.userId));
 
         //Post
         final response = await http.post(
@@ -95,15 +136,19 @@
             totalEarnings = myUser.totalEarnings.toDouble() ?? 0.0;
             thisMonthEarnings = myUser.totalEarningsThisMonth.toDouble() ?? 0.0;
             thisMonthTimes = myUser.numberOfEarningsThisMonth.toInt() ?? 0;
-            userDescription= myUser.description ?? "No description";
-            isSubscribed = myUser.isSubscribed ?? false;
+            userDescription = myUser.description ?? "No description";
+
+            if (myUser.isSubscribed != null) {
+              isSubscribed = myUser.isSubscribed!;
+              html.window.localStorage['subscribe_${widget.userId}'] = isSubscribed.toString();
+            }
           });
         }
     }
 
     Future<void> updateProfileDescription(String newDescription) async{
         final url = Uri.parse(
-            'http://127.0.0.1:8080/user/updateUser?id=${widget.userId}&name=${Uri.encodeComponent(userName)}&email=${Uri.encodeComponent(userEmail)}&description=${Uri.encodeComponent(newDescription)}'
+            '${ApiConfig.baseUrl}/user/updateUser?id=${widget.userId}&name=${Uri.encodeComponent(userName)}&email=${Uri.encodeComponent(userEmail)}&description=${Uri.encodeComponent(newDescription)}'
         );
 
       try{
@@ -135,7 +180,7 @@
 
     void fetchPostedTickets(String filterType) async {
 
-      final url = Uri.parse('http://127.0.0.1:8080/profilePage/getPostedTickets?userId=${widget.userId}&filter=$filterType');
+      final url = Uri.parse('${ApiConfig.baseUrl}/profilePage/getPostedTickets?userId=${widget.userId}&filter=$filterType');
 
       try{
         //Post
@@ -149,6 +194,7 @@
           setState(() {
             postedTickets = parsedTickets;
           });
+          fetchPosterNames(parsedTickets);
         }
       }catch(e){
         print("ticket crash");
@@ -158,7 +204,7 @@
 
     void fetchCompletedTickets(String filterType) async {
 
-      final url = Uri.parse('http://127.0.0.1:8080/profilePage/getCompletedTickets?userId=${widget.userId}&filter=$filterType');
+      final url = Uri.parse('${ApiConfig.baseUrl}/profilePage/getCompletedTickets?userId=${widget.userId}&filter=$filterType');
 
         //Post
         final response = await http.post(
@@ -171,6 +217,7 @@
           setState(() {
             completedTickets = parsedTickets;
           });
+          fetchPosterNames(parsedTickets);
         }
     }
 
@@ -179,6 +226,10 @@
     @override
     void initState() {
       super.initState();
+      String? savedSubscribe = html.window.localStorage['subscribe_${widget.userId}'];
+      if (savedSubscribe != null) {
+        isSubscribed = savedSubscribe == 'true';
+      }
       fetchFirstUserData();
       fetchPostedTickets('');
       fetchCompletedTickets('');
@@ -580,23 +631,27 @@
             child: Text('No jobs yet.', style: TextStyle(color: Colors.grey)),
             );
         }
-      
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.center,
-        children: postedTickets.map((ticket){ // assign postedTicket to ticket
+        children: postedTickets.map((ticket){
+          final pId = ticket.posterId;
+          final displayName = (pId != null && posterNameCache.containsKey(pId))
+              ? posterNameCache[pId]!
+              : (pId != null ? 'User ID: $pId' : 'Unknown User');
+
           return _buildTicket(
-            context, 
-            ticket.title.toString() ?? 'No title', 
+            context,
+            ticket.title ?? 'No title',
             ticket.location ?? 'Unknown Location',
             ticket.pay?.toString() ?? '0',
             ticket.description ?? "No description",
             ticket.idTicket ?? 0,
             ticket.datePosted?.toString() ?? "No date",
             widget.userId,
-
-
-            );
-            
+            displayName,
+            ticket.status ?? "Open",
+          );
         }).toList(),
       );
     }
@@ -610,22 +665,29 @@
             child: Text('No jobs yet.', style: TextStyle(color: Colors.grey)),
             );
         }
-      
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.center,
-        children: completedTickets.map((ticket){ // assign completedTicket to ticket
+        children: completedTickets.map((ticket){
+          // 💡 读取缓存
+          final pId = ticket.posterId;
+          final displayName = (pId != null && posterNameCache.containsKey(pId))
+              ? posterNameCache[pId]!
+              : (pId != null ? 'User ID: $pId' : 'Unknown User');
+
           return _buildTicket(
-            context, 
-            ticket.title.toString() ?? 'No title', 
+            context,
+            ticket.title ?? 'No title',
             ticket.location ?? 'Unknown Location',
             ticket.pay?.toString() ?? '0',
             ticket.description ?? "No description",
-            ticket.idTicket ?? 0, 
+            ticket.idTicket ?? 0,
             ticket.datePosted?.toString() ?? 'No date',
             widget.userId,
+            displayName,
+            ticket.status ?? "Open",
             isReadOnly: true,
-            );
-            
+          );
         }).toList(),
       );
     }
@@ -650,7 +712,7 @@
       );
     }
 
-    Widget _buildTicket(BuildContext context, String title, String companyName, String price, String description, int ticketId, String datePosted, int currentUserId, {bool isReadOnly = false}){
+    Widget _buildTicket(BuildContext context, String title, String companyName, String price, String description, int ticketId, String datePosted, int currentUserId, String posterName, String status, {bool isReadOnly = false}){
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
         child: InkWell(
@@ -663,8 +725,9 @@
                 price: price,
                 description: description,
                 date: datePosted,
-                currentUserId:Global.currentUserId,
+                currentUserId: Global.currentUserId,
                 isReadOnly: isReadOnly || (widget.userId != Global.currentUserId),
+                status: status,
               )));
             },
             borderRadius: BorderRadius.circular(12),
@@ -706,7 +769,7 @@
                           const SizedBox(height: 8),
 
 
-                          Text("Poster Name: $userName", style: const TextStyle(fontSize: 13, color: Colors.grey)),
+                          Text("Poster Name: $posterName", style: const TextStyle(fontSize: 13, color: Colors.grey)),
                         ],
                       ),
                     ),

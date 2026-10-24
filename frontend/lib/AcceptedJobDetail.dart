@@ -1,9 +1,9 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:ticketing_app/models/ticket_comment.dart';
 import 'package:ticketing_app/models/ticket_model.dart';
+import 'config.dart';
 
 class AcceptedJobDetail extends StatefulWidget {
   final int userId;
@@ -37,14 +37,14 @@ class _AcceptedJobDetailState extends State<AcceptedJobDetail> {
 
   Future<void> fetchComment() async {
     if (widget.ticket.idTicket == null) return;
-    final url = Uri.parse(
-      'http://127.0.0.1:8080/ticketComment/getTicketComments',
-    );
+
+    final url = Uri.parse(ApiConfig.getTicketComment(widget.ticket.idTicket!, widget.userId));
+
     try {
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'ticketIdticket': widget.ticket.idTicket}),
+        body: jsonEncode({}),
       );
       if (response.statusCode == 200) {
         final decodedData = jsonDecode(response.body);
@@ -65,20 +65,15 @@ class _AcceptedJobDetailState extends State<AcceptedJobDetail> {
   }
 
   Future<void> postNewComment() async {
-    if (widget.ticket.idTicket == null ||
-        commentController.text.trim().isEmpty) {
-      return;
-    }
-    final url = Uri.parse('http://127.0.0.1:8080/ticketComment/postComment');
+    if (widget.ticket.idTicket == null || commentController.text.trim().isEmpty) return;
+
+    final url = Uri.parse(ApiConfig.postTicketComment(widget.userId, widget.ticket.idTicket!, commentController.text));
+
     try {
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'ticketIdticket': widget.ticket.idTicket,
-          'userIduser': widget.userId,
-          'content': commentController.text,
-        }),
+        body: jsonEncode({}), // 💡 参数已经在 URL 里了，这里传空 JSON
       );
       if (!mounted) return;
       if (response.statusCode == 200) {
@@ -116,10 +111,7 @@ class _AcceptedJobDetailState extends State<AcceptedJobDetail> {
     setState(() => _isCompleting = true);
 
     // The backend mapping contains a literal space. Uri encodes the path safely.
-    final url = Uri.parse('http://127.0.0.1:8080/').replace(
-      path: '/ticket/complete ticket',
-      queryParameters: {'ticketId': '$ticketId'},
-    );
+    final url = Uri.parse(ApiConfig.completeTicket(ticketId));
     try {
       final response = await http.get(url).timeout(const Duration(seconds: 30));
       if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -162,13 +154,7 @@ class _AcceptedJobDetailState extends State<AcceptedJobDetail> {
     setState(() => _isDeallocating = true);
 
     final url =
-        Uri.parse('http://127.0.0.1:8080/ticketAssignment/deallocateTicket')
-            .replace(
-              queryParameters: {
-                'ticketId': '$ticketId',
-                'operatorId': '${widget.userId}',
-              },
-            );
+        Uri.parse(ApiConfig.deallocateTicket(ticketId, widget.userId));
     try {
       final response = await http
           .post(url)

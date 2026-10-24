@@ -53,6 +53,11 @@ public class TicketController {
         ticketService.completeTicket(ticketId);
     }
 
+    @GetMapping("close ticket")
+    public void closeTicket(@RequestParam int ticketId) {
+        ticketService.closeTicket(ticketId);
+    }
+
     @PostMapping("updatePostedTicket")
     public void updatePostedTicket(@RequestParam int ticketId, @RequestParam(required = false) String title, @RequestParam(required = false)String description, @RequestParam(required = false)String location, @RequestParam(required = false) Integer pay) {
         ticketService.updateTicket(ticketId, title, description, location, pay);

@@ -6,6 +6,7 @@ import org.apache.commons.text.similarity.JaroWinklerSimilarity;
 import org.example.ticketing_app.entity.*;
 import org.example.ticketing_app.mapper.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import org.example.ticketing_app.service.TicketNotificationService;
 import org.example.ticketing_app.service.ticketServiceHelper.Filter;
 import org.example.ticketing_app.service.ticketServiceHelper.TicketAssignmentReturn;
 import org.example.ticketing_app.service.ticketServiceHelper.TicketStatus;
@@ -19,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -37,6 +39,7 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
     private final TeamMapper teamMapper;
     private final TeamMemberMapper teamMemberMapper;
     private final TicketAssignmentMapper ticketAssignmentMapper;
+    private final TicketNotificationService ticketNotificationService;
 
     public List<TicketAssignmentReturn> getTicketAssignment(Integer assigneeID, Filter filter) {
         List<TicketAssignment> ticketAssignments = getAssignmentHelper(assigneeID);
@@ -196,15 +199,10 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
     }
 
     public List<TicketAssignmentReturn> getTicketAssignmentRelatedTo(Integer assigneeID, Integer teamID) {
-        List<TicketAssignment> ticketAssignments = lambdaQuery()
-                .eq(TicketAssignment::getAssigneeId, assigneeID).eq(TicketAssignment::getRelatedTeamId, teamID)
-                .list()
-                .stream()
-                .filter(ta -> {
-                    Ticket ticket = ticketMapper.selectById(ta.getTicketId());
-                    return TicketStatus.IN_PROGRESS.name().equals(ticket.getStatus()) || TicketStatus.CLOSED.name().equals(ticket.getStatus());
-                })
-                .toList();
+        List<TicketAssignment> ticketAssignments =
+                getAssignmentHelper(assigneeID)
+                        .stream()
+                        .filter(ticketAssignment -> Objects.equals(ticketAssignment.getRelatedTeamId(), teamID)).toList();
         List<TicketAssignmentReturn> ticketAssignmentReturns = new ArrayList<TicketAssignmentReturn>();
         setTicketAssignmentReturn(ticketAssignments, ticketAssignmentReturns);
         return ticketAssignmentReturns;
@@ -247,9 +245,9 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
 
     @Transactional
     public void delegateJobIndividual(Integer ticketID, Integer assigneeID, Integer teamId) {
-        TicketAssignment ticketAssignment = lambdaQuery().eq(TicketAssignment::getTicketId, ticketID).eq(TicketAssignment::getAssigneeId, assigneeID).one();
-        if (ticketAssignment == null) {
-            ticketAssignment = new TicketAssignment();
+        List<TicketAssignment> ticketAssignments = lambdaQuery().eq(TicketAssignment::getTicketId, ticketID).eq(TicketAssignment::getAssigneeId, assigneeID).list();
+        if (ticketAssignments.isEmpty()) {
+            TicketAssignment ticketAssignment = new TicketAssignment();
             ticketAssignment.setTicketId(ticketID);
             ticketAssignment.setAssigneeId(assigneeID);
             ticketAssignment.setRelatedTeamId(teamId);
@@ -258,6 +256,15 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
             ticket.setStatus(TicketStatus.IN_PROGRESS.name());
             ticketMapper.insertOrUpdate(ticket);
             save(ticketAssignment);
+
+            User poster = userMapper.selectById(ticket.getPosterId());
+            if (poster != null && poster.getSubscribeEmail() == 1){
+                User assignee = userMapper.selectById(assigneeID);
+                String assigneeName = assignee != null && assignee.getName() != null
+                        ? assignee.getName()
+                        : "User " + assigneeID;
+                ticketNotificationService.sendAssignedNotification(ticket, poster, assigneeName);
+            }
         }
         else{
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -275,9 +282,9 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
 
         for(TeamMember teamMember : teamMembers ){
             Integer assigneeID = teamMember.getUserId();
-            TicketAssignment ticketAssignment = lambdaQuery().eq(TicketAssignment::getTicketId, ticketID).eq(TicketAssignment::getAssigneeId, assigneeID).one();
-            if (ticketAssignment == null) {
-                ticketAssignment = new TicketAssignment();
+            List<TicketAssignment> ticketAssignments = lambdaQuery().eq(TicketAssignment::getTicketId, ticketID).eq(TicketAssignment::getAssigneeId, assigneeID).list();
+            if (ticketAssignments.isEmpty()) {
+                TicketAssignment ticketAssignment = new TicketAssignment();
                 ticketAssignment.setTicketId(ticketID);
                 ticketAssignment.setAssigneeId(assigneeID);
                 ticketAssignment.setRelatedTeamId(teamID);
@@ -293,6 +300,78 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
             }
 
         }
+
+        Ticket ticket = ticketMapper.selectById(ticketID);
+        User poster = userMapper.selectById(ticket.getPosterId());
+
+        if (poster != null
+                && Byte.valueOf((byte) 1).equals(poster.getSubscribeEmail())) {
+
+            // Team name
+            String teamName =
+                    team != null && team.getName() != null
+                            ? team.getName()
+                            : "Team " + teamID;
+
+            // Organisation name
+            String organizationName = "Unknown Organisation";
+
+            if (team != null && team.getOrganizationId() != null) {
+
+                Organization organization =
+                        organizationMapper.selectById(
+                                team.getOrganizationId()
+                        );
+
+                if (organization != null
+                        && organization.getName() != null) {
+
+                    organizationName =
+                            organization.getName();
+                }
+            }
+
+            // Team member names
+            List<String> memberNamesList =
+                    new ArrayList<>();
+
+            for (TeamMember teamMember : teamMembers) {
+
+                User member =
+                        userMapper.selectById(
+                                teamMember.getUserId()
+                        );
+
+                if (member != null
+                        && member.getName() != null) {
+
+                    memberNamesList.add(
+                            member.getName()
+                    );
+                }
+            }
+
+            String memberNames;
+
+            if (memberNamesList.isEmpty()) {
+                memberNames = "No members";
+            } else {
+                memberNames =
+                        String.join(
+                                ", ",
+                                memberNamesList
+                        );
+            }
+
+            ticketNotificationService
+                    .sendTeamAssignedNotification(
+                            ticket,
+                            poster,
+                            teamName,
+                            organizationName,
+                            memberNames
+                    );
+        }
     }
 
     @Transactional
@@ -301,7 +380,7 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
         if (ticketAssignment == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "no ticket assignment found for this ticketId " + ticketId + " and operatorId " + operatorId);
         }
-        Ticket ticket = ticketMapper.selectById(ticketAssignment.getTicketId());
+        Ticket ticket = ticketMapper.selectById(ticketId);
         if (ticket == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "no ticket found for this ticketId " + ticketId);
         }
@@ -312,8 +391,34 @@ public class TicketAssignmentServiceImpl extends ServiceImpl<TicketAssignmentMap
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "you cannot deallocate a closed ticket");
         }
         else if (Objects.equals(ticket.getStatus(), TicketStatus.IN_PROGRESS.name())) {
-            ticket.setStatus(TicketStatus.OPEN.name());
-            ticketMapper.insertOrUpdate(ticket);
+            List<TicketAssignment> ticketAssignments = lambdaQuery().eq(TicketAssignment::getTicketId, ticketId).list();
+            if (ticketAssignments.isEmpty()) {
+                ticket.setStatus(TicketStatus.OPEN.name());
+                ticketMapper.insertOrUpdate(ticket);
+            }
+
+            User poster =
+                    userMapper.selectById(ticket.getPosterId());
+
+            User deallocator =
+                    userMapper.selectById(operatorId);
+
+            String deallocatorName =
+                    deallocator != null
+                            && deallocator.getName() != null
+                            ? deallocator.getName()
+                            : "User " + operatorId;
+
+            if (poster != null
+                    && Byte.valueOf((byte) 1)
+                    .equals(poster.getSubscribeEmail())) {
+
+                ticketNotificationService.sendDeallocatedNotification(
+                        ticket,
+                        poster,
+                        deallocatorName
+                );
+            }
         }
 
     }

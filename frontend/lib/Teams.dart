@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:ticketing_app/config.dart';
 
 import 'Organisation.dart';
 import 'Profile.dart';
@@ -16,7 +17,7 @@ Future<List<({int userId, String name})>> fetchOrganisationManagers(
   final response = await http
       .get(
         Uri.parse(
-          'http://127.0.0.1:8080/organization/getOrganizationManagers?organizationId=$organisationId',
+          ApiConfig.getOrganizationManagers(organisationId),
         ),
         headers: {'Content-Type': 'application/json'},
       )
@@ -102,7 +103,7 @@ class _TeamsPageState extends State<TeamsPage> {
 
   Future<void> fetchTeams() async {
     final url = Uri.parse(
-      'http://127.0.0.1:8080/organization/getOrganizationTeams?organizationId=${widget.organizationId}&viewerUserId=${widget.userId}',
+      ApiConfig.getOrganizationTeams(widget.organizationId, widget.userId),
     );
 
     try {
@@ -213,7 +214,7 @@ class _TeamsPageState extends State<TeamsPage> {
       setState(() => _isSubmittingTeam = true);
       final response = await http
           .post(
-            Uri.parse('http://127.0.0.1:8080/organization/addTeam'),
+            Uri.parse('${ApiConfig.baseUrl}/organization/addTeam'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({
               'actorUserId': widget.userId,
@@ -295,7 +296,7 @@ class _TeamsPageState extends State<TeamsPage> {
       setState(() => _isSubmittingRemoval = true);
       final response = await http
           .delete(
-            Uri.parse('http://127.0.0.1:8080/organization/removeTeam').replace(
+            Uri.parse('${ApiConfig.baseUrl}/organization/removeTeam').replace(
               queryParameters: {
                 'actorUserId': '${widget.userId}',
                 'organizationId': '${widget.organizationId}',
@@ -354,7 +355,7 @@ class _TeamsPageState extends State<TeamsPage> {
 
       final response = await http
           .patch(
-            Uri.parse('http://127.0.0.1:8080/team/updateTeam'),
+            Uri.parse('${ApiConfig.baseUrl}/team/updateTeam'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({
               'actorUserId': widget.userId,

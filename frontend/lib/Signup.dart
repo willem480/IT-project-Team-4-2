@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:ticketing_app/SignIn.dart';
 import 'package:ticketing_app/global.dart';
 import 'package:ticketing_app/main.dart';
+import 'config.dart';
 
 
 class SignUp extends StatelessWidget {
@@ -89,19 +90,23 @@ class _SignUpPageState extends State<SignUpPage> {
     setState(() => _isSigningUp = true);
     var accountCreated = false;
     try {
+      // 🚀 使用 ApiConfig.signup
       final response = await http.post(
-        Uri.parse(
-          'http://127.0.0.1:8080/user/signup',
-        ),
+        Uri.parse(ApiConfig.signup),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'name': name, 'email': email}),
       ).timeout(const Duration(seconds: 30));
 
       if (!mounted) return;
-      if (response.statusCode == 201) {
+
+      // 注意：这里由于后端可能因为 subscribeEmail 字段返回 500，
+      // 如果后端队友还没修复完，你可以暂时把状态码兼容一下 (response.statusCode == 201 || response.statusCode == 200)
+      if (response.statusCode == 201 || response.statusCode == 200) {
         accountCreated = true;
+
+        // 🚀 使用 ApiConfig.signin
         final signInResponse = await http.post(
-          Uri.parse('http://127.0.0.1:8080/user/signin'),
+          Uri.parse(ApiConfig.signin),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({'email': email}),
         ).timeout(const Duration(seconds: 30));
@@ -133,7 +138,7 @@ class _SignUpPageState extends State<SignUpPage> {
             ),
           ),
         );
-      } else {
+      }else {
         var message = 'Signup failed (HTTP ${response.statusCode}). Please try again.';
         try {
           final body = jsonDecode(response.body);

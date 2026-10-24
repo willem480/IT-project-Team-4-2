@@ -32,15 +32,18 @@ class UserProfile {
     });
 
     factory UserProfile.fromJson(Map<String, dynamic> json) => UserProfile(
-        idUser: json["idUser"],
-        name: json["name"],
-        email: json["email"],
-        totalEarnings: json["totalEarnings"],
-        totalEarningsThisMonth: json["totalEarningsThisMonth"],
-        numberOfEarningsThisMonth: json["numberOfEarningsThisMonth"],
-        percentageEarningsCompareToLastMonth: json["percentageEarningsCompareToLastMonth"],
-        description: json["description"] ?? 'no description',
-        isSubscribed: json["isSubscribed"] ?? false,
+        idUser: json["idUser"] as int? ?? 0,
+        name: json["name"]?.toString() ?? 'User',
+        email: json["email"]?.toString() ?? 'unknown@email.com',
+
+        totalEarnings: (json["totalEarnings"] as num?)?.toInt() ?? 0,
+        totalEarningsThisMonth: (json["totalEarningsThisMonth"] as num?)?.toInt() ?? 0,
+        numberOfEarningsThisMonth: (json["numberOfEarningsThisMonth"] as num?)?.toInt() ?? 0,
+        percentageEarningsCompareToLastMonth: (json["percentageEarningsCompareToLastMonth"] as num?)?.toInt() ?? 0,
+
+        description: json["description"]?.toString() ?? 'no description',
+
+        isSubscribed: json["subscribeEmail"] as bool? ?? false,
     );
 
     Map<String, dynamic> toJson() => {

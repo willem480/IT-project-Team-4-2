@@ -9,15 +9,14 @@ import org.example.ticketing_app.entity.TicketAssignment;
 import org.example.ticketing_app.entity.TicketAttachment;
 import org.example.ticketing_app.entity.TicketComment;
 import org.example.ticketing_app.entity.User;
-import org.example.ticketing_app.mapper.TicketAssignmentMapper;
-import org.example.ticketing_app.mapper.TicketAttachmentMapper;
-import org.example.ticketing_app.mapper.TicketCommentMapper;
-import org.example.ticketing_app.mapper.TicketMapper;
+import org.example.ticketing_app.mapper.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import org.example.ticketing_app.service.TicketNotificationService;
 import org.example.ticketing_app.service.emailServiceHelper.EmailData;
 import org.example.ticketing_app.service.ticketServiceHelper.CreateTicketRequest;
 import org.example.ticketing_app.service.ticketServiceHelper.Filter;
 import org.example.ticketing_app.service.ticketServiceHelper.TicketStatus;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -26,6 +25,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
@@ -86,7 +86,8 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
     private final TicketAssignmentMapper ticketAssignmentMapper;
     private final TicketAttachmentMapper ticketAttachmentMapper;
     private final TicketCommentMapper ticketCommentMapper;
-
+    private final UserMapper userMapper;
+    private final TicketNotificationService ticketNotificationService;
     /**
      * Creates a ticket submitted manually from the app.
      * The server owns the posting time, poster email, and initial ticket status.
@@ -517,13 +518,30 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
     @Transactional
     public void completeTicket(int ticketId) {
         Ticket ticket = baseMapper.selectById(ticketId);
+        if (Objects.equals(ticket.getStatus(), TicketStatus.CLOSED.name())) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ticket is already completed");
         ticket.setStatus(TicketStatus.CLOSED.name());
         ticket.setDateCompleted(LocalDateTime.now());
         saveOrUpdate(ticket);
+
+        User poster = userMapper.selectById(ticket.getPosterId());
+        if (poster != null && poster.getSubscribeEmail() == 1){
+            ticketNotificationService.sendCompletedNotification(ticket, poster);
+        }
+    }
+
+    @Transactional
+    public void closeTicket(int ticketId) {
+        Ticket ticket = baseMapper.selectById(ticketId);
+        if (Objects.equals(ticket.getStatus(), TicketStatus.CLOSED.name())) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ticket is already closed");
+        ticket.setStatus(TicketStatus.CLOSED.name());
+        ticket.setDateCompleted(LocalDateTime.now());
+        saveOrUpdate(ticket);
+        List<TicketAssignment> assignments = ticketAssignmentMapper.selectList(new LambdaQueryWrapper<TicketAssignment>().eq(TicketAssignment::getTicketId, ticketId));
+        ticketAssignmentMapper.deleteByIds(assignments.stream().map(TicketAssignment::getIdTicketAssignment).toList());
     }
 
     public List<Ticket> getPostedTickets(int posterId, Filter filter) {
-        List<Ticket> tickets = lambdaQuery().eq(Ticket::getPosterId, posterId).eq(Ticket::getStatus, TicketStatus.OPEN).list();
+        List<Ticket> tickets = lambdaQuery().eq(Ticket::getPosterId, posterId).list();
         if (filter != null){
             switch (filter) {
                 case timeAscending -> {
@@ -550,6 +568,29 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
                             .toList();
                 }
 
+                case statusAscending -> {
+                    return tickets.stream()
+                            .sorted(Comparator.comparing(
+                                    t -> switch (TicketStatus.valueOf(t.getStatus())) {
+                                        case OPEN -> 0;
+                                        case IN_PROGRESS -> 1;
+                                        case CLOSED -> 2;
+                                        case CANCELLED -> 3;
+                                    }))
+                            .toList();
+                }
+                case statusDescending -> {
+                    return tickets.stream()
+                            .sorted(Comparator.comparing(
+                                    t -> switch (TicketStatus.valueOf(t.getStatus())) {
+                                        case CLOSED -> 0;
+                                        case IN_PROGRESS -> 1;
+                                        case OPEN -> 2;
+                                        case CANCELLED -> 3;
+                                    }))
+                            .toList();
+                }
+
                 default -> {
                     return tickets;
                 }
@@ -558,6 +599,7 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
         else return tickets;
     }
 
+    @Transactional
     public void updateTicket(int ticketId, String title, String description, String location, Integer pay) {
         Ticket ticket = baseMapper.selectById(ticketId);
         if (!StringUtils.isBlank(title)) {

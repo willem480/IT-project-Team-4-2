@@ -21,7 +21,7 @@ public class UserReturn {
     private float totalEarningsThisMonth;
     private int numberOfEarningsThisMonth;
     private float percentageEarningsCompareToLastMonth;
-
+    private boolean subscribeEmail;
     @Override
     public String toString() {
         return "UserReturn{" +
