@@ -501,6 +501,11 @@ public class TicketServiceTest {
     }
 
     @Test
+    void closeTicketTest() {
+        ticketService.closeTicket(14);
+    }
+
+    @Test
     void ticketManagementTest() {
         // Test 5.1: Create Ticket
         Ticket newTicket = new Ticket();

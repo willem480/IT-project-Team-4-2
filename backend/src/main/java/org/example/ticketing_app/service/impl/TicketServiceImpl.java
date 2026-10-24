@@ -518,6 +518,7 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
     @Transactional
     public void completeTicket(int ticketId) {
         Ticket ticket = baseMapper.selectById(ticketId);
+        if (Objects.equals(ticket.getStatus(), TicketStatus.CLOSED.name())) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ticket is already completed");
         ticket.setStatus(TicketStatus.CLOSED.name());
         ticket.setDateCompleted(LocalDateTime.now());
         saveOrUpdate(ticket);
