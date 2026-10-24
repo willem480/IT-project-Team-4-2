@@ -599,6 +599,7 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
         else return tickets;
     }
 
+    @Transactional
     public void updateTicket(int ticketId, String title, String description, String location, Integer pay) {
         Ticket ticket = baseMapper.selectById(ticketId);
         if (!StringUtils.isBlank(title)) {
