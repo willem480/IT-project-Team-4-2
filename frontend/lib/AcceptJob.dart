@@ -406,10 +406,10 @@ class _AcceptJobPageState extends State<AcceptJobPage> {
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       itemCount: _tickets.length,
       itemBuilder: (context, index) => Padding(
-        padding: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(vertical: 8),
         child: InkWell(
           onTap: () => _openAcceptedJob(_tickets[index]),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           child: JobCard(job: _tickets[index]),
         ),
       ),
@@ -758,31 +758,72 @@ class JobCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final posterName =
+        job.posterName ??
+        (job.posterId != null ? 'User ID: ${job.posterId}' : 'Unknown User');
+    final date = job.datePosted?.toString() ?? 'no date';
+
     return Container(
-      padding: const EdgeInsets.all(14),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border.all(color: _border),
-        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withValues(alpha: 0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  job.title ?? '',
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  job.title ?? 'No title',
                   style: const TextStyle(
-                    color: _ink,
-                    fontSize: 20,
-                    height: 1.3,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              const SizedBox(width: 10),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    const Icon(Icons.business, size: 14, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        job.location ?? 'Unknown Location',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Poster Name: $posterName',
+                  style: const TextStyle(fontSize: 12, color: Colors.black54),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
               ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 120),
                 child: Row(
@@ -811,20 +852,19 @@ class JobCard extends StatelessWidget {
                   ],
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              const Icon(Icons.business, size: 14, color: Colors.grey),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  job.location ?? '',
-                  style: const TextStyle(fontSize: 13, color: Colors.grey),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+              const SizedBox(height: 6),
+              Text(
+                '\$${job.pay ?? 0}',
+                style: const TextStyle(
+                  color: Colors.green,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
                 ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                date.length >= 10 ? date.substring(0, 10) : date,
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
               ),
             ],
           ),
