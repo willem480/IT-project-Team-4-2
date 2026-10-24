@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:ticketing_app/models/ticket_comment.dart';
 import 'package:ticketing_app/models/ticket_model.dart';
 import 'config.dart';
+import 'Profile.dart';
 
 class AcceptedJobDetail extends StatefulWidget {
   final int userId;
@@ -35,53 +36,93 @@ class _AcceptedJobDetailState extends State<AcceptedJobDetail> {
       ) ==
       'CLOSED';
 
+  Future<void> _deleteComment(int commentId) async {
+    final url = Uri.parse(ApiConfig.deleteComment(widget.userId, commentId));
+
+    try {
+      final response = await http.delete(
+        url,
+        headers: {"Content-Type": "application/json"},
+      );
+
+      if (!mounted) return;
+      if (response.statusCode == 200) {
+        fetchComment();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Comment deleted successfully!")),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Failed to delete, status: ${response.statusCode}"),
+          ),
+        );
+      }
+    } catch (e) {
+      print(" Delete comment error: $e");
+    }
+  }
+
   Future<void> fetchComment() async {
     if (widget.ticket.idTicket == null) return;
-
-    final url = Uri.parse(ApiConfig.getTicketComment(widget.ticket.idTicket!, widget.userId));
+    final url = Uri.parse(
+      "${ApiConfig.baseUrl}/ticketComment/getTicketComments?ticketId=${widget.ticket.idTicket!}&operatorId=${widget.userId}",
+    );
 
     try {
       final response = await http.post(
         url,
-        headers: {'Content-Type': 'application/json'},
+        headers: {"Content-Type": "application/json"},
         body: jsonEncode({}),
       );
+
       if (response.statusCode == 200) {
-        final decodedData = jsonDecode(response.body);
-        List<ticketComment> comments = [];
+        var decodedData = json.decode(response.body);
+        List<ticketComment> tempList = [];
+
         if (decodedData is List) {
-          comments = decodedData
+          tempList = decodedData
               .map((model) => ticketComment.fromJson(model))
               .toList();
         } else if (decodedData is Map<String, dynamic>) {
-          comments.add(ticketComment.fromJson(decodedData));
+          tempList.add(ticketComment.fromJson(decodedData));
         }
         if (!mounted) return;
-        setState(() => commentList = comments);
+        setState(() {
+          commentList = tempList;
+        });
       }
-    } catch (_) {
-      print('fail to get a comment');
+    } catch (e) {
+      print("fail to get a comment: $e");
     }
   }
 
   Future<void> postNewComment() async {
-    if (widget.ticket.idTicket == null || commentController.text.trim().isEmpty) return;
+    if (widget.ticket.idTicket == null || commentController.text.trim().isEmpty) {
+      return;
+    }
 
-    final url = Uri.parse(ApiConfig.postTicketComment(widget.userId, widget.ticket.idTicket!, commentController.text));
+    final url = Uri.parse(
+      "${ApiConfig.baseUrl}/ticketComment/postComment?userId=${widget.userId}&ticketId=${widget.ticket.idTicket!}&comment=${commentController.text}",
+    );
 
     try {
       final response = await http.post(
         url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({}), // 💡 参数已经在 URL 里了，这里传空 JSON
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({}),
       );
+
       if (!mounted) return;
       if (response.statusCode == 200) {
         commentController.clear();
-        await fetchComment();
+        fetchComment();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Comment sent successfully！")),
+        );
       }
-    } catch (_) {
-      print('fail to post a comment');
+    } catch (e) {
+      print("comment send error: $e");
     }
   }
 
@@ -374,90 +415,263 @@ class _AcceptedJobDetailState extends State<AcceptedJobDetail> {
       children: [
         const Text(
           'Comments',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: commentController,
-          maxLines: 4,
-          decoration: InputDecoration(
-            hintText: 'Add a comment...',
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade300),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade300),
-            ),
-          ),
-        ),
+        const SizedBox(height: 16),
 
-        const SizedBox(height: 10),
-        Align(
-          alignment: Alignment.centerRight,
-          child: ElevatedButton(
-            onPressed: postNewComment,
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-            child: const Text(
-              "Post comment",
-              style: TextStyle(color: Colors.white),
-            ),
-          ),
-        ),
-        const SizedBox(height: 20),
         commentList.isEmpty
             ? const Padding(
-                padding: EdgeInsets.all(20.0),
-                child: Text(
-                  "No comment yet",
-                  style: TextStyle(color: Colors.grey),
+                padding: EdgeInsets.symmetric(vertical: 20.0),
+                child: Center(
+                  child: Text(
+                    "No comments yet.",
+                    style: TextStyle(color: Colors.grey),
+                  ),
                 ),
               )
             : Column(
                 children: commentList.map((comment) {
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey.shade200),
-                    ),
-                    child: Column(
+                  bool isMe = comment.ownedByCurUser;
+                  String initial = comment.userName.isNotEmpty
+                      ? comment.userName.substring(0, 1).toUpperCase()
+                      : 'U';
+                  String dateStr = comment.date.toString();
+                  String displayDate = dateStr.length >= 10
+                      ? dateStr.substring(0, 10)
+                      : dateStr;
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 16.0),
+                    child: Row(
+                      mainAxisAlignment: isMe
+                          ? MainAxisAlignment.end
+                          : MainAxisAlignment.start,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'User ID: ${comment.posterId}',
+                        if (!isMe) ...[
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      Profile(userId: comment.posterId),
+                                ),
+                              );
+                            },
+                            child: CircleAvatar(
+                              radius: 18,
+                              backgroundColor: Colors.grey.shade300,
+                              child: Text(
+                                initial,
+                                style: const TextStyle(
+                                  color: Colors.black87,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+
+                        Flexible(
+                          child: Column(
+                            crossAxisAlignment: isMe
+                                ? CrossAxisAlignment.end
+                                : CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  bottom: 4.0,
+                                  left: 4.0,
+                                  right: 4.0,
+                                ),
+                                child: Text(
+                                  '${comment.userName} (ID: ${comment.posterId}) • $displayDate',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ),
+
+                              Builder(
+                                builder: (BuildContext bubbleContext) {
+                                  return GestureDetector(
+                                    onDoubleTap: () async {
+                                      if (!isMe) return;
+
+                                      final RenderBox button =
+                                          bubbleContext.findRenderObject()
+                                              as RenderBox;
+                                      final RenderBox overlay =
+                                          Navigator.of(context).overlay!.context
+                                                  .findRenderObject()
+                                              as RenderBox;
+
+                                      final RelativeRect position =
+                                          RelativeRect.fromRect(
+                                            Rect.fromPoints(
+                                              button.localToGlobal(
+                                                button.size.bottomLeft(
+                                                  Offset.zero,
+                                                ),
+                                                ancestor: overlay,
+                                              ),
+                                              button.localToGlobal(
+                                                button.size.bottomRight(
+                                                  Offset.zero,
+                                                ),
+                                                ancestor: overlay,
+                                              ),
+                                            ),
+                                            Offset.zero & overlay.size,
+                                          );
+
+                                      final String? choice =
+                                          await showMenu<String>(
+                                            context: context,
+                                            position: position,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                            items: const [
+                                              PopupMenuItem<String>(
+                                                value: 'delete',
+                                                child: Row(
+                                                  children: [
+                                                    Icon(
+                                                      Icons.delete_outline,
+                                                      color: Colors.redAccent,
+                                                    ),
+                                                    SizedBox(width: 8),
+                                                    Text(
+                                                      'Delete Comment',
+                                                      style: TextStyle(
+                                                        color: Colors.redAccent,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          );
+
+                                      if (choice == 'delete' && mounted) {
+                                        _deleteComment(comment.idticketComment);
+                                      }
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 10,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: isMe
+                                            ? Colors.blueAccent
+                                            : Colors.white,
+                                        borderRadius: BorderRadius.only(
+                                          topLeft: const Radius.circular(16),
+                                          topRight: const Radius.circular(16),
+                                          bottomLeft: isMe
+                                              ? const Radius.circular(16)
+                                              : const Radius.circular(4),
+                                          bottomRight: isMe
+                                              ? const Radius.circular(4)
+                                              : const Radius.circular(16),
+                                        ),
+                                        border: isMe
+                                            ? null
+                                            : Border.all(
+                                                color: Colors.grey.shade300,
+                                              ),
+                                      ),
+                                      child: Text(
+                                        comment.content,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: isMe
+                                              ? Colors.white
+                                              : Colors.black87,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        if (isMe) ...[
+                          const SizedBox(width: 8),
+                          CircleAvatar(
+                            radius: 18,
+                            backgroundColor: Colors.blueAccent,
+                            child: Text(
+                              initial,
                               style: const TextStyle(
+                                color: Colors.white,
                                 fontWeight: FontWeight.bold,
-                                fontSize: 14,
                               ),
                             ),
-                            Text(
-                              '${comment.date.year}-${comment.date.month}-${comment.date.day}',
-                              style: const TextStyle(
-                                color: Colors.grey,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          comment.content,
-                          style: const TextStyle(fontSize: 14),
-                        ),
+                          ),
+                        ],
                       ],
                     ),
                   );
                 }).toList(),
               ),
+
+        const SizedBox(height: 20),
+
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: commentController,
+                onSubmitted: (value) {
+                  postNewComment();
+                },
+                decoration: InputDecoration(
+                  hintText: 'Type a message...',
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: const BorderSide(color: Colors.blueAccent),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              decoration: const BoxDecoration(
+                color: Colors.blueAccent,
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.send, color: Colors.white, size: 20),
+                onPressed: postNewComment,
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }
