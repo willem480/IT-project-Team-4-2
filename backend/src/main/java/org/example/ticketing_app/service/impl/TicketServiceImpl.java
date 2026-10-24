@@ -16,6 +16,7 @@ import org.example.ticketing_app.service.emailServiceHelper.EmailData;
 import org.example.ticketing_app.service.ticketServiceHelper.CreateTicketRequest;
 import org.example.ticketing_app.service.ticketServiceHelper.Filter;
 import org.example.ticketing_app.service.ticketServiceHelper.TicketStatus;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -24,6 +25,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
@@ -524,6 +526,17 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
         if (poster != null && poster.getSubscribeEmail() == 1){
             ticketNotificationService.sendCompletedNotification(ticket, poster);
         }
+    }
+
+    @Transactional
+    public void closeTicket(int ticketId) {
+        Ticket ticket = baseMapper.selectById(ticketId);
+        if (Objects.equals(ticket.getStatus(), TicketStatus.CLOSED.name())) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ticket is already closed");
+        ticket.setStatus(TicketStatus.CLOSED.name());
+        ticket.setDateCompleted(LocalDateTime.now());
+        saveOrUpdate(ticket);
+        List<TicketAssignment> assignments = ticketAssignmentMapper.selectList(new LambdaQueryWrapper<TicketAssignment>().eq(TicketAssignment::getTicketId, ticketId));
+        ticketAssignmentMapper.deleteByIds(assignments.stream().map(TicketAssignment::getIdTicketAssignment).toList());
     }
 
     public List<Ticket> getPostedTickets(int posterId, Filter filter) {

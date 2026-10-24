@@ -3,7 +3,10 @@ package org.example.ticketing_app.service;
 import org.example.ticketing_app.entity.Ticket;
 import org.example.ticketing_app.entity.User;
 import org.example.ticketing_app.service.emailServiceHelper.EmailServiceHelper;
+import org.example.ticketing_app.service.ticketServiceHelper.TicketStatus;
 import org.springframework.stereotype.Service;
+
+import java.util.Objects;
 
 @Service
 public class TicketNotificationService {
@@ -36,6 +39,8 @@ public class TicketNotificationService {
             User poster,
             String deallocatorName
     ) {
+        String explanation = Objects.equals(ticket.getStatus(), TicketStatus.OPEN.name()) ? "Your ticket has been fully deallocated from either an individual " +
+                "or a team\n" : "your ticket has been deallocated from one of the team members but others are still working on it\n";
         String subject =
                 "Ticket Update - Ticket Deallocated (#"
                         + ticket.getIdTicket()
@@ -46,7 +51,7 @@ public class TicketNotificationService {
                         + "Ticket ID: " + ticket.getIdTicket() + "\n"
                         + "Title: " + ticket.getTitle() + "\n"
                         + "Deallocated by: " + deallocatorName + "\n"
-                        + "Status: " + ticket.getStatus();
+                        + "Note: " + explanation;
 
         sendToPoster(
                 poster,
