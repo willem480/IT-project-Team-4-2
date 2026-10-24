@@ -650,6 +650,7 @@
             ticket.datePosted?.toString() ?? "No date",
             widget.userId,
             displayName,
+            ticket.status ?? "Open",
           );
         }).toList(),
       );
@@ -684,6 +685,7 @@
             ticket.datePosted?.toString() ?? 'No date',
             widget.userId,
             displayName,
+            ticket.status ?? "Open",
             isReadOnly: true,
           );
         }).toList(),
@@ -710,7 +712,7 @@
       );
     }
 
-    Widget _buildTicket(BuildContext context, String title, String companyName, String price, String description, int ticketId, String datePosted, int currentUserId, String posterName, {bool isReadOnly = false}){
+    Widget _buildTicket(BuildContext context, String title, String companyName, String price, String description, int ticketId, String datePosted, int currentUserId, String posterName, String status, {bool isReadOnly = false}){
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
         child: InkWell(
@@ -723,8 +725,9 @@
                 price: price,
                 description: description,
                 date: datePosted,
-                currentUserId:Global.currentUserId,
+                currentUserId: Global.currentUserId,
                 isReadOnly: isReadOnly || (widget.userId != Global.currentUserId),
+                status: status,
               )));
             },
             borderRadius: BorderRadius.circular(12),

@@ -5,7 +5,6 @@ import 'package:ticketing_app/models/ticket_comment.dart';
 import 'dart:convert';
 import 'package:ticketing_app/Profile.dart';
 import 'package:http/http.dart' as http;
-import 'config.dart';
 
 class PostAJobDetailUser extends StatefulWidget {
   final String title;
@@ -16,6 +15,8 @@ class PostAJobDetailUser extends StatefulWidget {
   final String date;
   final int currentUserId;
   final bool isReadOnly;
+  final String status; //
+
   const PostAJobDetailUser({
     super.key,
     required this.title,
@@ -26,6 +27,7 @@ class PostAJobDetailUser extends StatefulWidget {
     required this.date,
     required this.currentUserId,
     this.isReadOnly = false,
+    this.status = 'OPEN',
   });
 
   @override
@@ -189,7 +191,7 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
       if (response.statusCode == 200) {
         fetchComment();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("✅ Comment deleted successfully!")),
+          const SnackBar(content: Text("Comment deleted successfully!")),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -219,6 +221,8 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
 
   @override
   Widget build(BuildContext context) {
+    bool isClosed = widget.status.toUpperCase().replaceAll(' ', '') == 'CLOSED';
+
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
@@ -227,7 +231,7 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
         actions: [
-          if (!widget.isReadOnly)
+          if (!widget.isReadOnly && !isClosed)
             IconButton(
               icon: const Icon(Icons.edit, color: Colors.blueAccent),
               onPressed: _showEditDialog,
@@ -254,7 +258,20 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(currentTitle, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 30)),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(child: Text(currentTitle, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 30), maxLines: 1, overflow: TextOverflow.ellipsis,)),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: isClosed ? Colors.grey.shade300 : Colors.green.shade100,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(widget.status, style: TextStyle(color: isClosed ? Colors.black54 : Colors.green.shade800, fontWeight: FontWeight.bold)),
+                                )
+                              ],
+                            ),
                             const SizedBox(height: 12),
                             Text(currentCompany, style: const TextStyle(fontSize: 18, color: Colors.grey)),
                             const SizedBox(height: 16),
@@ -287,25 +304,26 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
         ],
       ),
 
-      floatingActionButton: widget.isReadOnly ? null : Padding(
+      floatingActionButton: (widget.isReadOnly || isClosed) ? null : Padding(
         padding: const EdgeInsets.only(bottom: 20),
         child: SizedBox(
             width: 200,
             height: 56,
             child: FloatingActionButton(
               onPressed: () async {
-                final url = Uri.parse(ApiConfig.completeTicket(widget.ticketId));
+                final url = Uri.parse('${ApiConfig.baseUrl}/ticket/close%20ticket?ticketId=${widget.ticketId}');
                 try{
                   final response = await http.get(url);
                   if (response.statusCode == 200){
-                    print("job has been completed successfully");
+                    print("job has been closed successfully");
                     Navigator.pushAndRemoveUntil(
                         context,
                         MaterialPageRoute(builder: (context) => MyHomePage(title: 'Find a job', currentUserId: widget.currentUserId)),
                             (Route<dynamic> route) => false
                     );
                   } else {
-                    print("fail complet");
+                    print("fail close");
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Failed to close ticket")));
                   }
                 } catch(e){
                   print("network request error");
@@ -470,50 +488,50 @@ class _PostAJobDetailUserPage extends State<PostAJobDetailUser> {
         ),
 
         const SizedBox(height: 20),
-      if(!widget.isReadOnly)
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: commentController,
-                onSubmitted: (value) {
-                  postNewComment();
-                },
-                decoration: InputDecoration(
-                  hintText: 'Type a message...',
-                  filled: true,
-                  fillColor: Colors.white,
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 12),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    borderSide: const BorderSide(color: Colors.blueAccent),
+        if(!widget.isReadOnly)
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: commentController,
+                  onSubmitted: (value) {
+                    postNewComment();
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'Type a message...',
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: const BorderSide(color: Colors.blueAccent),
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              decoration: const BoxDecoration(
-                color: Colors.blueAccent,
-                shape: BoxShape.circle,
+              const SizedBox(width: 8),
+              Container(
+                decoration: const BoxDecoration(
+                  color: Colors.blueAccent,
+                  shape: BoxShape.circle,
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.send, color: Colors.white, size: 20),
+                  onPressed: postNewComment,
+                ),
               ),
-              child: IconButton(
-                icon: const Icon(Icons.send, color: Colors.white, size: 20),
-                onPressed: postNewComment,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 80), //
+            ],
+          ),
+        const SizedBox(height: 80),
       ],
     );
   }
