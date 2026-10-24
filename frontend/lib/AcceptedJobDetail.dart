@@ -325,27 +325,37 @@ class _AcceptedJobDetailState extends State<AcceptedJobDetail> {
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 412),
-          child: Row(
-            children: [
-              Expanded(
-                child: _buildActionButton(
-                  label: _isClosed ? 'Completed' : 'Mark as Complete',
-                  color: Colors.lightGreen,
-                  isLoading: _isCompleting,
-                  onPressed: _completeTicket,
+          child: _isClosed
+              ? SizedBox(
+                  width: double.infinity,
+                  child: _buildActionButton(
+                    label: 'Ticket is closed',
+                    color: Colors.grey,
+                    isLoading: false,
+                    onPressed: null,
+                  ),
+                )
+              : Row(
+                  children: [
+                    Expanded(
+                      child: _buildActionButton(
+                        label: 'Mark as Complete',
+                        color: Colors.lightGreen,
+                        isLoading: _isCompleting,
+                        onPressed: _completeTicket,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildActionButton(
+                        label: 'Deallocate',
+                        color: Colors.red,
+                        isLoading: _isDeallocating,
+                        onPressed: _deallocateTicket,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildActionButton(
-                  label: 'Deallocate',
-                  color: Colors.red,
-                  isLoading: _isDeallocating,
-                  onPressed: _deallocateTicket,
-                ),
-              ),
-            ],
-          ),
         ),
       ),
 
@@ -357,7 +367,7 @@ class _AcceptedJobDetailState extends State<AcceptedJobDetail> {
     required String label,
     required Color color,
     required bool isLoading,
-    required VoidCallback onPressed,
+    required VoidCallback? onPressed,
   }) {
     return SizedBox(
       width: 200,
