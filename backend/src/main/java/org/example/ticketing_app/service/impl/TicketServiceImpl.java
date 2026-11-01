@@ -117,6 +117,7 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
 
     @Transactional
     public Ticket createTicketFromEmail(EmailData emailData, LocalDateTime datePosted) {
+        System.out.println(String.format("Creating ticket from email: %s", emailData));
         // Keep non-job emails in inbox only; they must not create a ticket.
         if (!isPostJobEmail(emailData) || emailData.getFrom() == null || emailData.getFrom().isBlank()) {
             return null;

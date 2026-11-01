@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="ticketing_app@localhost" uuid="7df23966-26bd-4c49-80f1-c1b2671a20de">
+    <data-source source="LOCAL" name="ticketing_app@localhost" uuid="b311b8f2-fe21-4828-acae-66098a0cd9e0">
       <driver-ref>mysql.8</driver-ref>
       <synchronize>true</synchronize>
       <imported>true</imported>
-      <remarks>$PROJECT_DIR$/backend/src/main/resources/application.properties</remarks>
       <jdbc-driver>com.mysql.cj.jdbc.Driver</jdbc-driver>
       <jdbc-url>jdbc:mysql://localhost:3306/ticketing_app</jdbc-url>
       <jdbc-additional-properties>
