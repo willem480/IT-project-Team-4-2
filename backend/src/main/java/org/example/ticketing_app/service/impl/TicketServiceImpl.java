@@ -220,6 +220,7 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
         }
 
         updateById(ticket);
+        System.out.println(String.format("Updated a ticket with id %d, requested by %s", ticket.getIdTicket(), emailData));
         return ticket;
     }
 
@@ -263,6 +264,7 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
                         .eq(TicketAssignment::getTicketId, targetTicketId)
         );
         removeById(targetTicketId);
+        System.out.println(String.format("Deleted a ticket with id %d, requested by %s", targetTicketId, emailData));
         return ticket;
     }
 

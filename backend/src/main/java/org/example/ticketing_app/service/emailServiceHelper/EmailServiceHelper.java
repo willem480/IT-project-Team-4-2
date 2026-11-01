@@ -579,6 +579,8 @@ public final class EmailServiceHelper {
         reply.setText(withAutomatedFooter(body.toString()));
 
         Transport.send(reply);
+
+        System.out.println(String.format("Sending summary email to %s, the generated summary is about %s", recipient, user));
     }
 
     /** Sends an English confirmation only after a valid job-posting email creates a ticket. */
