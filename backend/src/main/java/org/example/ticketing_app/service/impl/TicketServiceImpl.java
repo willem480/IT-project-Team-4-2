@@ -117,7 +117,7 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
 
     @Transactional
     public Ticket createTicketFromEmail(EmailData emailData, LocalDateTime datePosted) {
-        System.out.println(String.format("Creating ticket from email: %s", emailData));
+        System.out.println(String.format("Creating ticket from email: %s\n", emailData));
         // Keep non-job emails in inbox only; they must not create a ticket.
         if (!isPostJobEmail(emailData) || emailData.getFrom() == null || emailData.getFrom().isBlank()) {
             return null;
@@ -220,7 +220,7 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
         }
 
         updateById(ticket);
-        System.out.println(String.format("Updated a ticket with id %d, requested by %s", ticket.getIdTicket(), emailData));
+        System.out.println(String.format("Updated a ticket with id %d, requested by %s\n", ticket.getIdTicket(), emailData));
         return ticket;
     }
 
@@ -264,7 +264,7 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> {
                         .eq(TicketAssignment::getTicketId, targetTicketId)
         );
         removeById(targetTicketId);
-        System.out.println(String.format("Deleted a ticket with id %d, requested by %s", targetTicketId, emailData));
+        System.out.println(String.format("Deleted a ticket with id %d, requested by %s\n", targetTicketId, emailData));
         return ticket;
     }
 
