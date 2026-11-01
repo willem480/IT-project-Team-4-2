@@ -812,7 +812,84 @@ public final class EmailServiceHelper {
 
     /** Adds the support mailbox to every automated email without duplicating it in each template. */
     private static String withAutomatedFooter(String body) {
-        return body + automatedFooter();
+        return body
+                + emailActionGuide()
+                + automatedFooter();
+    }
+
+    private static String emailActionGuide() {
+
+        return "\n\n" +
+                "Available Email Actions\n" +
+                "=======================\n\n" +
+
+                "1. Post a New Job\n" +
+                "-----------------\n" +
+                "Subject: Post Job\n\n" +
+                "Body:\n" +
+                "Title: [Job title]\n" +
+                "Description:\n" +
+                "[Job description]\n" +
+                "Location: [Job location]\n" +
+                "Pay: [Amount]\n\n" +
+
+                "Example:\n" +
+                "Subject: Post Job\n\n" +
+                "Title: Fix office printer\n" +
+                "Description:\n" +
+                "The printer on Level 2 is not working.\n" +
+                "Location: Building A\n" +
+                "Pay: 50\n\n" +
+
+
+                "2. Update an Existing Ticket\n" +
+                "----------------------------\n" +
+                "Subject: Update Ticket\n\n" +
+                "Body:\n" +
+                "Ticket ID: [Ticket ID]\n" +
+                "Title: [Optional new title]\n" +
+                "Description:\n" +
+                "[Optional new description]\n" +
+                "Location: [Optional new location]\n" +
+                "Pay: [Optional new amount]\n\n" +
+
+                "Only the Ticket ID and the fields you want to change are required.\n\n" +
+
+                "Example:\n" +
+                "Subject: Update Ticket\n\n" +
+                "Ticket ID: 12\n" +
+                "Location: Building B\n" +
+                "Pay: 80\n\n" +
+
+
+                "3. Cancel a Ticket\n" +
+                "------------------\n" +
+                "Subject: Cancel Ticket\n\n" +
+                "Body:\n" +
+                "Ticket ID: [Ticket ID]\n\n" +
+
+                "Example:\n" +
+                "Subject: Cancel Ticket\n\n" +
+                "Ticket ID: 12\n\n" +
+
+
+                "4. Request Your Account Summary\n" +
+                "--------------------------------\n" +
+                "Subject: Summary\n\n" +
+                "Body: No content is required.\n\n" +
+
+                "The Summary email will return your current account information, including:\n" +
+                "- User name, email and User ID\n" +
+                "- Total posted tickets\n" +
+                "- Open tickets\n" +
+                "- Tickets in progress\n" +
+                "- Closed tickets\n" +
+                "- Cancelled tickets\n" +
+                "- Total assigned jobs\n" +
+                "- Completed jobs\n" +
+                "- Jobs in progress\n" +
+                "- Total revenue earned\n" +
+                "- Details of your posted tickets\n";
     }
 
     private static String automatedFooter() {
@@ -820,4 +897,5 @@ public final class EmailServiceHelper {
                 "This is an automated message from ProvisionIT Support. Please do not reply to this email.\n" +
                 "For ticket requests, updates, or cancellations, please email: " + imapUsername;
     }
+
 }
